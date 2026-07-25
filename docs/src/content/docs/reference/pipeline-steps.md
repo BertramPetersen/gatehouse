@@ -156,7 +156,7 @@ Pushes the validated branch to the configured push target.
 - If `commands.format` is set, runs it first
 - Stages in-repo test evidence artifacts when `test.evidence.store_in_repo` is enabled and the evidence directory is not ignored by Git
 - Commits any uncommitted agent changes with message `no-mistakes: apply agent fixes`
-- Without fork routing, the push target is the credentialled upstream URL resolved from the worktree's `origin` remote at run time (the DB stores a redacted copy)
+- Without fork routing, successful run-start validation selects the upstream URL from the working clone; when it matches the gate worktree's `origin`, the worktree URL is used so embedded credentials retained outside the database can authenticate. If validation fails, the run continues with its prior routing.
 - With GitHub fork routing, the push target is `repos.fork_url`
 - Immediately before remote mutation, reloads the durable review-approved commit and refuses to push when that binding is missing, malformed, or unreachable
 - Requires the commit proposed for push to equal or descend from the review-approved commit, allowing commits made by later pipeline steps without authorizing unrelated history

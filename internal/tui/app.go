@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/kunchenguid/no-mistakes/internal/branchsync"
+	"github.com/kunchenguid/no-mistakes/internal/cimonitor"
 	"github.com/kunchenguid/no-mistakes/internal/ipc"
 	"github.com/kunchenguid/no-mistakes/internal/types"
 )
@@ -283,7 +284,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.reviewRetryReconcile = false
 			m.reviewReconcileErr = nil
-			m.applySnapshot(msg.run)
+			if msg.run != nil && !m.applySnapshot(msg.run) {
+				m.reconcileAgain = true
+			}
 			m.err = m.reviewRetryError()
 			m.resubscribeTries = 0
 		}
@@ -437,7 +440,8 @@ func (m Model) terminalTitle() string {
 		icon := stepStatusIndicator(s.Status, m.spinnerFrame)
 		switch s.Status {
 		case types.StepStatusRunning, types.StepStatusFixing:
-			if s.StepName == types.StepCI && ((m.run != nil && m.run.CIReady) || parseCIActivity(m.logs).Ready) {
+			activity := cimonitor.FromAuthoritative(m.run != nil && m.run.CIReady, m.run != nil && m.run.CIReadyNoCI, m.logs)
+			if s.StepName == types.StepCI && activity.Ready {
 				return "✓ Checks passed" + suffix
 			}
 			return icon + " " + stepLabel(s.StepName) + suffix

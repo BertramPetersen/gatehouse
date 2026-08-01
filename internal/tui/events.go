@@ -47,6 +47,15 @@ func (m *Model) applyEvent(event ipc.Event) bool {
 			m.run.PRURL = event.PRURL
 		}
 
+	case ipc.EventCIReadinessChanged:
+		m.err = nil
+		if event.CIReady != nil {
+			m.run.CIReady = *event.CIReady
+		}
+		if event.CIReadyNoCI != nil {
+			m.run.CIReadyNoCI = *event.CIReadyNoCI
+		}
+
 	case ipc.EventRunCompleted:
 		m.err = nil
 		if event.Status != nil {
@@ -182,22 +191,28 @@ func (m *Model) applyEvent(event ipc.Event) bool {
 // reconciliations racing cannot move state backwards either. Findings come
 // from the snapshot's persisted step rows, which is why a coalesced
 // step_completed carrying findings is recoverable.
-func (m *Model) applySnapshot(run *ipc.RunInfo) {
+func (m *Model) applySnapshot(run *ipc.RunInfo) bool {
 	if run == nil || run.StateRev < m.stateRev {
-		return
+		return false
 	}
 	m.err = nil
 	m.stateRev = run.StateRev
 	steps := normalizePipelineSteps(run.ID, run.Status, run.Steps)
+	findings := make(map[types.StepName]string, len(steps))
+	for _, step := range steps {
+		if step.FindingsJSON != nil && *step.FindingsJSON != "" {
+			findings[step.StepName] = *step.FindingsJSON
+		}
+	}
+	oldFindings := m.stepFindings
+	m.stepFindings = findings
+	m.reconcileGateState(steps, oldFindings, findings)
 	run.Steps = steps
 	m.run = run
 	m.steps = steps
 	m.syntheticSteps = false
 	m.invalidateInactiveStepDiffs()
 	for _, s := range steps {
-		if s.FindingsJSON != nil && *s.FindingsJSON != "" {
-			m.stepFindings[s.StepName] = *s.FindingsJSON
-		}
 		// A gate reached while the model was out of sync still needs its
 		// diff, which is derived rather than carried by the snapshot.
 		if s.Status == types.StepStatusFixReview {
@@ -209,6 +224,47 @@ func (m *Model) applySnapshot(run *ipc.RunInfo) {
 	if run.Status == types.RunCompleted || run.Status == types.RunFailed || run.Status == types.RunCancelled {
 		m.flushPartialLog()
 		m.done = true
+	}
+	return true
+}
+
+func (m *Model) reconcileGateState(steps []ipc.StepResultInfo, oldFindings, findings map[types.StepName]string) {
+	oldGate := awaitingStep(m.steps)
+	newGate := awaitingStep(steps)
+	if sameGateState(oldGate, newGate, oldFindings, findings) {
+		return
+	}
+	if oldGate != nil {
+		m.clearGateState(oldGate.StepName)
+	}
+	if newGate != nil && (oldGate == nil || oldGate.StepName != newGate.StepName) {
+		m.clearGateState(newGate.StepName)
+	}
+	if newGate != nil {
+		m.resetFindingSelection(newGate.StepName)
+	}
+}
+
+func sameGateState(oldGate, newGate *ipc.StepResultInfo, oldFindings, newFindings map[types.StepName]string) bool {
+	if oldGate == nil || newGate == nil {
+		return oldGate == nil && newGate == nil
+	}
+	return oldGate.ID == newGate.ID &&
+		oldGate.StepName == newGate.StepName &&
+		oldGate.Status == newGate.Status &&
+		oldGate.RoundCount == newGate.RoundCount &&
+		oldGate.FixRoundCount == newGate.FixRoundCount &&
+		oldGate.PendingFixSource == newGate.PendingFixSource &&
+		oldFindings[oldGate.StepName] == newFindings[newGate.StepName]
+}
+
+func (m *Model) clearGateState(step types.StepName) {
+	delete(m.findingSelections, step)
+	delete(m.findingCursor, step)
+	delete(m.findingInstructions, step)
+	delete(m.addedFindings, step)
+	if m.editor != nil && m.editor.step == step {
+		m.editor = nil
 	}
 }
 

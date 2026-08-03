@@ -1,10 +1,13 @@
 package steps
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/kunchenguid/no-mistakes/internal/config"
+	"github.com/kunchenguid/no-mistakes/internal/db"
+	"github.com/kunchenguid/no-mistakes/internal/pipeline"
 	"github.com/kunchenguid/no-mistakes/internal/scm"
 )
 
@@ -212,7 +215,7 @@ func TestTransientRerunSelectionCannotExceedTheBudget(t *testing.T) {
 	reruns := 0
 	for poll := 0; poll < 5; poll++ {
 		for _, candidate := range transientRerunCandidates(checks, &budget, limit) {
-			if used := budget.spend(candidate); used > limit {
+			if used := budget.spend(candidate, checks, "head"); used > limit {
 				t.Fatalf("poll %d spent rerun %d of a %d rerun budget for %q", poll, used, limit, candidate.Name)
 			}
 			reruns++
@@ -240,7 +243,7 @@ func TestTransientRerunSelectionDeclinesWhileTheRollupIsUnrefreshed(t *testing.T
 	if len(first) != 1 {
 		t.Fatalf("first poll candidates = %+v, want the cancelled check", first)
 	}
-	budget.spend(first[0])
+	budget.spend(first[0], []scm.Check{check}, "head")
 
 	for poll := 1; poll <= rerunRollupGracePolls; poll++ {
 		if got := transientRerunCandidates([]scm.Check{check}, &budget, limit); len(got) != 0 {
@@ -259,7 +262,7 @@ func TestTransientRerunSelectionDeclinesWhileTheRollupIsUnrefreshed(t *testing.T
 	if len(after) != 1 {
 		t.Fatalf("candidates after the grace ran out = %+v, want the remaining budget to be usable", after)
 	}
-	if used := budget.spend(after[0]); used != limit {
+	if used := budget.spend(after[0], []scm.Check{check}, "head"); used != limit {
 		t.Fatalf("spend after the grace ran out = %d, want %d", used, limit)
 	}
 	if got := budget.remaining("build", limit); got != 0 {
@@ -277,7 +280,7 @@ func TestTransientRerunSelectionResumesOnceTheRollupRefreshes(t *testing.T) {
 	check := scm.Check{Name: "build", Bucket: scm.CheckBucketCancel, State: "CANCELLED", CompletedAt: completed}
 
 	budget := checkRerunBudget{}
-	budget.spend(check)
+	budget.spend(check, []scm.Check{check}, "head")
 
 	rerun := check
 	rerun.CompletedAt = completed.Add(3 * time.Minute)
@@ -299,7 +302,8 @@ func TestCheckRerunBudgetAccounting(t *testing.T) {
 	if got := budget.used("test"); got != 0 {
 		t.Fatalf("used before any attempt = %d, want 0", got)
 	}
-	if got := budget.spend(scm.Check{Name: "test"}); got != 1 {
+	check := scm.Check{Name: "test"}
+	if got := budget.spend(check, []scm.Check{check}, "head"); got != 1 {
 		t.Fatalf("spend = %d, want 1", got)
 	}
 	if got := budget.remaining("test", 1); got != 0 {
@@ -376,7 +380,7 @@ func TestCancelledCheckAwaitsItsRerunBeforeBeingCalledUnresolved(t *testing.T) {
 	check := scm.Check{Name: "test", Bucket: scm.CheckBucketCancel, State: "CANCELLED", CompletedAt: completed}
 
 	budget := checkRerunBudget{}
-	budget.spend(check)
+	budget.spend(check, []scm.Check{check}, "head")
 
 	for poll := 1; poll <= rerunRollupGracePolls; poll++ {
 		unresolved, awaiting := budget.cancelledAfterRerun([]scm.Check{check})
@@ -400,7 +404,7 @@ func TestRerunThatEndsCancelledAgainIsUnresolvedImmediately(t *testing.T) {
 	check := scm.Check{Name: "test", Bucket: scm.CheckBucketCancel, State: "CANCELLED", CompletedAt: completed}
 
 	budget := checkRerunBudget{}
-	budget.spend(check)
+	budget.spend(check, []scm.Check{check}, "head")
 
 	rerun := check
 	rerun.CompletedAt = completed.Add(4 * time.Minute)
@@ -462,7 +466,8 @@ func TestRerunningCancelledChecksIsOffByDefault(t *testing.T) {
 func TestRerunBudgetSurvivesARestart(t *testing.T) {
 	completed := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
 	original := &checkRerunBudget{}
-	original.spend(scm.Check{Name: "build", Bucket: scm.CheckBucketCancel, CompletedAt: completed})
+	check := scm.Check{Name: "build", Bucket: scm.CheckBucketCancel, CompletedAt: completed, Link: "https://github.com/test/repo/actions/runs/1/job/10"}
+	original.spend(check, []scm.Check{check}, "head-1")
 
 	encoded, err := original.marshal()
 	if err != nil {
@@ -485,6 +490,26 @@ func TestRerunBudgetSurvivesARestart(t *testing.T) {
 	if !recovered.rollupUnchanged(scm.Check{Name: "build", CompletedAt: completed}) {
 		t.Fatal("recovered budget lost the completion the rerun was requested for")
 	}
+	if recovered.rollup["build"].headSHA != "head-1" {
+		t.Fatalf("recovered head = %q, want head-1", recovered.rollup["build"].headSHA)
+	}
+	if !recovered.rollup["build"].observedLinks[check.Link] {
+		t.Fatal("recovered budget lost the provider link observed before the rerun")
+	}
+	retired, err := recovered.retireResolvedReruns([]scm.Check{{Name: "build", Bucket: scm.CheckBucketPass, State: "SUCCESS", Link: check.Link}}, "head-1", func(*checkRerunBudget) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if retired {
+		t.Fatal("recovered budget retired a rerun while its head was current")
+	}
+	retired, err = recovered.retireResolvedReruns(nil, "head-2", func(*checkRerunBudget) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !retired {
+		t.Fatal("recovered budget did not retire after the pipeline head advanced")
+	}
 }
 
 // An empty budget writes nothing, so a run that never spent a rerun does not
@@ -505,7 +530,8 @@ func TestUnspentRerunBudgetMarshalsToNothing(t *testing.T) {
 func TestOutstandingRerunMissingFromTheRollupStaysTracked(t *testing.T) {
 	completed := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
 	budget := &checkRerunBudget{}
-	budget.spend(scm.Check{Name: "build", Bucket: scm.CheckBucketCancel, CompletedAt: completed})
+	check := scm.Check{Name: "build", Bucket: scm.CheckBucketCancel, CompletedAt: completed, Link: "https://github.com/test/repo/actions/runs/1/job/10"}
+	budget.spend(check, []scm.Check{check}, "head")
 
 	// The rollup no longer mentions the check at all.
 	for poll := 1; poll <= rerunRollupGracePolls; poll++ {
@@ -534,12 +560,209 @@ func TestOutstandingRerunMissingFromTheRollupStaysTracked(t *testing.T) {
 func TestOutstandingRerunPublishedInAnotherBucketIsNotTreatedAsMissing(t *testing.T) {
 	completed := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
 	budget := &checkRerunBudget{}
-	budget.spend(scm.Check{Name: "build", Bucket: scm.CheckBucketCancel, CompletedAt: completed})
+	check := scm.Check{Name: "build", Bucket: scm.CheckBucketCancel, CompletedAt: completed, Link: "https://github.com/test/repo/actions/runs/1/job/10"}
+	budget.spend(check, []scm.Check{check}, "head")
 
 	unresolved, awaiting := budget.cancelledAfterRerun([]scm.Check{
-		{Name: "build", Bucket: scm.CheckBucketPass, State: "SUCCESS"},
+		{Name: "build", Bucket: scm.CheckBucketPass, State: "SUCCESS", Link: "https://github.com/test/repo/actions/runs/1/job/11"},
 	})
 	if len(unresolved) != 0 || len(awaiting) != 0 {
 		t.Fatalf("unresolved = %v, awaiting = %v, want both empty for a republished check", unresolved, awaiting)
+	}
+}
+
+func TestRetireResolvedReruns(t *testing.T) {
+	completed := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
+	originalLink := "https://github.com/test/repo/actions/runs/1/job/10"
+	siblingLink := "https://github.com/test/repo/actions/runs/2/job/20"
+	replacementLink := "https://github.com/test/repo/actions/runs/1/job/11"
+	newBudget := func(recordedHead string) *checkRerunBudget {
+		b := &checkRerunBudget{}
+		cancelled := scm.Check{Name: "build", Bucket: scm.CheckBucketCancel, CompletedAt: completed, Link: originalLink}
+		sibling := scm.Check{Name: "build", Bucket: scm.CheckBucketPass, State: "SUCCESS", Link: siblingLink}
+		b.spend(cancelled, []scm.Check{cancelled, sibling}, recordedHead)
+		return b
+	}
+
+	tests := []struct {
+		name         string
+		recordedHead string
+		currentHead  string
+		checks       []scm.Check
+		wantRetired  bool
+	}{
+		{
+			name:         "new conclusive link retires on the current head",
+			recordedHead: "head-1",
+			currentHead:  "head-1",
+			checks:       []scm.Check{{Name: "build", Bucket: scm.CheckBucketPass, State: "SUCCESS", Link: replacementLink}},
+			wantRetired:  true,
+		},
+		{
+			name:         "advanced head retires the record",
+			recordedHead: "head-1",
+			currentHead:  "head-2",
+			wantRetired:  true,
+		},
+		{
+			name:         "spend-time link does not retire",
+			recordedHead: "head-1",
+			currentHead:  "head-1",
+			checks:       []scm.Check{{Name: "build", Bucket: scm.CheckBucketPass, State: "SUCCESS", Link: siblingLink}},
+			wantRetired:  false,
+		},
+		{
+			name:         "empty link does not retire",
+			recordedHead: "head-1",
+			currentHead:  "head-1",
+			checks:       []scm.Check{{Name: "build", Bucket: scm.CheckBucketPass, State: "SUCCESS"}},
+			wantRetired:  false,
+		},
+		{
+			name:         "transient failure stays outstanding",
+			recordedHead: "head-1",
+			currentHead:  "head-1",
+			checks:       []scm.Check{{Name: "build", Bucket: scm.CheckBucketFail, State: "CANCELLED", Link: replacementLink}},
+			wantRetired:  false,
+		},
+		{
+			name:         "american-spelled transient failure stays outstanding",
+			recordedHead: "head-1",
+			currentHead:  "head-1",
+			checks:       []scm.Check{{Name: "build", Bucket: scm.CheckBucketFail, State: "CANCELED", Link: replacementLink}},
+			wantRetired:  false,
+		},
+		{
+			name:         "pending check stays outstanding",
+			recordedHead: "head-1",
+			currentHead:  "head-1",
+			checks:       []scm.Check{{Name: "build", Bucket: scm.CheckBucketPending, State: "IN_PROGRESS", Link: replacementLink}},
+			wantRetired:  false,
+		},
+		{
+			name:         "unrecognized check stays outstanding",
+			recordedHead: "head-1",
+			currentHead:  "head-1",
+			checks:       []scm.Check{{Name: "build", Bucket: scm.CheckBucket(""), State: "UNKNOWN", Link: replacementLink}},
+			wantRetired:  false,
+		},
+		{
+			name:         "same-named pending observation blocks retirement",
+			recordedHead: "head-1",
+			currentHead:  "head-1",
+			checks: []scm.Check{
+				{Name: "build", Bucket: scm.CheckBucketPass, State: "SUCCESS", Link: replacementLink},
+				{Name: "build", Bucket: scm.CheckBucketPending, State: "QUEUED", Link: "https://github.com/test/repo/actions/runs/3/job/30"},
+			},
+			wantRetired: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			budget := newBudget(tt.recordedHead)
+			got, err := budget.retireResolvedReruns(tt.checks, tt.currentHead, func(*checkRerunBudget) error { return nil })
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != tt.wantRetired {
+				t.Fatalf("retireResolvedReruns = %v, want %v", got, tt.wantRetired)
+			}
+			if budget.used("build") != 1 {
+				t.Fatalf("spent budget = %d, want the rerun to stay spent", budget.used("build"))
+			}
+			// A retired record is no longer an outstanding rerun, so a rollup
+			// that stops reporting the check must not re-open it.
+			unresolved, awaiting := budget.cancelledAfterRerun(nil)
+			if tt.wantRetired {
+				if len(unresolved) != 0 || len(awaiting) != 0 {
+					t.Fatalf("unresolved = %v, awaiting = %v, want both empty for a retired rerun", unresolved, awaiting)
+				}
+				return
+			}
+			if len(awaiting) != 1 || awaiting[0] != "build" {
+				t.Fatalf("awaiting = %v, want [build] while the rerun is unanswered", awaiting)
+			}
+		})
+	}
+}
+
+func TestRetireResolvedRerunsRetriesAfterPersistenceFailure(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "state.db")
+	database, err := db.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo, err := database.InsertRepo(t.TempDir(), "https://github.com/test/repo", "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	run, err := database.InsertRun(repo.ID, "refs/heads/feature", "head-2", "base")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sctx := &pipeline.StepContext{DB: database, Run: run}
+	step := &CIStep{}
+	cancelled := scm.Check{
+		Name:        "build",
+		Bucket:      scm.CheckBucketCancel,
+		State:       "CANCELLED",
+		CompletedAt: time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC),
+		Link:        "https://github.com/test/repo/actions/runs/1/job/10",
+	}
+	step.transientReruns.spend(cancelled, []scm.Check{cancelled}, "head-1")
+	if err := step.persistRerunBudget(sctx); err != nil {
+		t.Fatal(err)
+	}
+	before := step.transientReruns.rollup["build"]
+	if err := database.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	retired, err := step.retireResolvedReruns(sctx, nil)
+	if err == nil || retired {
+		t.Fatalf("retirement with a closed database = (%v, %v), want (false, error)", retired, err)
+	}
+	after := step.transientReruns.rollup["build"]
+	if !after.completedAt.Equal(before.completedAt) || after.graceRemaining != before.graceRemaining || after.headSHA != before.headSHA || !after.observedLinks[cancelled.Link] {
+		t.Fatalf("failed persistence changed the outstanding record: before=%+v after=%+v", before, after)
+	}
+
+	database, err = db.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { database.Close() })
+	sctx.DB = database
+	encoded, err := database.GetRunCIRerunState(run.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	recovered := &checkRerunBudget{}
+	if err := recovered.unmarshal(encoded); err != nil {
+		t.Fatal(err)
+	}
+	recoveredState, ok := recovered.rollup["build"]
+	if !ok || recoveredState.graceRemaining != before.graceRemaining || recoveredState.headSHA != before.headSHA || !recoveredState.observedLinks[cancelled.Link] {
+		t.Fatalf("durable state lost the outstanding record after failed retirement: %+v", recoveredState)
+	}
+
+	retired, err = step.retireResolvedReruns(sctx, nil)
+	if err != nil || !retired {
+		t.Fatalf("retried retirement = (%v, %v), want (true, nil)", retired, err)
+	}
+	encoded, err = database.GetRunCIRerunState(run.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	recovered = &checkRerunBudget{}
+	if err := recovered.unmarshal(encoded); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := recovered.rollup["build"]; ok {
+		t.Fatal("successful retry did not durably retire the outstanding record")
+	}
+	if recovered.used("build") != 1 {
+		t.Fatalf("successful retry changed spent budget to %d", recovered.used("build"))
 	}
 }

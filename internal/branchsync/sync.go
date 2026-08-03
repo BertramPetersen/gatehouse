@@ -137,9 +137,11 @@ type Service struct {
 	GateDir string
 	Paths   *paths.Paths
 
-	beforeApply              func()
-	beforeGateReset          func()
-	beforeRecoverFastForward func()
+	beforeApply               func()
+	beforeGateReset           func()
+	beforeRecoverWorktreeMove func()
+	beforeRecoverBranchMove   func()
+	afterRecoverBranchMove    func()
 }
 
 // OpenCurrent opens a service for the invoking registered worktree. The caller
@@ -456,9 +458,28 @@ func (s *Service) Apply(ctx context.Context) State {
 //	                     then return custody            gate reset to it (CAS)
 //	behind     dirty     refuse (commit/stash first)    custody at local head;
 //	                                                    gate reset to it (CAS)
+//	diverged,  clean     anchor the pre-recovery local  custody at local head;
+//	P contains           head, then move to P with      gate reset to it (CAS)
+//	all local            fail-closed ops; return custody
+//	work
+//	diverged,  dirty     refuse (commit/stash first)    custody at local head;
+//	P contains                                          gate reset to it (CAS)
+//	all local
+//	work
 //	diverged   any       refuse (anchor named, manual   custody at local head;
 //	                     reconcile / rerun offered)     gate reset to it (CAS)
 //	P missing  any       refuse                         refuse
+//
+// The containment row exists because a cancelled validation routinely leaves P
+// as a REBASE of the local branch onto a newer base: the same logical commits
+// with new SHAs, so equality and ancestry alone see only divergence and
+// escalated a case where nothing could be lost. The row applies only where
+// preservedContainsLocalWork proves, by executable three-way merge, that P
+// already carries every local change. That proof is deliberately narrow, and
+// everything it cannot decide - including a rebase whose fix rounds also
+// rewrote the operator's lines - falls through to the plain diverged refusal.
+// No-data-loss outranks convenience here: when nothing can distinguish a
+// deliberate pipeline fix from a dropped change, the operator decides.
 //
 // Fail-safe rules, in the same spirit as Refresh/Apply:
 //   - An active run always refuses: only terminal runs are recoverable.
@@ -468,11 +489,13 @@ func (s *Service) Apply(ctx context.Context) State {
 //     access; otherwise the preserved head is verified at the gate branch head
 //     and fetched into that anchor. The anchor keeps them reachable locally no
 //     matter what later happens to the gate.
-//   - The only possible worktree mutation stays a strict fast-forward of a
-//     clean checked-out branch. When the operator explicitly keeps a behind or
-//     diverged local head instead of taking P, --keep-local never touches the
-//     worktree and moves the gate branch to the kept head with an atomic
-//     compare-and-swap, so a concurrent gate push wins and recovery refuses.
+//   - The only possible worktree mutation is a guarded move of a clean checked-out
+//     branch: a strict fast-forward, or an anchored move to a proven-containing
+//     head performed by Git operations that refuse on their own rather than by a
+//     preceding observation (see recoverAdoptPreserved). When the operator explicitly keeps a behind or diverged local
+//     head instead of taking P, --keep-local never touches the worktree and moves
+//     the gate branch to the kept head with an atomic compare-and-swap, so a
+//     concurrent gate push wins and recovery refuses.
 //   - Anything unverifiable (missing gate where required, moved gate branch,
 //     failed anchor write or fetch, changed assumptions) refuses with a reason
 //     and changes nothing.
@@ -533,6 +556,13 @@ func (s *Service) Recover(ctx context.Context, keepLocal bool) State {
 	local := state.Local.Head
 	preserved := run.HeadSHA
 	anchorRef := recoverAnchorRef(run.ID)
+	localAnchor := recoverLocalAnchorRef(run.ID)
+
+	if anchoredLocal, err := git.Run(ctx, wd, "rev-parse", "--verify", localAnchor+"^{commit}"); err == nil && anchoredLocal != preserved && local == preserved && !state.Local.Clean {
+		blocked := blockedPlan(state, StatePipelineOwned, "blocked_recover_incomplete_adoption", fmt.Sprintf("the branch reached the preserved pipeline head, but its worktree still differs from that head; the pre-recovery head remains anchored at %s; reconcile the worktree and re-run recovery; custody was not recorded", localAnchor))
+		blocked.NextAction = &NextAction{Code: "inspect_worktree", Command: "git status"}
+		return blocked
+	}
 
 	if objectExists(ctx, wd, preserved) && (local == preserved || isAncestor(ctx, wd, preserved, local)) {
 		if blocked, ok := s.anchorReachablePreserved(ctx, state, anchorRef, preserved); !ok {
@@ -589,6 +619,15 @@ func (s *Service) Recover(ctx context.Context, keepLocal bool) State {
 		if keepLocal {
 			return s.recoverKeepLocal(ctx, run, state, gateHead)
 		}
+		if preservedContainsLocalWork(ctx, wd, local, preserved) {
+			if !state.Local.Clean {
+				state.Relation = RelationDiverged
+				blocked := blockedPlan(state, StatePipelineOwned, "blocked_recover_dirty", fmt.Sprintf("the invoking worktree is not clean (%s); commit or stash first and re-run the recovery, or use --keep-local to return custody at the current head without moving the worktree; no files or refs were changed", state.Local.Reason))
+				blocked.NextAction = &NextAction{Code: "inspect_worktree", Command: "git status"}
+				return blocked
+			}
+			return s.recoverAdoptPreserved(ctx, run, state, preserved)
+		}
 		state.Relation = RelationDiverged
 		blocked := blockedPlan(state, StatePipelineOwned, "blocked_recover_diverged", fmt.Sprintf("the local branch and the preserved pipeline head have diverged; the preserved commits are anchored at %s - reconcile manually and re-run the recovery, run `no-mistakes rerun` to resume validating the preserved head, or use --keep-local to keep the current head; no files or refs were changed", anchorRef))
 		blocked.NextAction = &NextAction{Code: "inspect_and_reconcile_manually", Command: "git log --oneline --left-right HEAD..." + anchorRef}
@@ -639,8 +678,8 @@ func (s *Service) recoverKeepLocal(ctx context.Context, run *db.Run, state State
 // recoverFastForward advances the clean checked-out branch to the preserved
 // pipeline head with the same strict fast-forward and honesty rules as Apply.
 func (s *Service) recoverFastForward(ctx context.Context, run *db.Run, state State, preserved string) State {
-	if s.beforeRecoverFastForward != nil {
-		s.beforeRecoverFastForward()
+	if s.beforeRecoverWorktreeMove != nil {
+		s.beforeRecoverWorktreeMove()
 	}
 	branch, branchErr := git.CurrentBranch(ctx, s.workDir())
 	head, headErr := git.HeadSHA(ctx, s.workDir())
@@ -664,6 +703,168 @@ func (s *Service) recoverFastForward(ctx context.Context, run *db.Run, state Sta
 		state.Relation = RelationEqual
 		state.Safety = "blocked_post_recover_" + finalReason
 		state.Error = "HEAD reached the preserved pipeline head, but a Git hook left the worktree non-clean; custody was not recorded"
+		state.NextAction = &NextAction{Code: "inspect_worktree", Command: "git status"}
+		return state
+	}
+	return s.finishRecover(ctx, run, true)
+}
+
+// preservedContainsLocalWork proves the preserved pipeline head already carries
+// every change the local branch has, so adopting it discards no work.
+//
+// The proof is an executable three-way merge, never a patch-identity hash.
+// Patch IDs discard hunk locations and whitespace, so they cannot tell a
+// genuine replay from a same-shaped edit to a different identical block; a
+// containment claim built on them is not a proof, and this path exists only to
+// protect people's unlanded code. Merging the local branch into the preserved
+// head and requiring the result to be exactly the preserved head's tree is
+// decidable and content-exact: if the local branch had anything the preserved
+// head lacks, the merged tree differs and the answer is no.
+//
+// The merge base is the only sound anchor. Only a commit provably reachable
+// from BOTH heads makes the diff base..local mean exactly "the local branch's
+// own work"; runs.base_sha cannot be used, because it is the previous gate head
+// and for a re-pushed branch carries pipeline commits the local branch never
+// had.
+//
+// The predicate is one-directional: it answers only "would adopting the
+// preserved head lose local work", never "are the two heads interchangeable".
+// It is deliberately narrow, and every unreadable, conflicting, or ambiguous
+// case returns false so the plain diverged refusal escalates. That is the
+// intended trade: an ordinary rebase whose content is carried forward intact
+// recovers automatically, while a rebase that also rewrote the operator's lines
+// - where nothing can distinguish a deliberate pipeline fix from a dropped
+// change - stays a decision for the operator.
+func preservedContainsLocalWork(ctx context.Context, dir, local, preserved string) bool {
+	if local == "" || preserved == "" || local == preserved {
+		return false
+	}
+	base, err := git.Run(ctx, dir, "merge-base", local, preserved)
+	if err != nil || base == "" {
+		return false
+	}
+	return mergeTreePreservesFinalHead(ctx, dir, base, local, preserved)
+}
+
+// recoverAdoptPreserved returns custody for a preserved pipeline head that
+// already carries every local change. The local commits are represented in the
+// preserved head, but their exact SHAs are not reachable from it, so the move is
+// not a fast-forward and the pre-recovery local head is anchored first.
+//
+// The move itself must fail closed. An observation of branch, HEAD, and
+// cleanliness followed by an unconditional `reset --hard` is check-then-act:
+// anything landing in the gap is destroyed, and no amount of re-observation
+// closes it, because the check and the mutation are separate commands. So the
+// two Git operations that perform the move carry the guard in themselves, in
+// the spirit of `merge --ff-only`:
+//
+//   - `update-ref <branch> <preserved> <observed>` is an atomic compare-and-swap.
+//     A concurrent commit moved the branch, so the swap refuses and nothing at
+//     all has been touched.
+//   - `read-tree -m -u <observed> <preserved>` refuses to overwrite a modified
+//     or untracked working-tree file. A concurrent edit to a file this move
+//     would rewrite aborts it before any file changes; an edit to a file the
+//     move does not touch is simply carried across. When it refuses, the branch
+//     swap is rolled back by the same compare-and-swap in reverse.
+//
+// A crash between the two leaves the branch at the preserved head with the
+// working tree still holding the pre-recovery content, which reads as ordinary
+// uncommitted changes and loses nothing: containment was proven before the move
+// and the pre-recovery head stays anchored. Custody is stamped only after the
+// whole move is verified.
+func (s *Service) recoverAdoptPreserved(ctx context.Context, run *db.Run, state State, preserved string) State {
+	if s.beforeRecoverWorktreeMove != nil {
+		s.beforeRecoverWorktreeMove()
+	}
+	wd := s.workDir()
+	branch, branchErr := git.CurrentBranch(ctx, wd)
+	head, headErr := git.HeadSHA(ctx, wd)
+	clean, _ := worktreeClean(ctx, wd)
+	if branchErr != nil || branch != state.Local.Branch || headErr != nil || head != state.Local.Head || !clean {
+		return blockedPlan(state, StatePipelineOwned, "blocked_recover_assumptions_changed", "the local branch or worktree changed while custody was being returned; no files or refs were changed")
+	}
+	// The containment proof runs before the anchor and the move so that no
+	// slow work sits between the last guard and the mutation.
+	if !preservedContainsLocalWork(ctx, wd, head, preserved) {
+		return blockedPlan(state, StatePipelineOwned, "blocked_recover_assumptions_changed", "the containment proof changed while custody was being returned; no files or refs were changed")
+	}
+	localAnchor := recoverLocalAnchorRef(run.ID)
+	// Create-only: an empty old value requires the ref not to exist. A resumed
+	// recovery legitimately finds its own anchor already at this head; an anchor
+	// at any other commit is unexplained and refuses.
+	existingAnchor, existingErr := git.Run(ctx, wd, "rev-parse", "--verify", localAnchor+"^{commit}")
+	if existingErr == nil && existingAnchor != head {
+		return blockedPlan(state, StatePipelineOwned, "blocked_recover_preserve_failed", "the pre-recovery local head could not be anchored; no files or refs were changed")
+	}
+	if existingErr != nil {
+		if _, err := git.Run(ctx, wd, "update-ref", localAnchor, head, ""); err != nil {
+			return blockedPlan(state, StatePipelineOwned, "blocked_recover_preserve_failed", "the pre-recovery local head could not be anchored; no files or refs were changed")
+		}
+	}
+	if anchored, err := git.Run(ctx, wd, "rev-parse", localAnchor+"^{commit}"); err != nil || anchored != head {
+		return blockedPlan(state, StatePipelineOwned, "blocked_recover_preserve_failed", "the pre-recovery local head could not be verified after anchoring; no files or worktree refs were changed")
+	}
+
+	if s.beforeRecoverBranchMove != nil {
+		s.beforeRecoverBranchMove()
+	}
+	branchRef := "refs/heads/" + state.Local.Branch
+	boundaryBranch, boundaryErr := git.CurrentBranch(ctx, wd)
+	if boundaryErr != nil || boundaryBranch != state.Local.Branch {
+		return blockedPlan(state, StatePipelineOwned, "blocked_recover_assumptions_changed", "the checked-out branch changed while custody was being returned; no branch or worktree changes were made")
+	}
+	if _, err := git.Run(ctx, wd, "update-ref", branchRef, preserved, head); err != nil {
+		return blockedPlan(state, StatePipelineOwned, "blocked_recover_assumptions_changed", "the local branch moved while custody was being returned; no files or refs were changed")
+	}
+	if s.afterRecoverBranchMove != nil {
+		s.afterRecoverBranchMove()
+	}
+	// KNOWN BOUNDED FUNDAMENTAL-GIT LIMITATION: a concurrent git checkout
+	// landing between this branch-identity verification and the read-tree
+	// working-tree update can apply the preserved tree to another branch's
+	// worktree. This is not data loss: containment is proven before the move,
+	// the pre-recovery head stays anchored at
+	// refs/no-mistakes/recover-local/<run>, custody is never stamped, and the
+	// operation fails closed to a reported failure rather than a false success.
+	// The window is sub-millisecond and inside a worktree the pipeline already
+	// owns. It is irreducible because no single Git operation carries both
+	// guards, and no lock git checkout honors can be held across the two
+	// commands, so a further observation cannot close it. Keep this verification
+	// even though it cannot make the two commands atomic.
+	boundaryBranch, boundaryErr = git.CurrentBranch(ctx, wd)
+	if boundaryErr != nil || boundaryBranch != state.Local.Branch {
+		rollbackDetail := ""
+		if _, rollbackErr := git.Run(ctx, wd, "update-ref", branchRef, head, preserved); rollbackErr != nil {
+			rollbackDetail = fmt.Sprintf("; the branch could not be restored to %s and still requires manual reconciliation", head)
+		}
+		return blockedPlan(state, StatePipelineOwned, "blocked_recover_assumptions_changed", fmt.Sprintf("the checked-out branch changed while custody was being returned%s; custody was not recorded", rollbackDetail))
+	}
+	if _, err := git.Run(ctx, wd, "read-tree", "-m", "-u", head, preserved); err != nil {
+		rolledBack := ""
+		if _, rollbackErr := git.Run(ctx, wd, "update-ref", branchRef, head, preserved); rollbackErr != nil {
+			rolledBack = fmt.Sprintf("; the branch could not be restored to %s and now points at %s, whose content the pre-recovery head is contained in", head, preserved)
+		}
+		blocked := blockedPlan(state, StatePipelineOwned, "blocked_recover_worktree_busy", fmt.Sprintf("the working tree changed while custody was being returned, so no file was overwritten%s; re-run the recovery once the working tree is settled", rolledBack))
+		blocked.NextAction = &NextAction{Code: "inspect_worktree", Command: "git status"}
+		return blocked
+	}
+
+	finalHead, _ := git.HeadSHA(ctx, wd)
+	finalClean, finalReason := worktreeClean(ctx, wd)
+	state.Local.Head = finalHead
+	state.Local.Clean = finalClean
+	state.Local.Reason = finalReason
+	state.Changed = finalHead == preserved && finalHead != head
+	if finalHead != preserved {
+		blocked := blockedPlan(state, StatePipelineOwned, "blocked_recover_apply_failed", fmt.Sprintf("adopting the preserved pipeline head did not reach it; final HEAD is %s and the pre-recovery head is anchored at %s; inspect the worktree before retrying", finalHead, localAnchor))
+		blocked.NextAction = &NextAction{Code: "inspect_worktree", Command: "git status"}
+		return blocked
+	}
+	if !finalClean {
+		state.State = StateDirty
+		state.Relation = RelationEqual
+		state.Safety = "blocked_post_recover_" + finalReason
+		state.Error = fmt.Sprintf("HEAD reached the preserved pipeline head, but the worktree is not clean; nothing was overwritten and the pre-recovery head is anchored at %s; custody was not recorded", localAnchor)
 		state.NextAction = &NextAction{Code: "inspect_worktree", Command: "git status"}
 		return state
 	}
@@ -699,6 +900,13 @@ func (s *Service) finishRecover(ctx context.Context, run *db.Run, changed bool) 
 
 func recoverAnchorRef(runID string) string {
 	return "refs/no-mistakes/recover/" + runID
+}
+
+// recoverLocalAnchorRef keeps the exact pre-recovery local commits reachable
+// when custody is returned by adopting an equivalent preserved head, which
+// leaves those SHAs unreferenced by the branch.
+func recoverLocalAnchorRef(runID string) string {
+	return "refs/no-mistakes/recover-local/" + runID
 }
 
 func (s *Service) inspect(ctx context.Context) (State, *db.Run, bool) {

@@ -160,12 +160,12 @@ func (m *RunManager) prepareRecoveredRun(ctx context.Context, run *db.Run) (*rec
 		return nil, fmt.Errorf("worktree does not belong to its gate repository")
 	}
 
-	execSteps := m.steps()
-	if err := pipeline.ValidateRecoveredRun(m.db, run, execSteps); err != nil {
-		return nil, err
-	}
 	cfg, err := m.loadRecoveredConfig(ctx, run, repo, workDir)
 	if err != nil {
+		return nil, err
+	}
+	execSteps := steps.WithCustomGates(m.steps(), cfg.Gates)
+	if err := pipeline.ValidateRecoveredRun(m.db, run, execSteps); err != nil {
 		return nil, err
 	}
 	forgeCtx, err := forgecontext.Resolve(ctx, cfg.ForgeProfiles, repo.UpstreamURL, repo.ForkURL)
@@ -1094,7 +1094,7 @@ func (m *RunManager) startRunWithIntentSource(ctx context.Context, repo *db.Repo
 		}
 	}
 
-	execSteps := m.steps()
+	execSteps := steps.WithCustomGates(m.steps(), cfg.Gates)
 	telemetry.Track("run", telemetry.Fields{
 		"action":      "started",
 		"trigger":     trigger,

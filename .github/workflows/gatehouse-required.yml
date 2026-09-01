@@ -59,4 +59,4 @@ jobs:
       # own Go tests execute verify.py from the PR head), but it cannot certify
       # itself through the required check.
       - name: Verify gatehouse signature and pipeline attestation
-        uses: BertramPetersen/gatehouse/.github/actions/require-gatehouse@32d396ac0f29135daf7fcb9964aba9d5f4e796d6 # post-v1.57.1, untagged (action added in #819)
+        uses: BertramPetersen/gatehouse/.github/actions/require-gatehouse@b52bf4dd97ad082c22d214d94c7310043238458e # the commit that published this action (the gatehouse fork point)

@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func stepNames(steps []pipeline.Step) []string {
@@ -206,7 +206,7 @@ func TestCustomGateStep_CommandGateFixRoundRepairsThenReChecks(t *testing.T) {
 	if status := gitStatusPorcelain(t, dir); status != "" {
 		t.Fatalf("worktree = %q, want the fix committed", status)
 	}
-	if got := lastCommitMessage(t, dir); got != "no-mistakes(gate.test.mutation-budget): satisfy mutation budget" {
+	if got := lastCommitMessage(t, dir); got != "gatehouse(gate.test.mutation-budget): satisfy mutation budget" {
 		t.Fatalf("last commit message = %q", got)
 	}
 }
@@ -300,7 +300,7 @@ func TestCustomGateStep_AgentGateFixRoundRepairsThenReJudges(t *testing.T) {
 	if status := gitStatusPorcelain(t, dir); status != "" {
 		t.Fatalf("worktree = %q, want the fix committed", status)
 	}
-	if got := lastCommitMessage(t, dir); got != "no-mistakes(gate.lint.arch-fitness): drop internal/cli import" {
+	if got := lastCommitMessage(t, dir); got != "gatehouse(gate.lint.arch-fitness): drop internal/cli import" {
 		t.Fatalf("last commit message = %q", got)
 	}
 }

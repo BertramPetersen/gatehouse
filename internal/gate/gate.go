@@ -9,16 +9,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/gatecontext"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/procreap"
-	"github.com/kunchenguid/no-mistakes/internal/safeurl"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/scm/github"
-	"github.com/kunchenguid/no-mistakes/internal/types"
-	"github.com/kunchenguid/no-mistakes/internal/worktrees"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/gatecontext"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/procreap"
+	"github.com/BertramPetersen/gatehouse/internal/safeurl"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/scm/github"
+	"github.com/BertramPetersen/gatehouse/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/worktrees"
 )
 
 var ensureGateHooksPathIsolation = git.EnsureHooksPathIsolation
@@ -26,7 +26,7 @@ var ensureGateHooksPathIsolation = git.EnsureHooksPathIsolation
 var sweepRunWorktrees = procreap.SweepRunWorktrees
 
 // RemoteName is the name of the git remote that points to the local gate.
-const RemoteName = "no-mistakes"
+const RemoteName = "gatehouse"
 
 // repoID generates a deterministic 12-char hex ID from an absolute path.
 func repoID(absPath string) string {
@@ -34,17 +34,17 @@ func repoID(absPath string) string {
 	return fmt.Sprintf("%x", h[:6])
 }
 
-// Init sets up a no-mistakes gate for the git repo at workDir.
+// Init sets up a gatehouse gate for the git repo at workDir.
 // It creates a bare repo, installs the post-receive hook, best-effort
 // isolates the bare repo's hooks path from shared local config writes when
-// Git supports config --worktree, adds the no-mistakes remote, and records
+// Git supports config --worktree, adds the gatehouse remote, and records
 // the repo in the database.
 //
 // Init is idempotent: re-running it on an already-initialized repo repairs and
 // refreshes the gate (for example installing a newer hook, picking up hook-path
 // isolation, or restoring a missing remote) instead of failing. This includes
 // a working directory that was renamed or moved since the gate was created:
-// the gate identified by the leftover no-mistakes remote is reattached at the
+// the gate identified by the leftover gatehouse remote is reattached at the
 // new path, preserving its run history. The returned bool reports whether a
 // new gate was created (true) or an existing one was refreshed (false).
 func Init(ctx context.Context, d *db.DB, p *paths.Paths, workDir string) (*db.Repo, bool, error) {
@@ -102,7 +102,7 @@ func InitWithFork(ctx context.Context, d *db.DB, p *paths.Paths, workDir, forkUR
 		if listErr == nil && !hasOrigin {
 			return nil, false, fmt.Errorf(
 				"no 'origin' remote in %s\n\n"+
-					"no-mistakes pushes your branch and opens a pull request, so it needs a remote to push to.\n"+
+					"gatehouse pushes your branch and opens a pull request, so it needs a remote to push to.\n"+
 					"Add one, then re-run:\n\n"+
 					"  git remote add origin <url>",
 				absRoot)
@@ -247,7 +247,7 @@ func ensureWorkingRemote(ctx context.Context, absRoot, bareDir, reposDir string,
 }
 
 // reattachRelocatedRepo detects a working directory that was renamed or moved
-// after init: it carries a no-mistakes remote pointing at a gate in our repos
+// after init: it carries a gatehouse remote pointing at a gate in our repos
 // dir, but its repo record references the old path. When the old path no
 // longer exists, the record is migrated to the new path so the existing gate
 // and its run history are reattached. It returns nil when the repo should be
@@ -283,7 +283,7 @@ func reattachRelocatedRepo(ctx context.Context, d *db.DB, p *paths.Paths, absRoo
 	return migrated, nil
 }
 
-// Eject removes the no-mistakes gate from the repo at workDir.
+// Eject removes the gatehouse gate from the repo at workDir.
 // It removes the remote, deletes the bare repo and worktrees,
 // and deletes the repo record from the database.
 func Eject(ctx context.Context, d *db.DB, p *paths.Paths, workDir string) (*db.Repo, error) {
@@ -332,7 +332,7 @@ func Eject(ctx context.Context, d *db.DB, p *paths.Paths, workDir string) (*db.R
 
 // removeRepoWorktrees deletes the ejected repository's run worktrees.
 //
-// Under the default placement no-mistakes owns <NM_HOME>/worktrees/<repoID>
+// Under the default placement gatehouse owns <GATEHOUSE_HOME>/worktrees/<repoID>
 // outright, so the whole directory goes. Everything a run recorded outside it
 // is removed one directory at a time (see worktree_roots and
 // internal/worktrees): such a directory sits in a directory of the operator's

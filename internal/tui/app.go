@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/BertramPetersen/gatehouse/internal/branchsync"
+	"github.com/BertramPetersen/gatehouse/internal/cimonitor"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/kunchenguid/no-mistakes/internal/branchsync"
-	"github.com/kunchenguid/no-mistakes/internal/cimonitor"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/types"
 )
 
 // Model is the root bubbletea model for the TUI.

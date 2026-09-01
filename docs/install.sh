@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-REPO="kunchenguid/no-mistakes"
-INSTALL_DIR="${NO_MISTAKES_INSTALL_DIR:-$HOME/.no-mistakes/bin}"
-LINK_DIR="${NO_MISTAKES_LINK_DIR:-}"
+REPO="BertramPetersen/gatehouse"
+INSTALL_DIR="${GATEHOUSE_INSTALL_DIR:-$HOME/.gatehouse/bin}"
+LINK_DIR="${GATEHOUSE_LINK_DIR:-}"
 
 if [ -z "$LINK_DIR" ]; then
   case ":$PATH:" in
@@ -12,8 +12,8 @@ if [ -z "$LINK_DIR" ]; then
   esac
 fi
 
-BIN_PATH="$INSTALL_DIR/no-mistakes"
-LINK_PATH="$LINK_DIR/no-mistakes"
+BIN_PATH="$INSTALL_DIR/gatehouse"
+LINK_PATH="$LINK_DIR/gatehouse"
 
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
@@ -35,13 +35,13 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-FILENAME="no-mistakes-${VERSION}-${OS}-${ARCH}.tar.gz"
+FILENAME="gatehouse-${VERSION}-${OS}-${ARCH}.tar.gz"
 URL="https://github.com/${REPO}/releases/download/${VERSION}/${FILENAME}"
 
 TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
-echo "Downloading no-mistakes ${VERSION} for ${OS}/${ARCH}..."
+echo "Downloading gatehouse ${VERSION} for ${OS}/${ARCH}..."
 curl -fsSL "$URL" -o "${TMPDIR}/${FILENAME}"
 tar xzf "${TMPDIR}/${FILENAME}" -C "$TMPDIR"
 
@@ -50,7 +50,7 @@ if ! mkdir -p "$INSTALL_DIR"; then
   exit 1
 fi
 
-mv "${TMPDIR}/no-mistakes" "$BIN_PATH"
+mv "${TMPDIR}/gatehouse" "$BIN_PATH"
 chmod 755 "$BIN_PATH" 2>/dev/null || true
 
 resolve_path() {
@@ -74,7 +74,7 @@ else
   fi
 fi
 
-echo "no-mistakes ${VERSION} installed to ${BIN_PATH}"
+echo "gatehouse ${VERSION} installed to ${BIN_PATH}"
 echo "Command path: ${LINK_PATH} -> ${BIN_PATH}"
 
 "$BIN_PATH" daemon restart >/dev/null

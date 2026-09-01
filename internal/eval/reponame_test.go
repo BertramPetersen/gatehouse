@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/db"
 )
 
 // A case identifies its repository only by the fingerprint of the redacted
@@ -12,7 +12,7 @@ import (
 // registered repositories the same way capture did.
 func TestRepoDisplayNamesKeyResolvedNamesByCaptureFingerprint(t *testing.T) {
 	repos := []*db.Repo{
-		{ID: "a", WorkingPath: filepath.Join("/tmp", "clone-a"), UpstreamURL: "https://github.com/kunchenguid/no-mistakes.git"},
+		{ID: "a", WorkingPath: filepath.Join("/tmp", "clone-a"), UpstreamURL: "https://github.com/BertramPetersen/gatehouse.git"},
 		{ID: "b", WorkingPath: filepath.Join("/tmp", "clone-b"), UpstreamURL: "git@example.test:org/other.git"},
 		{ID: "c", WorkingPath: filepath.Join("/tmp", "clone-c"), UpstreamURL: "https://example.test/single-segment"},
 		{ID: "d"},
@@ -21,9 +21,9 @@ func TestRepoDisplayNamesKeyResolvedNamesByCaptureFingerprint(t *testing.T) {
 	names := RepoDisplayNames(repos)
 
 	cases := map[string]string{
-		fingerprint("https://github.com/kunchenguid/no-mistakes.git"): "kunchenguid/no-mistakes",
-		fingerprint("git@example.test:org/other.git"):                 "org/other",
-		fingerprint("https://example.test/single-segment"):            "clone-c",
+		fingerprint("https://github.com/BertramPetersen/gatehouse.git"): "BertramPetersen/gatehouse",
+		fingerprint("git@example.test:org/other.git"):                   "org/other",
+		fingerprint("https://example.test/single-segment"):              "clone-c",
 	}
 	for print, want := range cases {
 		if got := names[print]; got != want {
@@ -41,9 +41,9 @@ func TestRepoDisplayNamesKeyResolvedNamesByCaptureFingerprint(t *testing.T) {
 // A repository with a credentialled URL is fingerprinted from the redacted
 // form, exactly as capture stores it, so it still resolves.
 func TestRepoDisplayNamesResolveCredentialledUpstreamURL(t *testing.T) {
-	repo := &db.Repo{ID: "a", WorkingPath: "/tmp/clone", UpstreamURL: "https://user:token@github.com/kunchenguid/no-mistakes.git"}
+	repo := &db.Repo{ID: "a", WorkingPath: "/tmp/clone", UpstreamURL: "https://user:token@github.com/BertramPetersen/gatehouse.git"}
 	names := RepoDisplayNames([]*db.Repo{repo})
-	if got := names[fingerprint(repo.UpstreamURL)]; got != "kunchenguid/no-mistakes" {
+	if got := names[fingerprint(repo.UpstreamURL)]; got != "BertramPetersen/gatehouse" {
 		t.Fatalf("name = %q, want the slug of the credentialled upstream URL", got)
 	}
 }

@@ -1,4 +1,4 @@
-name: Require no-mistakes
+name: Require gatehouse
 run-name: "PR #${{ github.event.pull_request.number }} body compliance - ${{ github.event.action }} - event ${{ github.run_number }} (run ${{ github.run_id }})"
 
 on:
@@ -31,17 +31,17 @@ permissions:
 # an immutable per-event group so first-time-fork approvals can never collapse
 # opened/edited checks. Keep reopened coalescing as before.
 concurrency:
-  group: no-mistakes-required-${{ github.event.pull_request.number }}-${{ (github.event.action == 'opened' || github.event.action == 'edited') && github.run_id || 'head-change' }}
+  group: gatehouse-required-${{ github.event.pull_request.number }}-${{ (github.event.action == 'opened' || github.event.action == 'edited') && github.run_id || 'head-change' }}
   cancel-in-progress: true
 
 jobs:
   check:
-    name: PR must be raised via no-mistakes
+    name: PR must be raised via gatehouse
     runs-on: ubuntu-latest
     # Known automation accounts are exempt so the release pipeline keeps working:
     # - github-actions[bot] opens the release-please PR via GITHUB_TOKEN
     # - dependabot[bot] opens dependency update PRs
-    # Other authors (human or bot) must raise PRs through `git push no-mistakes`.
+    # Other authors (human or bot) must raise PRs through `git push gatehouse`.
     #
     # These stay job-level rather than moving to the action's `exempt-authors`
     # input on purpose: an in-job exemption still requires the run to start, and
@@ -58,5 +58,5 @@ jobs:
       # request that changes the action is still TESTED here (the repository's
       # own Go tests execute verify.py from the PR head), but it cannot certify
       # itself through the required check.
-      - name: Verify no-mistakes signature and pipeline attestation
-        uses: kunchenguid/no-mistakes/.github/actions/require-no-mistakes@32d396ac0f29135daf7fcb9964aba9d5f4e796d6 # post-v1.57.1, untagged (action added in #819)
+      - name: Verify gatehouse signature and pipeline attestation
+        uses: BertramPetersen/gatehouse/.github/actions/require-gatehouse@32d396ac0f29135daf7fcb9964aba9d5f4e796d6 # post-v1.57.1, untagged (action added in #819)

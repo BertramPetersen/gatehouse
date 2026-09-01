@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // D5: every state-changing event is emitted AFTER its database write.

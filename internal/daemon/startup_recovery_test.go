@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/custody"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	gitpkg "github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/custody"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	gitpkg "github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestPreserveStaleRunHeadsAnchorsCrashWorkBeforeTerminalization(t *testing.T) {

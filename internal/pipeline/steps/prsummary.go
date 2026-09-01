@@ -14,9 +14,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 type prBodyFlavor int
@@ -36,14 +36,14 @@ func prBodyFlavorFor(provider scm.Provider) prBodyFlavor {
 const (
 	maxEmbeddedArtifactBytes               = 16 * 1024
 	maxEmbeddedArtifactsTotalBytes         = 32 * 1024
-	noMistakesPRSignature                  = "Updates from [git push no-mistakes](https://github.com/kunchenguid/no-mistakes)"
-	pipelineAttestationCommentPrefix       = "<!-- no-mistakes-pipeline-attestation:v1 "
+	gatehousePRSignature                   = "Updates from [git push gatehouse](https://github.com/BertramPetersen/gatehouse)"
+	pipelineAttestationCommentPrefix       = "<!-- gatehouse-pipeline-attestation:v1 "
 	pipelineAttestationCommentClosingToken = " -->"
 	// escapedPipelineAttestationCommentPrefix keeps an embedded copy readable
 	// while breaking the literal prefix a consumer scans for. Only the marker
 	// is altered; the payload after it is left exactly as the agent captured
 	// it, so evidence stays faithful.
-	escapedPipelineAttestationCommentPrefix = "<!-- no-mistakes-pipeline-attestation\\:v1 "
+	escapedPipelineAttestationCommentPrefix = "<!-- gatehouse-pipeline-attestation\\:v1 "
 )
 
 type pipelineAttestation struct {
@@ -120,7 +120,7 @@ func BuildPipelineSummaryFor(steps []*db.StepResult, rounds map[string][]*db.Ste
 
 	var b strings.Builder
 	b.WriteString("## Pipeline\n\n")
-	b.WriteString(noMistakesPRSignature)
+	b.WriteString(gatehousePRSignature)
 	b.WriteString("\n\n")
 	if flavor == prBodyHTML {
 		b.WriteString(buildPipelineAttestation(steps, headSHA))
@@ -138,7 +138,7 @@ func BuildPipelineSummaryFor(steps []*db.StepResult, rounds map[string][]*db.Ste
 }
 
 // buildPipelineAttestation records the exact step lifecycle snapshot available
-// when no-mistakes writes the PR body. Its compact JSON is deliberately data
+// when gatehouse writes the PR body. Its compact JSON is deliberately data
 // only: consumers decide their own policy from the step names and statuses.
 func buildPipelineAttestation(steps []*db.StepResult, headSHA string) string {
 	attestation := pipelineAttestation{
@@ -1338,14 +1338,14 @@ func escapePRText(s string, flavor prBodyFlavor) string {
 //   - The PR-body truncation parser (parsePipelineUpdateGroups /
 //     nextPipelineFoldStart) treats "### " and "<details>" at the start of a
 //     line as step-fold boundaries.
-//   - The require-no-mistakes compliance check
-//     (.github/actions/require-no-mistakes/verify.py) takes the FIRST
+//   - The require-gatehouse compliance check
+//     (.github/actions/require-gatehouse/verify.py) takes the FIRST
 //     attestation comment in the body and binds its head_sha to the PR head.
 //     A step agent that captures a generated PR body as evidence embeds a
 //     second attestation comment carrying that evidence run's head_sha; left
 //     intact it precedes and therefore shadows the real one, and the check
 //     fails on a head_sha mismatch for a PR the pipeline did produce. Observed
-//     on kunchenguid/no-mistakes#831, whose test evidence embedded three.
+//     on BertramPetersen/gatehouse#831, whose test evidence embedded three.
 func escapePipelineFoldMarkers(s string) string {
 	if s == "" {
 		return s

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 func TestStartInstallsLaunchAgentAndBootstrapsManagedDaemon(t *testing.T) {
@@ -24,7 +24,7 @@ func TestStartInstallsLaunchAgentAndBootstrapsManagedDaemon(t *testing.T) {
 	runtimeGOOS = "darwin"
 	serviceUserHomeDir = func() (string, error) { return home, nil }
 	serviceCurrentUser = func() (*user.User, error) { return &user.User{Uid: "501"}, nil }
-	serviceExecutablePath = func() (string, error) { return "/opt/no-mistakes/bin/no-mistakes", nil }
+	serviceExecutablePath = func() (string, error) { return "/opt/gatehouse/bin/gatehouse", nil }
 
 	var commands []string
 	serviceCommandRunner = func(name string, args ...string) ([]byte, error) {
@@ -48,7 +48,7 @@ func TestStartInstallsLaunchAgentAndBootstrapsManagedDaemon(t *testing.T) {
 	}
 	text := string(data)
 	for _, want := range []string{
-		"<string>/opt/no-mistakes/bin/no-mistakes</string>",
+		"<string>/opt/gatehouse/bin/gatehouse</string>",
 		"<string>daemon</string>",
 		"<string>run</string>",
 		"<string>--root</string>",
@@ -129,7 +129,7 @@ func TestInstallLaunchAgentKeepsLegacyPlistOnScopedWriteFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := installLaunchAgent(p, "/opt/no-mistakes/bin/no-mistakes")
+	err := installLaunchAgent(p, "/opt/gatehouse/bin/gatehouse")
 	if err == nil {
 		t.Fatal("installLaunchAgent should fail when scoped plist path is a directory")
 	}
@@ -249,7 +249,7 @@ func TestInstallLaunchAgentDoesNotRemoveLegacyPlistForDifferentRoot(t *testing.T
 		t.Fatal(err)
 	}
 	otherRoot := filepath.Join(t.TempDir(), "other-nm-home")
-	legacyPlist := renderLaunchAgent("/opt/no-mistakes/bin/no-mistakes", paths.WithRoot(otherRoot), home)
+	legacyPlist := renderLaunchAgent("/opt/gatehouse/bin/gatehouse", paths.WithRoot(otherRoot), home)
 	if err := os.WriteFile(legacyPath, []byte(legacyPlist), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +260,7 @@ func TestInstallLaunchAgentDoesNotRemoveLegacyPlistForDifferentRoot(t *testing.T
 		return nil, nil
 	}
 
-	if err := installLaunchAgent(p, "/opt/no-mistakes/bin/no-mistakes"); err != nil {
+	if err := installLaunchAgent(p, "/opt/gatehouse/bin/gatehouse"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(legacyPath); err != nil {
@@ -277,7 +277,7 @@ func TestRenderLaunchAgentForwardsProxyEnv(t *testing.T) {
 	}
 	t.Setenv("HTTPS_PROXY", "http://127.0.0.1:7897")
 
-	plist := renderLaunchAgent("/opt/no-mistakes/bin/no-mistakes", paths.WithRoot(t.TempDir()), "/home/u")
+	plist := renderLaunchAgent("/opt/gatehouse/bin/gatehouse", paths.WithRoot(t.TempDir()), "/home/u")
 	for _, want := range []string{
 		"<key>HTTPS_PROXY</key>",
 		"<string>http://127.0.0.1:7897</string>",
@@ -302,7 +302,7 @@ func TestRenderLaunchAgentForwardsEveryProxyEnvKey(t *testing.T) {
 		proxyEnv = append(proxyEnv, [2]string{key, "val-" + key})
 	}
 
-	plist := renderLaunchAgentWithProxyEnv("/opt/no-mistakes/bin/no-mistakes", paths.WithRoot(t.TempDir()), "/home/u", proxyEnv)
+	plist := renderLaunchAgentWithProxyEnv("/opt/gatehouse/bin/gatehouse", paths.WithRoot(t.TempDir()), "/home/u", proxyEnv)
 	for _, key := range proxyEnvKeys {
 		fragment := "<key>" + key + "</key>\n    <string>val-" + key + "</string>"
 		if !strings.Contains(plist, fragment) {

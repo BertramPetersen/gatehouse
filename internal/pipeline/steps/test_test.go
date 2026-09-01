@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestTestStep_HangingEvidenceAgentFailsRunAfterTimeout(t *testing.T) {
@@ -193,7 +193,7 @@ func TestTestStep_FixMode(t *testing.T) {
 	if status := gitStatusPorcelain(t, dir); status != "" {
 		t.Fatalf("expected clean worktree after fix commit, got %q", status)
 	}
-	if got := lastCommitMessage(t, dir); got != "no-mistakes(test): fix test failures" {
+	if got := lastCommitMessage(t, dir); got != "gatehouse(test): fix test failures" {
 		t.Fatalf("last commit message = %q", got)
 	}
 }
@@ -251,7 +251,7 @@ func TestTestStep_FixMode_UsesFallbackSummaryWhenStructuredSummaryMalformed(t *t
 	if outcome.NeedsApproval {
 		t.Fatal("expected no approval after fallback summary commit and passing tests")
 	}
-	if got := lastCommitMessage(t, dir); got != "no-mistakes(test): fix test failures" {
+	if got := lastCommitMessage(t, dir); got != "gatehouse(test): fix test failures" {
 		t.Fatalf("last commit message = %q", got)
 	}
 }
@@ -408,7 +408,7 @@ func TestTestStep_EvidenceDirectoryIsAlwaysOutsideTheWorktree(t *testing.T) {
 	if !strings.Contains(prompt, "Write new evidence files into this evidence directory, never into the worktree: "+wantDir) {
 		t.Fatalf("expected evidence guidance to point outside the worktree, got:\n%s", prompt)
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".no-mistakes")); err == nil {
+	if _, err := os.Stat(filepath.Join(dir, ".gatehouse")); err == nil {
 		t.Fatal("test step created an in-repo evidence directory")
 	}
 }
@@ -425,7 +425,7 @@ func TestTestStep_PublishedEvidenceGuidanceNamesTheEvidenceBranch(t *testing.T) 
 	}
 	sctx := newTestContextWithDBRecords(t, ag, dir, baseSHA, headSHA, config.Commands{})
 	sctx.UserIntent = "Show users a success screen after checkout"
-	sctx.Config.Test.Evidence = config.Evidence{StoreInRepo: true, Dir: ".no-mistakes/evidence", Branch: "team/ci/evidence"}
+	sctx.Config.Test.Evidence = config.Evidence{StoreInRepo: true, Dir: ".gatehouse/evidence", Branch: "team/ci/evidence"}
 
 	step := &TestStep{}
 	if _, err := step.Execute(sctx); err != nil {

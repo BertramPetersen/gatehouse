@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kunchenguid/no-mistakes/internal/e2edaemon"
+	"github.com/BertramPetersen/gatehouse/internal/e2edaemon"
 )
 
 func main() {
-	if os.Getenv("NM_E2E_REAP_ABANDONED") == "1" {
-		for _, err := range e2edaemon.ReapAbandoned(os.Getenv("NM_E2E_DAEMON_INVENTORY_PARENT"), os.Getenv(e2edaemon.EnvInventory)) {
+	if os.Getenv("GATEHOUSE_E2E_REAP_ABANDONED") == "1" {
+		for _, err := range e2edaemon.ReapAbandoned(os.Getenv("GATEHOUSE_E2E_DAEMON_INVENTORY_PARENT"), os.Getenv(e2edaemon.EnvInventory)) {
 			fmt.Fprintf(os.Stderr, "e2e-reap: %v\n", err)
 		}
 		return
@@ -32,7 +32,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "e2e-reap: %s\n", e)
 		}
 	}
-	if os.Getenv("NM_E2E_REAP_VERBOSE") == "1" {
+	if os.Getenv("GATEHOUSE_E2E_REAP_VERBOSE") == "1" {
 		fmt.Fprintf(os.Stderr, "e2e-reap: entries=%d stopped=%d killed=%d removed=%d skipped=%d\n",
 			result.Entries, result.Stopped, result.Killed, result.Removed, result.Skipped)
 	}

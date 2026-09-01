@@ -67,7 +67,7 @@ func TestEvidenceLocalStorageFallsBackToDefaultsWhenOnlyTheRepoSetsIt(t *testing
 }
 
 // TestEvidenceStorageDefaultsAreBounded states the shipped policy: evidence is
-// reaped by no-mistakes on both axes out of the box, with no configuration.
+// reaped by gatehouse on both axes out of the box, with no configuration.
 // The whole point of the relocation is that cleanup stops depending on an OS
 // temp-directory timer, so neither default may be "keep forever".
 func TestEvidenceStorageDefaultsAreBounded(t *testing.T) {

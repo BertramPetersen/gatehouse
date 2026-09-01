@@ -2,13 +2,13 @@
 title: Evaluation toolkit
 ---
 
-`no-mistakes eval` is a **local-only** toolkit for comparing review candidates against review passes your own pipeline has already recorded.
+`gatehouse eval` is a **local-only** toolkit for comparing review candidates against review passes your own pipeline has already recorded.
 
 The corpus collects itself: eligible finished runs' decided review passes become cases, so the sets are populated by the time you want to compare something. Replay and reporting stay explicit commands you run.
 
-The `eval` commands do not start or use the shared daemon, alter a gate, emit remote telemetry, push a branch, open a PR, or run CI. Cases, source findings, decisions, candidate outputs, and metrics are stored only under `<NM_HOME>/eval/`; there is no export, sharing, synchronization, or remote case store.
+The `eval` commands do not start or use the shared daemon, alter a gate, emit remote telemetry, push a branch, open a PR, or run CI. Cases, source findings, decisions, candidate outputs, and metrics are stored only under `<GATEHOUSE_HOME>/eval/`; there is no export, sharing, synchronization, or remote case store.
 
-Replay does invoke the selected agent normally, so that agent may send the restored code and review context to its configured model provider. The local-only guarantee concerns eval storage and transport added by no-mistakes, not the selected agent's ordinary provider traffic.
+Replay does invoke the selected agent normally, so that agent may send the restored code and review context to its configured model provider. The local-only guarantee concerns eval storage and transport added by gatehouse, not the selected agent's ordinary provider traffic.
 
 When `eval sets`, `eval report`, or `eval run` resolves repository fingerprints into display names, it consults `state.sqlite` only if that pipeline database already exists and opens it read-only. The display lookup never creates or migrates pipeline state; without a readable database, the dashboards fall back to fingerprints.
 
@@ -16,7 +16,7 @@ When `eval sets`, `eval report`, or `eval run` resolves repository fingerprints 
 
 Cases arrive on their own. When an eligible run finishes, its decided Review passes are frozen into the local corpus - one case per pass. Collection happens after the pipeline has already reported its outcome, so it can never change or fail the run; a problem is logged and nothing else.
 
-Two settings in `config.yaml` govern it, both on by default and both documented in [Global configuration](/no-mistakes/reference/global-config/#eval):
+Two settings in `config.yaml` govern it, both on by default and both documented in [Global configuration](/gatehouse/reference/global-config/#eval):
 
 - `eval.capture_provenance` records the exact commit and configuration inputs a replay needs. It is written when the review round is written and **cannot be added afterwards**, so a run reviewed with it off is never capturable - not by the automatic path and not by hand.
 - `eval.auto_capture` performs the collection. Turning it off leaves provenance recorded, so runs stay capturable by hand.
@@ -24,13 +24,13 @@ Two settings in `config.yaml` govern it, both on by default and both documented 
 You can also capture a specific run yourself:
 
 ```sh
-no-mistakes eval capture <run-id>
+gatehouse eval capture <run-id>
 ```
 
 A confirmed post-PR miss - review passed green, and a later human-vetted finding showed a real defect - is ingested as false-negative gold through the same local corpus:
 
 ```sh
-no-mistakes eval miss ingest <run-id> \
+gatehouse eval miss ingest <run-id> \
   --finding '{"id":"stable-id","file":"path.go","line":12,"severity":"error","description":"one-sentence defect"}'
 ```
 
@@ -74,18 +74,18 @@ A case with no finding-level gold is unlabeled / pending, never a pass. True-neg
 
 ## Disk use and retention
 
-Cases from the same repository share one local Git object pool under `<NM_HOME>/eval/pools/`. The first case from a repository stores its history once; every later case adds only the objects its own commits introduced, which is normally a few kilobytes.
+Cases from the same repository share one local Git object pool under `<GATEHOUSE_HOME>/eval/pools/`. The first case from a repository stores its history once; every later case adds only the objects its own commits introduced, which is normally a few kilobytes.
 
 `eval.max_cases` (default 200) is the retention target enforced after automatic collection. When it is exceeded the oldest unprotected cases are dropped first. A case that has a replay in progress or already has recorded candidate replays is never dropped - an eval report's cohort pins the case IDs it compared, so reclaiming one would invalidate a comparison you already paid for. Protected cases can therefore keep the corpus above the target. Set it to `0` to keep every case.
 
 Because the objects live in the pool rather than inside each case, a case directory is not a portable archive: copying it elsewhere does not carry the code it replays.
 
-Finding-level gold uses `labels.json` schema version 2. There is no migration from labels that store a park/pass verdict, and manifest version 1 cases are also incompatible. If an eval command reports an unsupported case or labels version, remove `<NM_HOME>/eval/` to start a fresh corpus; automatic collection will refill it from later runs.
+Finding-level gold uses `labels.json` schema version 2. There is no migration from labels that store a park/pass verdict, and manifest version 1 cases are also incompatible. If an eval command reports an unsupported case or labels version, remove `<GATEHOUSE_HOME>/eval/` to start a fresh corpus; automatic collection will refill it from later runs.
 
 ## Inspect case sets before spending tokens
 
 ```sh
-no-mistakes eval sets
+gatehouse eval sets
 ```
 
 The command renders a dashboard headlined by the **diversified holdout** - the official gold-only set - showing its size, pin and cap state, finding-level gold as a confusion-matrix table (raised / missed against real issue / not an issue; true negatives are never counted, because a correctly silent review leaves no gold), and stratum composition (repository, dominant language, change-size bucket, source severity, finding type). A case stores only the fingerprint of its upstream URL, so the repository column resolves each locally registered repository to its upstream namespace/name, then its working-directory name or repository ID; an unresolved case falls back to its short fingerprint. The other sets appear as a compact footnote with their counts, gold coverage, unlabeled / pending cases, and queued candidate findings.
@@ -101,20 +101,20 @@ Four logical sets are available to replay:
 - `diversified` - the official gold-only holdout: a pinned, size-capped stratified sample of labeled cases (repository, language, size, severity, finding-type). Empty gold produces an empty set and a warning, never a silent unlabeled fill. Rebuild pins with `eval sets --refresh-diversified`.
 - `tune` - leftover labeled cases after the diversified pins. Iterate matcher thresholds and prompt experiments here, never on `diversified`.
 
-`eval.diversified_size` (default 32, documented in [Global configuration](/no-mistakes/reference/global-config/#eval)) caps the official set. `0` keeps one gold case per stratum. Pins stay until a case is pruned, loses its gold, or an explicit refresh. Lowering the cap takes effect on the next `eval sets` / `ListCases` read: oldest pins are trimmed to the live cap, at most one per stratum, without waiting for `--refresh-diversified`. Seats freed by collapsing duplicates fill new strata at most one case each.
+`eval.diversified_size` (default 32, documented in [Global configuration](/gatehouse/reference/global-config/#eval)) caps the official set. `0` keeps one gold case per stratum. Pins stay until a case is pruned, loses its gold, or an explicit refresh. Lowering the cap takes effect on the next `eval sets` / `ListCases` read: oldest pins are trimmed to the live cap, at most one per stratum, without waiting for `--refresh-diversified`. Seats freed by collapsing duplicates fill new strata at most one case each.
 
 Do not fit matcher thresholds or review product prompts against `diversified`. That set is the held-out official measurement; `tune` is the only labeled leftover it is safe to iterate on.
 
 ## Replay a candidate
 
 ```sh
-no-mistakes eval run \
+gatehouse eval run \
   --cases diversified \
   --candidate codex,model=gpt-5.4,effort=low \
   --repeats 3
 ```
 
-A candidate is `agent,model=<model>[,effort=<level>]`. The fields are the same harness-neutral knobs [`agent_config`](/no-mistakes/reference/global-config/#agent_config) exposes to the pipeline, and they resolve through the same per-harness mapping, so a candidate can express exactly what a real run can. `model` is mandatory - a comparison that inherited whatever default the harness happened to resolve would not be reproducible - while `effort` is optional and one of `minimal`, `low`, `medium`, `high`, `xhigh`, `max`.
+A candidate is `agent,model=<model>[,effort=<level>]`. The fields are the same harness-neutral knobs [`agent_config`](/gatehouse/reference/global-config/#agent_config) exposes to the pipeline, and they resolve through the same per-harness mapping, so a candidate can express exactly what a real run can. `model` is mandatory - a comparison that inherited whatever default the harness happened to resolve would not be reproducible - while `effort` is optional and one of `minimal`, `low`, `medium`, `high`, `xhigh`, `max`.
 
 Effort is part of the candidate identity, so `codex,model=gpt-5.4,effort=low` and `codex,model=gpt-5.4,effort=high` are reported as two candidates rather than collapsing into one.
 
@@ -131,18 +131,18 @@ Matching is a documented cascade of strengths: the same finding ID, the same fil
 
 The report prints recall, precision bounds (adjudicated vs pending-as-FP), and F1 as the headline metric **only when false-positive gold exists** so precision is real. Otherwise F1 is withheld rather than reported as recall-in-disguise.
 
-`--repeats` defaults to `3` and must be at least `1`. Candidates must use an agent whose model no-mistakes can actually pin. ACP targets such as `cursor` and `acp:<target>` are pinned through `acpx --model`, but they cannot take `effort`; `rovodev` and `antigravity` expose no mechanism at all and are rejected outright. `opencode` needs the `provider/model` form. The per-harness mapping table lives in [`agent_config`](/no-mistakes/reference/global-config/#agent_config).
+`--repeats` defaults to `3` and must be at least `1`. Candidates must use an agent whose model gatehouse can actually pin. ACP targets such as `cursor` and `acp:<target>` are pinned through `acpx --model`, but they cannot take `effort`; `rovodev` and `antigravity` expose no mechanism at all and are rejected outright. `opencode` needs the `provider/model` form. The per-harness mapping table lives in [`agent_config`](/gatehouse/reference/global-config/#agent_config).
 
 The replay never inherits this machine's own harness pins: capture strips `agent`, `agent_args_override`, and `agent_config` from the configuration it freezes, so the candidate is the only thing that decides what the harness runs as.
 
-The earlier `agent+model` candidate spelling was replaced by the key=value form and is no longer accepted; evaluations recorded under it keep their old candidate string and are reported as their own group. Replays are intentionally isolated from the production `NM_HOME`; they do not contact the shared no-mistakes daemon. The selected agent still communicates with its configured model provider in the normal way.
+The earlier `agent+model` candidate spelling was replaced by the key=value form and is no longer accepted; evaluations recorded under it keep their old candidate string and are reported as their own group. Replays are intentionally isolated from the production `GATEHOUSE_HOME`; they do not contact the shared gatehouse daemon. The selected agent still communicates with its configured model provider in the normal way.
 
 The command streams one scored progress line per replay as it completes, then renders the session's score summary in the same dashboard style as `eval sets` and `stats`, followed by the session identifier. Re-running the same `eval run` is additive by design - each invocation records a fresh measurement session - but it is safe: identical inputs land in the same cohort so the report aggregates the samples instead of fragmenting into a new comparison group, while captured labels and manifests remain unchanged.
 
 ## Report results
 
 ```sh
-no-mistakes eval report
+gatehouse eval report
 ```
 
 The report groups local replays by candidate and cohort. A cohort pins the selected case IDs and repeat count, so frontier comparisons only compare candidates run over the same corpus and repeat plan. It shows:

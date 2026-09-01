@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
 )
 
 func TestServerClientRoundTrip(t *testing.T) {

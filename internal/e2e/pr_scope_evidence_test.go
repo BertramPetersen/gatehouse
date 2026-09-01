@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 const staleTwoFileEvidence = "Inspected only final files: internal/example/flag.go and cmd/example/main.go."
@@ -75,7 +75,7 @@ func writeFinalPRScopeScenario(t *testing.T) string {
 //
 // PR #605 originally made the whole PR body (including the deterministic
 // Risk Assessment, Testing, and Pipeline sections) final-diff scoped, but
-// that silently dropped those three sections everywhere (no-mistakes #605
+// that silently dropped those three sections everywhere (gatehouse #605
 // regression, firstmate PR #1577/#1609). The corrected, intentional scope is
 // narrower: only the agent-authored `## What Changed` narrative is bound to
 // the actual final branch delta. The deterministic Risk Assessment, Testing,
@@ -87,8 +87,8 @@ func TestPRWhatChangedScopesToFinalDiffWhileEvidenceStaysStepScoped(t *testing.T
 	h := NewHarness(t, SetupOpts{Agent: "claude", Scenario: writeFinalPRScopeScenario(t)})
 	ctx := context.Background()
 
-	parentURL := "https://github.com/example/no-mistakes.git"
-	forkURL := "https://github.com/example-fork/no-mistakes.git"
+	parentURL := "https://github.com/example/gatehouse.git"
+	forkURL := "https://github.com/example-fork/gatehouse.git"
 	forkDir := filepath.Join(filepath.Dir(h.UpstreamDir), "fork.git")
 	if err := os.MkdirAll(forkDir, 0o755); err != nil {
 		t.Fatalf("mkdir fork: %v", err)
@@ -108,7 +108,7 @@ func TestPRWhatChangedScopesToFinalDiffWhileEvidenceStaysStepScoped(t *testing.T
 	ghLog := filepath.Join(filepath.Dir(h.AgentLog), "gh-final-pr-scope.log")
 	t.Setenv("FAKEAGENT_GH_MODE", "fork-pr")
 	t.Setenv("FAKEAGENT_GH_LOG", ghLog)
-	t.Setenv("FAKEAGENT_GH_PARENT", "example/no-mistakes")
+	t.Setenv("FAKEAGENT_GH_PARENT", "example/gatehouse")
 
 	if out, err := h.Run("init", "--fork-url", forkURL); err != nil {
 		t.Fatalf("init with fork URL: %v\n%s", err, out)

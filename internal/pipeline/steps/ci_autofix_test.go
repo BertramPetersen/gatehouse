@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func assertCIRestartsValidation(t *testing.T, outcome *pipeline.StepOutcome, err error) {

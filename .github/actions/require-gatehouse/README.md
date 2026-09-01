@@ -1,22 +1,22 @@
-# `require-no-mistakes`
+# `require-gatehouse`
 
 Composite action that checks whether a pull request body declares a completed,
-head-bound no-mistakes pipeline run. It is the reusable shared implementation
-of the check named **`PR must be raised via no-mistakes`**; enforcing
+head-bound gatehouse pipeline run. It is the reusable shared implementation
+of the check named **`PR must be raised via gatehouse`**; enforcing
 repositories can call it instead of copying the shell into their own workflow.
 
 It verifies, in order:
 
-1. the PR body carries the no-mistakes signature line;
-2. the body carries a parseable `<!-- no-mistakes-pipeline-attestation:v1 {...} -->`
+1. the PR body carries the gatehouse signature line;
+2. the body carries a parseable `<!-- gatehouse-pipeline-attestation:v1 {...} -->`
    comment;
 3. the attestation's `head_sha` equals the PR head SHA, so a later push cannot
    pass on an older attestation;
 4. `review`, `test`, and `document` each recorded `status == "completed"`.
    Quota skips and agent skips are not compliant.
 
-Missing or unparseable attestation reports the no-mistakes `>= 1.46.0` floor;
-a missing signature reports the not-raised-via-no-mistakes guidance.
+Missing or unparseable attestation reports the gatehouse `>= 1.46.0` floor;
+a missing signature reports the not-raised-via-gatehouse guidance.
 
 ## Usage
 
@@ -24,7 +24,7 @@ Consumers pin a release tag or a commit SHA. Never `@main`: `main` is editable
 by the very PR the gate is judging.
 
 ```yaml
-name: Require no-mistakes
+name: Require gatehouse
 on:
   pull_request:
     types: [opened, edited, reopened]
@@ -35,20 +35,20 @@ permissions:
 
 jobs:
   check:
-    name: PR must be raised via no-mistakes
+    name: PR must be raised via gatehouse
     runs-on: ubuntu-latest
     steps:
-      - uses: kunchenguid/no-mistakes/.github/actions/require-no-mistakes@<release-tag-or-sha>
+      - uses: BertramPetersen/gatehouse/.github/actions/require-gatehouse@<release-tag-or-sha>
         with:
           exempt-authors: |
             github-actions[bot]
             dependabot[bot]
 ```
 
-Replace `<release-tag-or-sha>` with a no-mistakes release tag or commit SHA
+Replace `<release-tag-or-sha>` with a gatehouse release tag or commit SHA
 that contains this action.
 
-The job name must stay exactly `PR must be raised via no-mistakes` so branch
+The job name must stay exactly `PR must be raised via gatehouse` so branch
 rulesets keep matching the same check across the fleet.
 
 An ordinary `pull_request`-triggered caller forwards no PR facts: the action
@@ -83,9 +83,9 @@ The action never checks out or executes repository code, so it is safe on
 and stay on `pull_request` rather than `pull_request_target`.
 
 An exemption is trusted outer-repository policy supplied by the caller's pinned
-workflow. It does not claim that no-mistakes ran: exempt PRs report
+workflow. It does not claim that gatehouse ran: exempt PRs report
 `compliant=false` and `exempt=true`. This is separate from the invariant that no
-standing configuration may skip a step inside a no-mistakes run.
+standing configuration may skip a step inside a gatehouse run.
 
 ### Non-goal: a contributor guardrail, not a forgery-proof boundary
 
@@ -112,7 +112,7 @@ of scope for this action.
 
 ## Rollout
 
-This repository's own gate (`.github/workflows/no-mistakes-required.yml`) is a
+This repository's own gate (`.github/workflows/gatehouse-required.yml`) is a
 thin caller of this action, pinned to the commit that first published it. GitHub
 downloads `uses:` actions at job setup, so the pin must always name a ref that
 already carries the action; a caller pinned to a tag that predates it fails
@@ -130,6 +130,6 @@ tag or a commit SHA, never `@main`.
 
 ## Behavior is pinned by tests
 
-`require_no_mistakes_action_test.go` in the repository root executes
+`require_gatehouse_action_test.go` in the repository root executes
 `verify.py` the way a runner does and covers every verdict, the exemption
 surface, and the event-payload fallback.

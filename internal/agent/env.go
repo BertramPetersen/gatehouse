@@ -1,12 +1,12 @@
 package agent
 
 import (
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/runenv"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/runenv"
 )
 
 // GateRoleEnvVar is exported into every spawned gate agent's environment as an
-// coarse diagnostic marker that the process is a no-mistakes gate agent (a
+// coarse diagnostic marker that the process is a gatehouse gate agent (a
 // review/fix/document/test/lint/rebase/pr/ci invocation), NOT a fleet operator.
 // It is defense in depth only: it can be removed, forged, or inherited, so
 // runtime authorization uses canonical managed Git identity plus authenticated
@@ -17,7 +17,7 @@ import (
 // validating (see the ambient-authority incident). A cooperating harness reads
 // this marker and its fleet-lifecycle entrypoints fail closed. It is deliberately
 // coarse (`=1`): presence is the whole signal.
-const GateRoleEnvVar = "NO_MISTAKES_GATE"
+const GateRoleEnvVar = "GATEHOUSE_GATE"
 
 // subprocessContext centralizes environment policy shared by every agent
 // adapter, including persistent server-backed adapters.

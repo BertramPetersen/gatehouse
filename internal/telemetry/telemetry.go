@@ -17,18 +17,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/buildinfo"
+	"github.com/BertramPetersen/gatehouse/internal/buildinfo"
 )
 
 const (
 	defaultHostname = "cli"
-	defaultTitle    = "no-mistakes CLI"
+	defaultTitle    = "gatehouse CLI"
 	defaultPath     = "/api/send"
-	defaultHost     = "https://a.kunchenguid.com"
+	defaultHost     = ""
 
-	umamiHostEnv      = "NO_MISTAKES_UMAMI_HOST"
-	umamiWebsiteIDEnv = "NO_MISTAKES_UMAMI_WEBSITE_ID"
-	telemetryEnv      = "NO_MISTAKES_TELEMETRY"
+	umamiHostEnv      = "GATEHOUSE_UMAMI_HOST"
+	umamiWebsiteIDEnv = "GATEHOUSE_UMAMI_WEBSITE_ID"
+	telemetryEnv      = "GATEHOUSE_TELEMETRY"
 )
 
 type Fields map[string]any
@@ -94,7 +94,7 @@ func NewClient(cfg Config) (*Client, error) {
 		return nil, fmt.Errorf("website ID is required")
 	}
 	if cfg.App == "" {
-		cfg.App = "no-mistakes"
+		cfg.App = "gatehouse"
 	}
 	if cfg.Version == "" {
 		cfg.Version = buildinfo.CurrentVersion()
@@ -142,7 +142,7 @@ func Default() Sink {
 	client, err := NewClient(Config{
 		Host:      host,
 		WebsiteID: websiteID,
-		App:       "no-mistakes",
+		App:       "gatehouse",
 		Version:   buildinfo.CurrentVersion(),
 		GOOS:      runtime.GOOS,
 		GOARCH:    runtime.GOARCH,
@@ -296,7 +296,7 @@ func (c *Client) send(ctx context.Context, payload []byte) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", fmt.Sprintf("no-mistakes/%s telemetry", c.version))
+	req.Header.Set("User-Agent", fmt.Sprintf("gatehouse/%s telemetry", c.version))
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -328,7 +328,7 @@ func normalizeEndpoint(host string) (string, error) {
 
 func eventURL(app, name string) string {
 	if app == "" {
-		app = "no-mistakes"
+		app = "gatehouse"
 	}
 	if name == "" {
 		return "app://" + app

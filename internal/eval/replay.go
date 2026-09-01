@@ -13,16 +13,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/e2edaemon"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline/steps"
-	"github.com/kunchenguid/no-mistakes/internal/safeurl"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/e2edaemon"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline/steps"
+	"github.com/BertramPetersen/gatehouse/internal/safeurl"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // ReplayOptions controls one isolated candidate comparison. The optional
@@ -55,7 +55,7 @@ const (
 )
 
 // Replay runs exactly the captured review pass. It does not start a daemon or
-// use the production NM_HOME: every case is restored into a fresh temp gate and
+// use the production GATEHOUSE_HOME: every case is restored into a fresh temp gate and
 // worktree. Push, PR, CI, and all fix loops are intentionally absent from the
 // MVP subject under test.
 func Replay(ctx context.Context, store *Store, opts ReplayOptions) (Session, []Evaluation, error) {
@@ -209,12 +209,12 @@ func replayOne(ctx context.Context, store *Store, c Case, session Session, candi
 		}
 	}()
 
-	// The replay sandbox deliberately stays OUTSIDE the source NM_HOME: it
-	// materializes its own nested NM_HOME and worktree, and the eval store,
-	// object pools, and Store.Prune all live under <NM_HOME>/eval, so a live
+	// The replay sandbox deliberately stays OUTSIDE the source GATEHOUSE_HOME: it
+	// materializes its own nested GATEHOUSE_HOME and worktree, and the eval store,
+	// object pools, and Store.Prune all live under <GATEHOUSE_HOME>/eval, so a live
 	// sandbox nested there would sit inside the very state it is replaying.
 	// That isolation outranks moving it off the system temp directory; see the
-	// held-scope note in AGENTS.md ("no-mistakes Owns Its Own Scratch").
+	// held-scope note in AGENTS.md ("gatehouse Owns Its Own Scratch").
 	root, err := os.MkdirTemp("", "nm-eval-replay-")
 	if err != nil {
 		evaluation.Error = safeurl.RedactText(fmt.Sprintf("create isolated replay root: %v", err))
@@ -316,7 +316,7 @@ func replayOne(ctx context.Context, store *Store, c Case, session Session, candi
 		SkipFixExecution:      fixing,
 		ReviewStartingHeadSHA: startingHeadSHA,
 		PreviousFindings:      previousFindings,
-		Env:                   []string{"NM_HOME=" + isolatedPaths.Root(), "HOME=" + isolatedHome},
+		Env:                   []string{"GATEHOUSE_HOME=" + isolatedPaths.Root(), "HOME=" + isolatedHome},
 		Log:                   func(string) {},
 		LogChunk:              func(string) {},
 		LogFile:               func(string) {},

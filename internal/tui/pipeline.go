@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/types"
 )
 
 var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}

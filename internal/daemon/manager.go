@@ -12,24 +12,24 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/custody"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/eval"
-	"github.com/kunchenguid/no-mistakes/internal/forgecontext"
-	"github.com/kunchenguid/no-mistakes/internal/gate"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline/steps"
-	"github.com/kunchenguid/no-mistakes/internal/procreap"
-	"github.com/kunchenguid/no-mistakes/internal/runenv"
-	"github.com/kunchenguid/no-mistakes/internal/safeurl"
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
-	"github.com/kunchenguid/no-mistakes/internal/types"
-	"github.com/kunchenguid/no-mistakes/internal/worktrees"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/custody"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/eval"
+	"github.com/BertramPetersen/gatehouse/internal/forgecontext"
+	"github.com/BertramPetersen/gatehouse/internal/gate"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline/steps"
+	"github.com/BertramPetersen/gatehouse/internal/procreap"
+	"github.com/BertramPetersen/gatehouse/internal/runenv"
+	"github.com/BertramPetersen/gatehouse/internal/safeurl"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/worktrees"
 )
 
 // StepFactory creates pipeline steps for a run. Defaults to steps.AllSteps.
@@ -636,7 +636,7 @@ func branchFromRef(ref string) string {
 	return strings.TrimPrefix(ref, "refs/heads/")
 }
 
-// loadTrustedRepoConfig reads .no-mistakes.yaml from the trusted
+// loadTrustedRepoConfig reads .gatehouse.yaml from the trusted
 // default-branch commit (trustedSHA - the exact SHA startRun just fetched and
 // resolved) in the worktree and parses it. Reading at a pinned SHA, rather
 // than the origin/<defaultBranch> remote-tracking ref, closes the stale-ref
@@ -655,7 +655,7 @@ func loadTrustedRepoConfig(ctx context.Context, wtDir, trustedSHA, runID string)
 		// potentially stale origin/<defaultBranch> ref.
 		return nil
 	}
-	content, err := git.ShowFile(ctx, wtDir, trustedSHA, ".no-mistakes.yaml")
+	content, err := git.ShowFile(ctx, wtDir, trustedSHA, ".gatehouse.yaml")
 	if err != nil {
 		// Path absent on the default branch is the common "repo has no
 		// trusted commands" case; log at debug so it isn't noisy. Other
@@ -673,21 +673,21 @@ func loadTrustedRepoConfig(ctx context.Context, wtDir, trustedSHA, runID string)
 }
 
 // assertGateTrustedConfigReadable fails a run LOUD when the trusted
-// default-branch copy of .no-mistakes.yaml could not be READ at all. This is the
+// default-branch copy of .gatehouse.yaml could not be READ at all. This is the
 // security correction for disable_project_settings: that field is a boundary
 // honored only from the trusted copy, so an unreadable trusted config must NOT
-// be silently treated as "not opted out" - no-mistakes cannot know whether the
+// be silently treated as "not opted out" - gatehouse cannot know whether the
 // repo relies on the boundary, so it refuses to run rather than risk launching a
 // gate agent with the project instructions loaded.
 //
 // It distinguishes "could not read the trusted config at all" (abort) from
-// "read the trusted tree fine, there is simply no .no-mistakes.yaml on the
+// "read the trusted tree fine, there is simply no .gatehouse.yaml on the
 // default branch" (the common ordinary-repo case, which is NOT opted out and
 // must proceed). Abort cases:
 //   - no known default branch to read a trusted copy from,
 //   - the default branch could not be fetched/resolved to a pinned SHA,
 //   - the pinned commit or tree is not readable (missing object / partial fetch),
-//   - the trusted .no-mistakes.yaml is present but unreadable or unparseable.
+//   - the trusted .gatehouse.yaml is present but unreadable or unparseable.
 func assertGateTrustedConfigReadable(ctx context.Context, wtDir, defaultBranch, trustedSHA string) error {
 	if defaultBranch == "" {
 		return fmt.Errorf("cannot evaluate disable_project_settings: repository has no known default branch to read trusted config from")
@@ -698,19 +698,19 @@ func assertGateTrustedConfigReadable(ctx context.Context, wtDir, defaultBranch, 
 	if _, err := git.Run(ctx, wtDir, "rev-parse", "-q", "--verify", trustedSHA+"^{commit}"); err != nil {
 		return fmt.Errorf("cannot evaluate disable_project_settings: trusted default-branch commit %s is not readable: %w", trustedSHA, err)
 	}
-	entry, err := git.Run(ctx, wtDir, "ls-tree", trustedSHA, "--", ".no-mistakes.yaml")
+	entry, err := git.Run(ctx, wtDir, "ls-tree", trustedSHA, "--", ".gatehouse.yaml")
 	if err != nil {
 		return fmt.Errorf("cannot evaluate disable_project_settings: trusted default-branch tree at %s is not readable: %w", trustedSHA, err)
 	}
 	if entry == "" {
 		return nil
 	}
-	content, err := git.ShowFile(ctx, wtDir, trustedSHA, ".no-mistakes.yaml")
+	content, err := git.ShowFile(ctx, wtDir, trustedSHA, ".gatehouse.yaml")
 	if err != nil {
-		return fmt.Errorf("cannot evaluate disable_project_settings: trusted .no-mistakes.yaml at %s is present but not readable: %w", trustedSHA, err)
+		return fmt.Errorf("cannot evaluate disable_project_settings: trusted .gatehouse.yaml at %s is present but not readable: %w", trustedSHA, err)
 	}
 	if _, err := config.LoadRepoFromBytes([]byte(content)); err != nil {
-		return fmt.Errorf("cannot evaluate disable_project_settings: trusted .no-mistakes.yaml at %s is present but unparseable: %w", trustedSHA, err)
+		return fmt.Errorf("cannot evaluate disable_project_settings: trusted .gatehouse.yaml at %s is present but unparseable: %w", trustedSHA, err)
 	}
 	return nil
 }
@@ -844,10 +844,10 @@ func resolveRerunHead(ctx context.Context, gateDir, branch string, latest *db.Ru
 	if refExists {
 		preserved, preserveErr := git.Run(ctx, gateDir, "rev-parse", recoveryRef+"^{commit}")
 		if preserveErr != nil {
-			return "", fmt.Errorf("refusing rerun: terminal recovery ref for run %s points at non-commit object %s; inspect with `no-mistakes axi status` and reconcile custody first", latest.ID, refTarget)
+			return "", fmt.Errorf("refusing rerun: terminal recovery ref for run %s points at non-commit object %s; inspect with `gatehouse axi status` and reconcile custody first", latest.ID, refTarget)
 		}
 		if preserved != latest.HeadSHA {
-			return "", fmt.Errorf("refusing rerun: terminal recovery ref for run %s points at %s, not recorded unpublished head %s; inspect with `no-mistakes axi status` and reconcile custody first", latest.ID, preserved, latest.HeadSHA)
+			return "", fmt.Errorf("refusing rerun: terminal recovery ref for run %s points at %s, not recorded unpublished head %s; inspect with `gatehouse axi status` and reconcile custody first", latest.ID, preserved, latest.HeadSHA)
 		}
 		return preserved, nil
 	}
@@ -857,7 +857,7 @@ func resolveRerunHead(ctx context.Context, gateDir, branch string, latest *db.Ru
 		}
 		return preserved, nil
 	}
-	return "", fmt.Errorf("refusing rerun from stale gate head %s: terminal run %s recorded unpublished head %s, but that head is unavailable; inspect with `no-mistakes axi status` and reconcile custody first", gateHead, latest.ID, latest.HeadSHA)
+	return "", fmt.Errorf("refusing rerun from stale gate head %s: terminal run %s recorded unpublished head %s, but that head is unavailable; inspect with `gatehouse axi status` and reconcile custody first", gateHead, latest.ID, latest.HeadSHA)
 }
 
 // fetchRunDefaultBranch fetches the trusted branch from the refreshed
@@ -1023,7 +1023,7 @@ func (m *RunManager) startRunWithIntentSource(ctx context.Context, repo *db.Repo
 		return "", fmt.Errorf("load repo config: %w", err)
 	}
 	// SECURITY: load the code-executing selection fields (commands.* and
-	// agent) from the trusted default-branch copy of .no-mistakes.yaml rather
+	// agent) from the trusted default-branch copy of .gatehouse.yaml rather
 	// than the pushed SHA. The worktree is checked out at headSHA (the
 	// contributor's branch), so reading repoCfg above would honor a
 	// contributor's commands/agent and let any pushed SHA run arbitrary shell

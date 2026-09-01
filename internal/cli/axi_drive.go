@@ -10,16 +10,16 @@ import (
 
 	toon "github.com/toon-format/toon-go"
 
-	"github.com/kunchenguid/no-mistakes/internal/branchsync"
-	"github.com/kunchenguid/no-mistakes/internal/cimonitor"
-	"github.com/kunchenguid/no-mistakes/internal/daemon"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/gate"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/branchsync"
+	"github.com/BertramPetersen/gatehouse/internal/cimonitor"
+	"github.com/BertramPetersen/gatehouse/internal/daemon"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/gate"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -69,7 +69,7 @@ func newAxiRunCmd() *cobra.Command {
 			"accepting the result) until a decision point or outcome.\n\n" +
 			"--intent is required when starting a new run: pass what the user set out\n" +
 			"to accomplish (the goal behind the change, not a description of the diff)\n" +
-			"so no-mistakes uses it directly instead of inferring it from transcripts.\n\n" +
+			"so gatehouse uses it directly instead of inferring it from transcripts.\n\n" +
 			"The calling agent drives AXI approval gates but does not become the pipeline\n" +
 			"agent. The daemon requires a supported native agent binary, the `agent: cursor`\n" +
 			"ACP alias, or an explicit `acp:<target>` through `acpx`, and fails before the\n" +
@@ -131,7 +131,7 @@ func runAxiRun(cmd *cobra.Command, autoYes bool, skipSteps []types.StepName, int
 		// from transcripts. Reattaching to an in-flight run does not need it.
 		if strings.TrimSpace(intent) == "" {
 			return emitError(cmd, 2, "--intent is required to start a run",
-				`Pass what the user set out to accomplish: no-mistakes axi run --intent "the user's goal"`)
+				`Pass what the user set out to accomplish: gatehouse axi run --intent "the user's goal"`)
 		}
 		// Starting a fresh run: apply the same pre-flight the human wizard
 		// enforces, but as structured errors the agent acts on rather than
@@ -741,7 +741,7 @@ func runAxiRespond(cmd *cobra.Command, ra respondArgs) error {
 	case types.ActionApprove, types.ActionFix, types.ActionSkip:
 	case "":
 		return emitError(cmd, 2, "--action is required",
-			"Run `no-mistakes axi respond --action approve|fix|skip`")
+			"Run `gatehouse axi respond --action approve|fix|skip`")
 	default:
 		return emitError(cmd, 2, fmt.Sprintf("unknown action %q", ra.action),
 			"Valid actions: approve, fix, skip")
@@ -763,7 +763,7 @@ func runAxiRespond(cmd *cobra.Command, ra respondArgs) error {
 	}
 	if active.Run == nil {
 		return emitError(cmd, 1, "no active run to respond to",
-			"Run `no-mistakes axi run --intent \"...\"` to start one")
+			"Run `gatehouse axi run --intent \"...\"` to start one")
 	}
 	runID := active.Run.ID
 
@@ -778,7 +778,7 @@ func runAxiRespond(cmd *cobra.Command, ra respondArgs) error {
 		gate, ok := rv.awaitingStep()
 		if !ok {
 			return emitError(cmd, 1, "no step is awaiting approval",
-				"Run `no-mistakes axi status` to see the run state")
+				"Run `gatehouse axi status` to see the run state")
 		}
 		stepName = types.StepName(gate.Name)
 	}
@@ -790,7 +790,7 @@ func runAxiRespond(cmd *cobra.Command, ra respondArgs) error {
 	if act == types.ActionFix {
 		if len(findingIDs) == 0 && ra.addFinding == "" {
 			return emitError(cmd, 2, "--action fix requires --findings <id,...> or --add-finding <json>",
-				"Run `no-mistakes axi status` to list finding IDs")
+				"Run `gatehouse axi status` to list finding IDs")
 		}
 		if note := strings.TrimSpace(ra.instructions); note != "" && len(findingIDs) > 0 {
 			instructions = make(map[string]string, len(findingIDs))
@@ -922,7 +922,7 @@ func runAxiAbort(cmd *cobra.Command, runID string) error {
 		fields = append(fields, branchSyncField(state))
 	}
 	help := []string{
-		"Run `no-mistakes axi sync --check` before any local follow-up commit - a cancelled run can leave unpublished pipeline commits preserved in the local gate, and the check offers the guarded custody recovery",
+		"Run `gatehouse axi sync --check` before any local follow-up commit - a cancelled run can leave unpublished pipeline commits preserved in the local gate, and the check offers the guarded custody recovery",
 	}
 	if state.Pipeline.RunID == active.Run.ID {
 		switch {
@@ -1028,8 +1028,8 @@ func emitUnconfirmedAbort(cmd *cobra.Command, runID, branch, reason string, last
 		fields = append(fields, runObjectFieldWithKey("run_state", *last))
 	}
 	fields = append(fields, toon.Field{Key: "help", Value: []string{
-		"Run `no-mistakes axi status --run " + runID + "` to observe the run until it reports a terminal status",
-		"Re-run `no-mistakes axi abort` once the daemon is reachable; a repeated abort is an idempotent no-op",
+		"Run `gatehouse axi status --run " + runID + "` to observe the run until it reports a terminal status",
+		"Re-run `gatehouse axi abort` once the daemon is reachable; a repeated abort is an idempotent no-op",
 		"Do not treat the branch as released or recoverable until a terminal status is confirmed",
 	}})
 	emitDoc(cmd, fields...)

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 // installWindowsTask registers the daemon as a per-user scheduled task.

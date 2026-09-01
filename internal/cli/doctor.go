@@ -9,15 +9,15 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/daemon"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/forgecontext"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/shellenv"
-	"github.com/kunchenguid/no-mistakes/internal/types"
-	"github.com/kunchenguid/no-mistakes/internal/winproc"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/daemon"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/forgecontext"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/shellenv"
+	"github.com/BertramPetersen/gatehouse/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/winproc"
 	"github.com/spf13/cobra"
 )
 
@@ -186,7 +186,7 @@ func doctorForgeProfiles(
 	sort.Strings(hosts)
 	allOK := true
 	for _, profileHost := range hosts {
-		remote := "git@" + profileHost + ":no-mistakes/doctor.git"
+		remote := "git@" + profileHost + ":gatehouse/doctor.git"
 		resolved, err := forgecontext.Resolve(ctx, config.ForgeProfiles{profileHost: profiles[profileHost]}, remote, "")
 		label := fmt.Sprintf("%-14s", "forge "+profileHost)
 		if err != nil {

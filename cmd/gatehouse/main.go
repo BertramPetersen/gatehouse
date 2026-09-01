@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/cli"
-	"github.com/kunchenguid/no-mistakes/internal/daemon"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
-	"github.com/kunchenguid/no-mistakes/internal/update"
+	"github.com/BertramPetersen/gatehouse/internal/cli"
+	"github.com/BertramPetersen/gatehouse/internal/daemon"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/update"
 )
 
 var cleanupOldExecutable = update.CleanupOldExecutable
@@ -31,7 +31,7 @@ func run() int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	} else if ok {
-		if err := os.Setenv("NM_HOME", root); err != nil {
+		if err := os.Setenv("GATEHOUSE_HOME", root); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
@@ -46,7 +46,7 @@ func run() int {
 		return 1
 	} else if ok {
 		if root != "" {
-			if err := os.Setenv("NM_HOME", root); err != nil {
+			if err := os.Setenv("GATEHOUSE_HOME", root); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				return 1
 			}

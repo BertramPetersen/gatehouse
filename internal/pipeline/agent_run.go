@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
 )
 
 // ErrAgentTimeout is the context cause used when the default per-invocation

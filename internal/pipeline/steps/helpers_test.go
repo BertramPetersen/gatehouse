@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 var testGitExecutable, _ = exec.LookPath("git")
@@ -341,9 +341,9 @@ func newFakeBitbucketPRAPI(t *testing.T, existingPRID int, existingPRURL string)
 
 func fakeBitbucketEnv(apiBaseURL string) []string {
 	return []string{
-		"NO_MISTAKES_BITBUCKET_EMAIL=test@example.com",
-		"NO_MISTAKES_BITBUCKET_API_TOKEN=test-token",
-		"NO_MISTAKES_BITBUCKET_API_BASE_URL=" + apiBaseURL,
+		"GATEHOUSE_BITBUCKET_EMAIL=test@example.com",
+		"GATEHOUSE_BITBUCKET_API_TOKEN=test-token",
+		"GATEHOUSE_BITBUCKET_API_BASE_URL=" + apiBaseURL,
 	}
 }
 

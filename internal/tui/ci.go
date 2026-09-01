@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/BertramPetersen/gatehouse/internal/cimonitor"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kunchenguid/no-mistakes/internal/cimonitor"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/types"
 )
 
 // isCIActive returns true if the CI step is currently running.

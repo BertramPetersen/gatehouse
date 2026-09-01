@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/runenv"
+	"github.com/BertramPetersen/gatehouse/internal/runenv"
 )
 
 func TestCodexAgentRunAppliesForgeEnvironment(t *testing.T) {

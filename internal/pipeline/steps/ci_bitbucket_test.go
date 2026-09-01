@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/bitbucket"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/bitbucket"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestCIStep_BitbucketPassesWhenStatusesPass(t *testing.T) {
@@ -70,9 +70,9 @@ func TestCIStep_BitbucketPassesWhenStatusesPass(t *testing.T) {
 func TestCIStep_BitbucketUsesProcessEnvWhenStepEnvIsNil(t *testing.T) {
 	dir, baseSHA, headSHA := setupGitRepo(t)
 	api := newFakeBitbucketCIAPI(t, "OPEN", `{"values":[{"name":"build","state":"SUCCESSFUL"}]}`)
-	t.Setenv("NO_MISTAKES_BITBUCKET_EMAIL", "test@example.com")
-	t.Setenv("NO_MISTAKES_BITBUCKET_API_TOKEN", "test-token")
-	t.Setenv("NO_MISTAKES_BITBUCKET_API_BASE_URL", api.server.URL)
+	t.Setenv("GATEHOUSE_BITBUCKET_EMAIL", "test@example.com")
+	t.Setenv("GATEHOUSE_BITBUCKET_API_TOKEN", "test-token")
+	t.Setenv("GATEHOUSE_BITBUCKET_API_BASE_URL", api.server.URL)
 
 	prURL := "https://bitbucket.org/test/repo/pull-requests/42"
 	ag := &mockAgent{name: "test"}

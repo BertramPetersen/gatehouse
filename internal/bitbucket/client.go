@@ -15,9 +15,9 @@ import (
 
 const (
 	defaultAPIBaseURL = "https://api.bitbucket.org"
-	envEmail          = "NO_MISTAKES_BITBUCKET_EMAIL"
-	envToken          = "NO_MISTAKES_BITBUCKET_API_TOKEN"
-	envAPIBaseURL     = "NO_MISTAKES_BITBUCKET_API_BASE_URL"
+	envEmail          = "GATEHOUSE_BITBUCKET_EMAIL"
+	envToken          = "GATEHOUSE_BITBUCKET_API_TOKEN"
+	envAPIBaseURL     = "GATEHOUSE_BITBUCKET_API_BASE_URL"
 	maxStepLogBytes   = 32 * 1024
 )
 

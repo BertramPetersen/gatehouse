@@ -1,7 +1,7 @@
 // Package safepath keeps operator filesystem identity - home directory paths -
 // out of the text a caller passes it.
 //
-// It guarantees nothing on its own about what no-mistakes publishes: coverage
+// It guarantees nothing on its own about what gatehouse publishes: coverage
 // is exactly the set of publication boundaries that call it. Today that is the
 // pull request title and body (PRStep.buildPRContent). Agent-authored commit
 // subjects, which reach the remote through the auto-fix commit path

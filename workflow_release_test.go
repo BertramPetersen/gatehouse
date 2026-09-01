@@ -69,16 +69,18 @@ func TestReleaseWorkflowBuildStartsOnlyWhenReleaseIsCreated(t *testing.T) {
 	}
 }
 
-func TestReleaseWorkflowEmbedsSelfHostedTelemetryConfig(t *testing.T) {
+func TestReleaseWorkflowKeepsTelemetryOptIn(t *testing.T) {
 	data, err := os.ReadFile(".github/workflows/release.yml")
 	if err != nil {
 		t.Fatalf("read workflow: %v", err)
 	}
 
 	block := extractJobBlock(t, string(data), "build-and-upload")
+	// Telemetry is opt-in: the repo variables render empty until an operator
+	// sets them, and an empty website ID makes telemetry.Default() a noopSink.
 	for _, want := range []string{
-		"UMAMI_HOST: https://a.kunchenguid.com",
-		"UMAMI_WEBSITE_ID: f959e889-92f5-4121-8a1f-571b10861198",
+		"UMAMI_HOST: ${{ vars.UMAMI_HOST }}",
+		"UMAMI_WEBSITE_ID: ${{ vars.UMAMI_WEBSITE_ID }}",
 		"TelemetryHost=${UMAMI_HOST}",
 		"TelemetryWebsiteID=${UMAMI_WEBSITE_ID}",
 	} {

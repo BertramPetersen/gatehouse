@@ -1,4 +1,4 @@
-module github.com/kunchenguid/no-mistakes
+module github.com/BertramPetersen/gatehouse
 
 go 1.25.0
 

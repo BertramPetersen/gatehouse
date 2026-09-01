@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/buildinfo"
+	"github.com/BertramPetersen/gatehouse/internal/buildinfo"
 )
 
 func TestDefaultUsesDotEnvInDevBuildWhenEnvMissing(t *testing.T) {
@@ -28,7 +28,7 @@ func TestDefaultUsesDotEnvInDevBuildWhenEnvMissing(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, ".env")
-	content := "NO_MISTAKES_UMAMI_HOST=https://dotenv.example\nNO_MISTAKES_UMAMI_WEBSITE_ID=website-from-dotenv\n"
+	content := "GATEHOUSE_UMAMI_HOST=https://dotenv.example\nGATEHOUSE_UMAMI_WEBSITE_ID=website-from-dotenv\n"
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write .env: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestDefaultPrefersEnvVarsOverDotEnvAndEmbeddedConfig(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, ".env")
-	content := "NO_MISTAKES_UMAMI_HOST=https://dotenv.example\nNO_MISTAKES_UMAMI_WEBSITE_ID=website-from-dotenv\n"
+	content := "GATEHOUSE_UMAMI_HOST=https://dotenv.example\nGATEHOUSE_UMAMI_WEBSITE_ID=website-from-dotenv\n"
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write .env: %v", err)
 	}
@@ -139,7 +139,11 @@ func TestDefaultUsesEmbeddedTelemetryHostAndWebsiteID(t *testing.T) {
 	}
 }
 
-func TestDefaultUsesSelfHostedHostWhenHostConfigMissing(t *testing.T) {
+// With no collection host configured anywhere - build flags, env, or .env - the
+// default sink must be a no-op rather than inventing a destination. This project
+// ships no baked-in host, so that is the ordinary case, and an embedded website
+// ID alone must never be enough to start sending.
+func TestDefaultDisablesTelemetryWhenNoHostIsConfigured(t *testing.T) {
 	prevSink := defaultSink
 	defaultSink = nil
 	defer func() { defaultSink = prevSink }()
@@ -160,13 +164,8 @@ func TestDefaultUsesSelfHostedHostWhenHostConfigMissing(t *testing.T) {
 	t.Setenv(umamiHostEnv, "")
 	t.Setenv(umamiWebsiteIDEnv, "")
 
-	sink := Default()
-	client, ok := sink.(*Client)
-	if !ok {
-		t.Fatalf("Default() type = %T, want *Client", sink)
-	}
-	if client.endpoint != defaultHost+"/api/send" {
-		t.Fatalf("endpoint = %q, want %q", client.endpoint, defaultHost+"/api/send")
+	if sink, ok := Default().(*Client); ok {
+		t.Fatalf("Default() built a client for endpoint %q, want telemetry disabled", sink.endpoint)
 	}
 }
 
@@ -181,11 +180,11 @@ func TestDefaultDisablesTelemetryWhenEnvIsOff(t *testing.T) {
 	}()
 	buildinfo.TelemetryWebsiteID = "embedded-website"
 
-	t.Setenv("NO_MISTAKES_TELEMETRY", "off")
+	t.Setenv("GATEHOUSE_TELEMETRY", "off")
 	t.Setenv(umamiWebsiteIDEnv, "website-from-env")
 
 	if _, ok := Default().(*Client); ok {
-		t.Fatal("Default() should disable telemetry when NO_MISTAKES_TELEMETRY=off")
+		t.Fatal("Default() should disable telemetry when GATEHOUSE_TELEMETRY=off")
 	}
 }
 
@@ -203,7 +202,7 @@ func TestDefaultIgnoresDotEnvOutsideRepo(t *testing.T) {
 	t.Setenv(umamiWebsiteIDEnv, "")
 
 	parentDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(parentDir, ".env"), []byte("NO_MISTAKES_UMAMI_WEBSITE_ID=outside-repo\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(parentDir, ".env"), []byte("GATEHOUSE_UMAMI_WEBSITE_ID=outside-repo\n"), 0o644); err != nil {
 		t.Fatalf("write parent .env: %v", err)
 	}
 
@@ -234,7 +233,7 @@ func TestDefaultIgnoresDotEnvOutsideRepo(t *testing.T) {
 }
 
 func TestParseDotEnvStripsInlineCommentsFromUnquotedValues(t *testing.T) {
-	values := parseDotEnv([]byte("NO_MISTAKES_UMAMI_WEBSITE_ID=abc123 # dev\n"))
+	values := parseDotEnv([]byte("GATEHOUSE_UMAMI_WEBSITE_ID=abc123 # dev\n"))
 
 	if got := values[umamiWebsiteIDEnv]; got != "abc123" {
 		t.Fatalf("website ID = %q, want %q", got, "abc123")
@@ -242,7 +241,7 @@ func TestParseDotEnvStripsInlineCommentsFromUnquotedValues(t *testing.T) {
 }
 
 func TestParseDotEnvPreservesHashesInQuotedValues(t *testing.T) {
-	values := parseDotEnv([]byte("NO_MISTAKES_UMAMI_WEBSITE_ID=\"abc # dev\"\n"))
+	values := parseDotEnv([]byte("GATEHOUSE_UMAMI_WEBSITE_ID=\"abc # dev\"\n"))
 
 	if got := values[umamiWebsiteIDEnv]; got != "abc # dev" {
 		t.Fatalf("website ID = %q, want %q", got, "abc # dev")

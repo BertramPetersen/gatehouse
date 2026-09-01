@@ -11,26 +11,26 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 // Base identifiers for the managed-service artifacts. The live identifiers
 // returned by launchdServiceLabel/systemdServiceName/windowsTaskName include
-// a short stable suffix derived from p.Root() so two no-mistakes installs
-// with different NM_HOMEs cannot collide in the global launchctl/systemctl/
+// a short stable suffix derived from p.Root() so two gatehouse installs
+// with different GATEHOUSE_HOMEs cannot collide in the global launchctl/systemctl/
 // schtasks namespace. See serviceInstanceSuffix for the full rationale.
 const (
-	launchdServiceLabelBase = "com.kunchenguid.no-mistakes.daemon"
-	systemdServiceNameBase  = "no-mistakes-daemon"
-	windowsTaskNameBase     = "no-mistakes-daemon"
+	launchdServiceLabelBase = "com.bertrampetersen.gatehouse.daemon"
+	systemdServiceNameBase  = "gatehouse-daemon"
+	windowsTaskNameBase     = "gatehouse-daemon"
 )
 
 // Legacy (pre-scoping) identifiers, retained only so that a new binary can
 // clean up artifacts installed by a pre-fix binary on first `daemon start`.
 const (
-	legacyLaunchdServiceLabel = "com.kunchenguid.no-mistakes.daemon"
-	legacySystemdServiceName  = "no-mistakes-daemon.service"
-	legacyWindowsTaskName     = "no-mistakes-daemon"
+	legacyLaunchdServiceLabel = "com.bertrampetersen.gatehouse.daemon"
+	legacySystemdServiceName  = "gatehouse-daemon.service"
+	legacyWindowsTaskName     = "gatehouse-daemon"
 )
 
 var runtimeGOOS = runtime.GOOS
@@ -256,7 +256,7 @@ func writeFileAtomic(path string, content []byte, mode os.FileMode) error {
 // defaultServiceManagerBypassed reports whether managed-service plumbing
 // (launchctl/systemctl/schtasks) should be skipped.
 //
-// It returns true when NM_TEST_START_DAEMON=1 is set (the production escape
+// It returns true when GATEHOUSE_TEST_START_DAEMON=1 is set (the production escape
 // hatch used by demo recordings and similar) or when the process is running
 // under `go test`. The test-binary guard is critical because the managed
 // service label, plist path, systemd unit path, and schtasks task name are
@@ -268,7 +268,7 @@ func writeFileAtomic(path string, content []byte, mode os.FileMode) error {
 // managed path (service_test.go) override serviceManagerBypassed via
 // stubServiceRuntime.
 func defaultServiceManagerBypassed() bool {
-	if os.Getenv("NM_TEST_START_DAEMON") == "1" {
+	if os.Getenv("GATEHOUSE_TEST_START_DAEMON") == "1" {
 		return true
 	}
 	return testing.Testing()
@@ -279,9 +279,9 @@ func defaultServiceManagerBypassed() bool {
 // name + path, Windows task name) are scoped per-install instead of sharing
 // a single globally unique identifier per user.
 //
-// Without scoping, the launchd label com.kunchenguid.no-mistakes.daemon (and
-// its systemd/Windows equivalents) is a shared slot. Any no-mistakes process
-// on the machine can `launchctl bootout gui/<uid>/com.kunchenguid.no-mistakes.daemon`
+// Without scoping, the launchd label com.bertrampetersen.gatehouse.daemon (and
+// its systemd/Windows equivalents) is a shared slot. Any gatehouse process
+// on the machine can `launchctl bootout gui/<uid>/com.bertrampetersen.gatehouse.daemon`
 // and tear down another install's daemon. The failure mode observed twice in
 // practice: a pipeline review step ran `go test ./internal/daemon` in a
 // worktree, that test binary reached TestStopNotRunningIsNoop which calls
@@ -290,11 +290,11 @@ func defaultServiceManagerBypassed() bool {
 //
 // By scoping every identifier by sha256(p.Root()), the test's Stop(p)
 // inspects a path and label that belong to its own tmpdir, not the live
-// daemon's NM_HOME. managedServiceInstalled(p) stats a non-existent scoped
+// daemon's GATEHOUSE_HOME. managedServiceInstalled(p) stats a non-existent scoped
 // plist, returns false, and Stop never reaches serviceCommandRunner.
 //
-// A secondary benefit: multiple concurrent NM_HOMEs (e.g. a dev vs prod
-// no-mistakes install) each get their own managed daemon and can coexist.
+// A secondary benefit: multiple concurrent GATEHOUSE_HOMEs (e.g. a dev vs prod
+// gatehouse install) each get their own managed daemon and can coexist.
 func serviceInstanceSuffix(p *paths.Paths) string {
 	root := ""
 	if p != nil {

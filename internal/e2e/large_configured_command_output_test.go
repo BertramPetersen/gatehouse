@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 const largeCommandMiddleMarker = "OMITTED_SECRET_MIDDLE_MARKER_7f9c"
@@ -48,7 +48,7 @@ exit 1
 
 			config := "allow_repo_commands: true\ncommands:\n  test: true\n  lint: true\n"
 			config = strings.Replace(config, "  "+tc.commandKey+": true", "  "+tc.commandKey+": "+commandName, 1)
-			h.CommitChange(tc.branch, ".no-mistakes.yaml", config, "configure large "+tc.name+" failure")
+			h.CommitChange(tc.branch, ".gatehouse.yaml", config, "configure large "+tc.name+" failure")
 			h.PushToGate(tc.branch)
 			run := waitForStepStatus(t, h, tc.branch, tc.step, types.StepStatusAwaitingApproval, 60*time.Second)
 

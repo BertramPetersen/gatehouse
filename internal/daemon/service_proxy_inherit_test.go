@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 // TestReinstallSystemdServiceInheritsProxyFromExistingUnitWhenEnvUnset is the
@@ -30,7 +30,7 @@ func TestReinstallSystemdServiceInheritsProxyFromExistingUnitWhenEnvUnset(t *tes
 	defer cleanup()
 	runtimeGOOS = "linux"
 	serviceUserHomeDir = func() (string, error) { return home, nil }
-	serviceExecutablePath = func() (string, error) { return "/usr/local/bin/no-mistakes", nil }
+	serviceExecutablePath = func() (string, error) { return "/usr/local/bin/gatehouse", nil }
 
 	unitPath := filepath.Join(home, ".config", "systemd", "user", systemdServiceName(p))
 	if err := os.MkdirAll(filepath.Dir(unitPath), 0o755); err != nil {
@@ -43,7 +43,7 @@ func TestReinstallSystemdServiceInheritsProxyFromExistingUnitWhenEnvUnset(t *tes
 		t.Setenv(key, "")
 	}
 	t.Setenv("HTTPS_PROXY", "http://user:p%40ss@127.0.0.1:7897")
-	unit := renderSystemdUnit("/usr/local/bin/no-mistakes", p, home)
+	unit := renderSystemdUnit("/usr/local/bin/gatehouse", p, home)
 	if err := os.WriteFile(unitPath, []byte(unit), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestReinstallLaunchAgentInheritsProxyFromExistingPlistWhenEnvUnset(t *testi
 	defer cleanup()
 	runtimeGOOS = "darwin"
 	serviceUserHomeDir = func() (string, error) { return home, nil }
-	serviceExecutablePath = func() (string, error) { return "/usr/local/bin/no-mistakes", nil }
+	serviceExecutablePath = func() (string, error) { return "/usr/local/bin/gatehouse", nil }
 
 	plistPath := launchAgentPath(p)
 	if err := os.MkdirAll(filepath.Dir(plistPath), 0o755); err != nil {
@@ -106,7 +106,7 @@ func TestReinstallLaunchAgentInheritsProxyFromExistingPlistWhenEnvUnset(t *testi
 		t.Setenv(key, "")
 	}
 	t.Setenv("HTTPS_PROXY", "http://user:pass@127.0.0.1:7897")
-	plist := renderLaunchAgent("/usr/local/bin/no-mistakes", p, home)
+	plist := renderLaunchAgent("/usr/local/bin/gatehouse", p, home)
 	if err := os.WriteFile(plistPath, []byte(plist), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +174,7 @@ func TestInstallSystemdUserServiceInheritsProxyFromExistingWhenEnvUnset(t *testi
 		t.Setenv(key, "")
 	}
 	t.Setenv("HTTPS_PROXY", "http://user:pass@127.0.0.1:7897")
-	if err := os.WriteFile(unitPath, []byte(renderSystemdUnit("/old/no-mistakes", p, home)), 0o600); err != nil {
+	if err := os.WriteFile(unitPath, []byte(renderSystemdUnit("/old/gatehouse", p, home)), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -182,7 +182,7 @@ func TestInstallSystemdUserServiceInheritsProxyFromExistingWhenEnvUnset(t *testi
 	for _, key := range proxyEnvKeys {
 		t.Setenv(key, "")
 	}
-	if err := installSystemdUserService(p, "/usr/local/bin/no-mistakes"); err != nil {
+	if err := installSystemdUserService(p, "/usr/local/bin/gatehouse"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -193,7 +193,7 @@ func TestInstallSystemdUserServiceInheritsProxyFromExistingWhenEnvUnset(t *testi
 	if !strings.Contains(string(data), `Environment="HTTPS_PROXY=http://user:pass@127.0.0.1:7897"`) {
 		t.Fatalf("reinstall stripped the inherited proxy:\n%s", data)
 	}
-	if !strings.Contains(string(data), "ExecStart=/usr/local/bin/no-mistakes") {
+	if !strings.Contains(string(data), "ExecStart=/usr/local/bin/gatehouse") {
 		t.Fatalf("reinstall should update the executable:\n%s", data)
 	}
 	if info, err := os.Stat(unitPath); err != nil {

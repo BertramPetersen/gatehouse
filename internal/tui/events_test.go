@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/types"
 )
 
 func TestModel_ApplyEvent_LogChunk(t *testing.T) {

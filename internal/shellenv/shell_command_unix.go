@@ -48,7 +48,7 @@ const terminateGrace = 3 * time.Second
 // the group when the leader exits so inherited pipe holders cannot wedge the
 // parser.
 //
-// Apply this to every long-lived subprocess no-mistakes spawns on behalf of a
+// Apply this to every long-lived subprocess gatehouse spawns on behalf of a
 // cancellable step/agent invocation.
 func ConfigureShellCommand(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

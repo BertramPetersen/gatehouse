@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 const (
@@ -80,7 +80,7 @@ func validGateName(name string) error {
 // gates list the pipeline could not honor deterministically. Like
 // validateReviewRaw this deliberately also runs on the PUSHED copy even though
 // EffectiveRepoConfig discards a pushed gates block: the trusted-copy read
-// aborts every run whose default-branch .no-mistakes.yaml fails these checks,
+// aborts every run whose default-branch .gatehouse.yaml fails these checks,
 // so a branch carrying an invalid block has to fail here, before it merges,
 // rather than brick the pipeline afterwards.
 //

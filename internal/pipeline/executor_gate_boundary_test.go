@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 type promptCaptureAgent struct{ prompt string }
@@ -26,8 +26,8 @@ func TestGateStepBoundaryWrapsEveryAgentInvocation(t *testing.T) {
 		t.Fatalf("run: %v", err)
 	}
 	for _, want := range []string{
-		"You are the document phase inside an already active no-mistakes run",
-		"Never invoke no-mistakes init, axi run, rerun, respond, sync, abort, eject",
+		"You are the document phase inside an already active gatehouse run",
+		"Never invoke gatehouse init, axi run, rerun, respond, sync, abort, eject",
 		"outer executor alone owns every phase other than this assigned one",
 		intent,
 	} {

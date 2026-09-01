@@ -10,16 +10,16 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/buildinfo"
-	"github.com/kunchenguid/no-mistakes/internal/daemon"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/buildinfo"
+	"github.com/BertramPetersen/gatehouse/internal/daemon"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 const (
-	appName            = "no-mistakes"
-	repoName           = "kunchenguid/no-mistakes"
+	appName            = "gatehouse"
+	repoName           = "BertramPetersen/gatehouse"
 	backgroundFlag     = "--update-check"
-	noUpdateCheckEnv   = "NO_MISTAKES_NO_UPDATE_CHECK"
+	noUpdateCheckEnv   = "GATEHOUSE_NO_UPDATE_CHECK"
 	checksumsAssetName = "checksums.txt"
 	cacheTTL           = 24 * time.Hour
 	maxAPIResponseSize = 5 << 20

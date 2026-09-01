@@ -14,14 +14,14 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/forgecontext"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/runenv"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/forgecontext"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/runenv"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestPRStep_GhNotAvailable(t *testing.T) {
@@ -87,8 +87,8 @@ func TestPRStep_UpdatesExistingPR(t *testing.T) {
 	if !strings.Contains(ghLog, "--body") {
 		t.Errorf("expected --body flag in gh pr edit, got:\n%s", ghLog)
 	}
-	if !strings.Contains(ghLog, noMistakesPRSignature) {
-		t.Errorf("expected updated PR body to include no-mistakes signature, got:\n%s", ghLog)
+	if !strings.Contains(ghLog, gatehousePRSignature) {
+		t.Errorf("expected updated PR body to include gatehouse signature, got:\n%s", ghLog)
 	}
 
 	// Verify PR URL was stored
@@ -532,8 +532,8 @@ func TestPRStep_GitHubForkCreatesParentPRWithForkHead(t *testing.T) {
 	}
 	sctx := newTestContextWithDBRecords(t, ag, dir, baseSHA, headSHA, config.Commands{})
 	sctx.Env = env
-	sctx.Repo.UpstreamURL = "https://github.com/parent-owner/no-mistakes.git"
-	sctx.Repo.ForkURL = "https://github.com/fork-owner/no-mistakes.git"
+	sctx.Repo.UpstreamURL = "https://github.com/parent-owner/gatehouse.git"
+	sctx.Repo.ForkURL = "https://github.com/fork-owner/gatehouse.git"
 	sctx.Config.PR.BaseBranch = "develop"
 	sctx.Run.Branch = "refs/heads/feature"
 	forgeCtx, err := forgecontext.Resolve(context.Background(), config.ForgeProfiles{
@@ -554,16 +554,16 @@ func TestPRStep_GitHubForkCreatesParentPRWithForkHead(t *testing.T) {
 		t.Fatal(err)
 	}
 	ghLog := string(logData)
-	if !strings.Contains(ghLog, "pr list --head feature --repo parent-owner/no-mistakes --state open --json number,url,baseRefName,headRefName,headRepositoryOwner") {
+	if !strings.Contains(ghLog, "pr list --head feature --repo parent-owner/gatehouse --state open --json number,url,baseRefName,headRefName,headRepositoryOwner") {
 		t.Fatalf("expected PR lookup to use parent repo and bare head branch, got:\n%s", ghLog)
 	}
 	if strings.Contains(ghLog, "pr list --head fork-owner:feature") {
 		t.Fatalf("PR lookup used unsupported owner-qualified --head, got:\n%s", ghLog)
 	}
-	if !strings.Contains(ghLog, "pr create --head fork-owner:feature --base develop --repo parent-owner/no-mistakes") {
+	if !strings.Contains(ghLog, "pr create --head fork-owner:feature --base develop --repo parent-owner/gatehouse") {
 		t.Fatalf("expected PR create to target parent repo with fork owner head, got:\n%s", ghLog)
 	}
-	if strings.Contains(ghLog, "--repo fork-owner/no-mistakes") {
+	if strings.Contains(ghLog, "--repo fork-owner/gatehouse") {
 		t.Fatalf("expected no self-PR against fork repo, got:\n%s", ghLog)
 	}
 	if strings.Contains(ghLog, "pr create --head feature --") {
@@ -720,9 +720,9 @@ func TestPRStep_BitbucketMissingEnvSkipsBeforeBuildingContent(t *testing.T) {
 func TestPRStep_BitbucketUsesProcessEnvWhenStepEnvIsNil(t *testing.T) {
 	dir, baseSHA, headSHA := setupGitRepo(t)
 	api := newFakeBitbucketPRAPI(t, 0, "")
-	t.Setenv("NO_MISTAKES_BITBUCKET_EMAIL", "test@example.com")
-	t.Setenv("NO_MISTAKES_BITBUCKET_API_TOKEN", "test-token")
-	t.Setenv("NO_MISTAKES_BITBUCKET_API_BASE_URL", api.server.URL)
+	t.Setenv("GATEHOUSE_BITBUCKET_EMAIL", "test@example.com")
+	t.Setenv("GATEHOUSE_BITBUCKET_API_TOKEN", "test-token")
+	t.Setenv("GATEHOUSE_BITBUCKET_API_BASE_URL", api.server.URL)
 
 	ag := &mockAgent{
 		name: "test",
@@ -1033,14 +1033,14 @@ func TestAssemblePRBody_RetainsAttestationWhenCoreExceedsAzureCap(t *testing.T) 
 	}
 	attestation := buildPipelineAttestation(steps, testPipelineHeadSHA)
 	pipelineMD := pipelineMarkdownForTest(strings.Repeat("review detail 😀 ", 1000))
-	pipelineMD = strings.Replace(pipelineMD, noMistakesPRSignature+"\n\n", noMistakesPRSignature+"\n\n"+attestation+"\n\n", 1)
+	pipelineMD = strings.Replace(pipelineMD, gatehousePRSignature+"\n\n", gatehousePRSignature+"\n\n"+attestation+"\n\n", 1)
 
 	got := assemblePRBody(sctx, "## What Changed\n\n"+strings.Repeat("change 😀 ", 1000), strings.Repeat("risk 😀 ", 1000), "", pipelineMD, limit)
 
 	if scm.PRBodyLen(got) > limit {
 		t.Fatalf("assembled body = %d units, want <= %d", scm.PRBodyLen(got), limit)
 	}
-	for _, want := range []string{"## Pipeline", noMistakesPRSignature, attestation} {
+	for _, want := range []string{"## Pipeline", gatehousePRSignature, attestation} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("budgeted body dropped required pipeline content %q:\n%s", want, got)
 		}
@@ -1167,7 +1167,7 @@ func TestAppendGeneratedSections_RetainsPipelineAttestationWhenTruncated(t *test
 	}
 	attestation := buildPipelineAttestation(steps, testPipelineHeadSHA)
 	pipelineMD := pipelineMarkdownForTest(strings.Repeat("review round - "+strings.Repeat("x", 1000), 100))
-	pipelineMD = strings.Replace(pipelineMD, noMistakesPRSignature+"\n\n", noMistakesPRSignature+"\n\n"+attestation+"\n\n", 1)
+	pipelineMD = strings.Replace(pipelineMD, gatehousePRSignature+"\n\n", gatehousePRSignature+"\n\n"+attestation+"\n\n", 1)
 
 	got := appendGeneratedSections("## What Changed\n\n- summary", "", "", pipelineMD)
 
@@ -1184,7 +1184,7 @@ func TestAppendGeneratedSections_RetainsAttestationWhenEssentialSectionsOverflow
 	}
 	attestation := buildPipelineAttestation(steps, testPipelineHeadSHA)
 	pipelineMD := pipelineMarkdownForTest("review round 001")
-	pipelineMD = strings.Replace(pipelineMD, noMistakesPRSignature+"\n\n", noMistakesPRSignature+"\n\n"+attestation+"\n\n", 1)
+	pipelineMD = strings.Replace(pipelineMD, gatehousePRSignature+"\n\n", gatehousePRSignature+"\n\n"+attestation+"\n\n", 1)
 
 	got := appendGeneratedSections(
 		"## What Changed\n\n"+strings.Repeat("change detail\n", 5000),
@@ -1194,7 +1194,7 @@ func TestAppendGeneratedSections_RetainsAttestationWhenEssentialSectionsOverflow
 	)
 
 	assertGitHubBodyLimitForTest(t, got)
-	for _, want := range []string{"## Pipeline", noMistakesPRSignature, attestation} {
+	for _, want := range []string{"## Pipeline", gatehousePRSignature, attestation} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("budgeted body dropped required pipeline content %q:\n%s", want, got)
 		}
@@ -1722,7 +1722,7 @@ func bitbucketPRDescriptionForTest(t *testing.T, raw string) string {
 
 func pipelineMarkdownForTest(rounds ...string) string {
 	var b strings.Builder
-	b.WriteString("## Pipeline\n\nUpdates from [git push no-mistakes](https://github.com/kunchenguid/no-mistakes)\n\n")
+	b.WriteString("## Pipeline\n\nUpdates from [git push gatehouse](https://github.com/BertramPetersen/gatehouse)\n\n")
 	b.WriteString("<details>\n")
 	b.WriteString("<summary>🔧 **Review** - update rounds</summary>\n\n")
 	for _, round := range rounds {
@@ -1735,7 +1735,7 @@ func pipelineMarkdownForTest(rounds ...string) string {
 
 func bitbucketPipelineMarkdownForTest(rounds ...string) string {
 	var b strings.Builder
-	b.WriteString("## Pipeline\n\nUpdates from [git push no-mistakes](https://github.com/kunchenguid/no-mistakes)\n\n")
+	b.WriteString("## Pipeline\n\nUpdates from [git push gatehouse](https://github.com/BertramPetersen/gatehouse)\n\n")
 	b.WriteString("### ✅ **Review** - passed\n\n")
 	for _, round := range rounds {
 		b.WriteString(round)
@@ -2353,12 +2353,12 @@ func TestPRStep_LateSuccessAfterTimeoutDoesNotUseAgentTitle(t *testing.T) {
 // TestPRStep_EmbeddedAttestationDoesNotShadowTheRealOne guards the compliance
 // check against the PR body's own evidence.
 //
-// require-no-mistakes reads the FIRST attestation comment in the body and binds
+// require-gatehouse reads the FIRST attestation comment in the body and binds
 // its head_sha to the PR head. A step agent that captures a generated PR body
 // as evidence embeds that body's attestation comment verbatim, carrying the
 // evidence run's head_sha; because the Testing section precedes the Pipeline
 // section, the embedded copy wins and the check fails a PR the pipeline did
-// produce. Seen live on kunchenguid/no-mistakes#831, whose test evidence
+// produce. Seen live on BertramPetersen/gatehouse#831, whose test evidence
 // embedded three.
 func TestPRStep_EmbeddedAttestationDoesNotShadowTheRealOne(t *testing.T) {
 	t.Parallel()

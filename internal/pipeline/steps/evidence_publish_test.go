@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 const evidenceTestUpstream = "https://github.com/example/widgets.git"
@@ -46,7 +46,7 @@ func newEvidencePublishContext(t *testing.T, branch string) (sctx *pipeline.Step
 	sctx.Repo.UpstreamURL = evidenceTestUpstream
 	sctx.Repo.DefaultBranch = "main"
 	sctx.Run.Branch = branch
-	sctx.Config.Test.Evidence = config.Evidence{StoreInRepo: true, Dir: ".no-mistakes/evidence", Branch: "no-mistakes/evidence"}
+	sctx.Config.Test.Evidence = config.Evidence{StoreInRepo: true, Dir: ".gatehouse/evidence", Branch: "gatehouse/evidence"}
 	return sctx, remote
 }
 
@@ -90,11 +90,11 @@ func TestPublishRunEvidence_LandsOnOrphanBranchAndLinksFromThePRBody(t *testing.
 		t.Fatal("expected evidence to be published")
 	}
 
-	tip := gitCmd(t, remote, "rev-parse", "refs/heads/no-mistakes/evidence")
+	tip := gitCmd(t, remote, "rev-parse", "refs/heads/gatehouse/evidence")
 	tree := gitCmd(t, remote, "ls-tree", "-r", "--name-only", tip)
 	for _, want := range []string{
-		".no-mistakes/evidence/feature/add-login/checkout.png",
-		".no-mistakes/evidence/feature/add-login/cli-run.txt",
+		".gatehouse/evidence/feature/add-login/checkout.png",
+		".gatehouse/evidence/feature/add-login/cli-run.txt",
 	} {
 		if !strings.Contains(tree, want) {
 			t.Errorf("evidence branch missing %q, has:\n%s", want, tree)
@@ -110,11 +110,11 @@ func TestPublishRunEvidence_LandsOnOrphanBranchAndLinksFromThePRBody(t *testing.
 	md := BuildTestingSummaryForPR(steps, rounds, sctx.Repo.UpstreamURL, sctx.Run.HeadSHA, sctx.WorkDir, testEvidenceDir(sctx), links)
 	t.Logf("rendered PR testing markdown:\n%s", md)
 
-	wantLink := "https://github.com/example/widgets/blob/" + tip + "/.no-mistakes/evidence/feature/add-login/checkout.png"
+	wantLink := "https://github.com/example/widgets/blob/" + tip + "/.gatehouse/evidence/feature/add-login/checkout.png"
 	if !strings.Contains(md, "- Evidence: [Checkout screenshot]("+wantLink+")") {
 		t.Fatalf("expected the PR body to link the evidence branch, got:\n%s", md)
 	}
-	if !strings.Contains(md, "https://github.com/example/widgets/blob/"+tip+"/.no-mistakes/evidence/feature/add-login/cli-run.txt") {
+	if !strings.Contains(md, "https://github.com/example/widgets/blob/"+tip+"/.gatehouse/evidence/feature/add-login/cli-run.txt") {
 		t.Fatalf("expected the log artifact to link the evidence branch, got:\n%s", md)
 	}
 	if strings.Contains(md, "local file:") {
@@ -144,7 +144,7 @@ func TestPublishRunEvidence_PercentEncodesEveryArtifactPathSegment(t *testing.T)
 	if links == nil {
 		t.Fatal("expected evidence to be published")
 	}
-	tip := gitCmd(t, remote, "rev-parse", "refs/heads/no-mistakes/evidence")
+	tip := gitCmd(t, remote, "rev-parse", "refs/heads/gatehouse/evidence")
 	steps, rounds := testStepWithArtifacts(fmt.Sprintf(
 		`{"kind":"screenshot","label":"Encoded screenshot","path":%q}`,
 		filepath.Join(evidenceDir, filepath.FromSlash(artifact)),
@@ -166,10 +166,10 @@ func TestPublishRunEvidence_UsesTheConfiguredBranchName(t *testing.T) {
 	}
 
 	tree := gitCmd(t, remote, "ls-tree", "-r", "--name-only", "refs/heads/team/ci/evidence")
-	if !strings.Contains(tree, ".no-mistakes/evidence/feature/add-login/cli-run.txt") {
+	if !strings.Contains(tree, ".gatehouse/evidence/feature/add-login/cli-run.txt") {
 		t.Errorf("configured evidence branch missing the artifact, has:\n%s", tree)
 	}
-	if refs := gitCmd(t, remote, "for-each-ref", "--format=%(refname)", "refs/heads/no-mistakes"); refs != "" {
+	if refs := gitCmd(t, remote, "for-each-ref", "--format=%(refname)", "refs/heads/gatehouse"); refs != "" {
 		t.Errorf("the default evidence branch was created too: %q", refs)
 	}
 }

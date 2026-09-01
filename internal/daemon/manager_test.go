@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/custody"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/custody"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // --- RunManager integration tests ---
@@ -514,7 +514,7 @@ func TestPushReceivedConcurrentDifferentBranchRunsAvoidSharedConfigLock(t *testi
 	_, headSHA := setupTestGitRepo(t, p, d, repoID)
 
 	// Mirror a real gate: enable the per-worktree config isolation that
-	// `no-mistakes init` installs, which is what lets identity writes avoid the
+	// `gatehouse init` installs, which is what lets identity writes avoid the
 	// shared config.lock.
 	if err := git.IsolateHooksPath(context.Background(), p.RepoDir(repoID)); err != nil {
 		t.Fatalf("isolate hooks path: %v", err)
@@ -719,7 +719,7 @@ func TestResolveRerunHeadUsesPreservedTerminalHeadInsteadOfStaleGateBranch(t *te
 	run := &db.Run{ID: "run-1", Branch: "feature/recover", Status: types.RunFailed, HeadSHA: preserved, SubmittedHeadSHA: &submitted}
 	now := int64(1)
 	run.TerminalHeadVerifiedAt = &now
-	gitCmd(t, work, "push", gate, preserved+":refs/no-mistakes/recover/"+run.ID)
+	gitCmd(t, work, "push", gate, preserved+":refs/gatehouse/recover/"+run.ID)
 
 	head, err := resolveRerunHead(context.Background(), gate, run.Branch, run)
 	if err != nil {
@@ -920,7 +920,7 @@ func TestPushReceivedTracksRunTelemetryAfterPanic(t *testing.T) {
 }
 
 func TestPushReceivedDemoModeBypassesAgentResolution(t *testing.T) {
-	t.Setenv("NM_DEMO", "1")
+	t.Setenv("GATEHOUSE_DEMO", "1")
 
 	step := &mockPassStep{name: types.StepReview}
 	p, d := startTestDaemonWithSteps(t, func() []pipeline.Step {

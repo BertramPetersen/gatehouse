@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 func TestMigrateGateConfigsRejectsInvalidDirectoriesAndSkipsCurrentGates(t *testing.T) {
@@ -102,7 +102,7 @@ func TestMigrateGateConfigsRejectsInvalidDirectoriesAndSkipsCurrentGates(t *test
 	snapshots := make(map[string]snapshot)
 	for _, id := range []string{registeredID, legacyID} {
 		bareDir := p.RepoDir(id)
-		for _, name := range []string{"config", "config.worktree", "hooks/post-receive", "no-mistakes-gate-config"} {
+		for _, name := range []string{"config", "config.worktree", "hooks/post-receive", "gatehouse-gate-config"} {
 			path := filepath.Join(bareDir, filepath.FromSlash(name))
 			content, err := os.ReadFile(path)
 			if err != nil {

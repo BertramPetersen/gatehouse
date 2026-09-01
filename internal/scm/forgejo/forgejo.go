@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/safeurl"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/shellenv"
+	"github.com/BertramPetersen/gatehouse/internal/safeurl"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/shellenv"
 )
 
 const (
@@ -42,7 +42,7 @@ type Options struct {
 	Secrets        []string
 }
 
-// Host maps no-mistakes SCM operations to forgejo-axi --json commands.
+// Host maps gatehouse SCM operations to forgejo-axi --json commands.
 type Host struct {
 	cmdFactory                CmdFactory
 	available                 func(string) bool

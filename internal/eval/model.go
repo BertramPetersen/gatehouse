@@ -1,6 +1,6 @@
 // Package eval implements the local-only review evaluation toolkit.
 //
-// It deliberately owns a separate registry under <NM_HOME>/eval, so opening the
+// It deliberately owns a separate registry under <GATEHOUSE_HOME>/eval, so opening the
 // normal pipeline database never creates an eval table or runs an eval
 // migration, and nothing here emits telemetry or reaches the network.
 //
@@ -14,8 +14,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/agentcfg"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agentcfg"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 const (
@@ -103,7 +103,7 @@ func CandidateUsage() string { return candidateUsage }
 
 // ParseCandidate accepts agent,key=value[,key=value]... Keys are the common
 // agentcfg knobs, so the eval surface and the agent_config YAML block name the
-// same things. Unmappable requests (a model on a harness no-mistakes cannot pin,
+// same things. Unmappable requests (a model on a harness gatehouse cannot pin,
 // an effort on an ACP target) are refused here rather than silently dropped.
 func ParseCandidate(raw string) (Candidate, error) {
 	value := strings.TrimSpace(raw)
@@ -170,8 +170,8 @@ type Manifest struct {
 	TrustedConfigSHA string `json:"trusted_config_sha"`
 	Intent           string `json:"intent,omitempty"`
 	IntentSource     string `json:"intent_source,omitempty"`
-	VersionAtCapture string `json:"no_mistakes_version,omitempty"`
-	BuildSHA         string `json:"no_mistakes_build_sha,omitempty"`
+	VersionAtCapture string `json:"gatehouse_version,omitempty"`
+	BuildSHA         string `json:"gatehouse_build_sha,omitempty"`
 	ChangedFiles     int    `json:"changed_files"`
 	ChangedLines     int    `json:"changed_lines"`
 }

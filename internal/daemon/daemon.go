@@ -15,20 +15,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/custody"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/gatecontext"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/logstore"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/procreap"
-	"github.com/kunchenguid/no-mistakes/internal/shellenv"
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
-	"github.com/kunchenguid/no-mistakes/internal/types"
-	"github.com/kunchenguid/no-mistakes/internal/worktrees"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/custody"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/gatecontext"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/logstore"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/procreap"
+	"github.com/BertramPetersen/gatehouse/internal/shellenv"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/worktrees"
 )
 
 // orphanProcessMinAge is the age floor for the startup orphan-process sweep.
@@ -44,7 +44,7 @@ var renameDaemonPIDFile = os.Rename
 
 // Run starts the daemon process. It blocks until a shutdown signal is received
 // or the shutdown IPC method is called. This is called via the hidden
-// `no-mistakes daemon run` entrypoint used by managed and detached services.
+// `gatehouse daemon run` entrypoint used by managed and detached services.
 func Run() (retErr error) {
 	startupStarted := time.Now()
 	p, err := paths.New()
@@ -106,7 +106,7 @@ func Run() (retErr error) {
 }
 
 func prepareDaemonEnvironment() error {
-	nmHome := os.Getenv("NM_HOME")
+	nmHome := os.Getenv("GATEHOUSE_HOME")
 	for _, key := range []string{
 		"CLAUDECODE",
 		"CLAUDE_CODE_ENTRYPOINT",
@@ -122,8 +122,8 @@ func prepareDaemonEnvironment() error {
 		return fmt.Errorf("apply login shell environment: %w", err)
 	}
 	if nmHome != "" {
-		if err := os.Setenv("NM_HOME", nmHome); err != nil {
-			return fmt.Errorf("restore NM_HOME: %w", err)
+		if err := os.Setenv("GATEHOUSE_HOME", nmHome); err != nil {
+			return fmt.Errorf("restore GATEHOUSE_HOME: %w", err)
 		}
 	}
 	logDaemonPathSummary()
@@ -170,7 +170,7 @@ func RunWithResources(p *paths.Paths, d *db.DB) error {
 // stepFactory overrides the default pipeline steps (for testing).
 func RunWithOptions(p *paths.Paths, d *db.DB, stepFactory StepFactory) error {
 	startupStarted := time.Now()
-	// Singleton guard: only one live daemon may own this NM_HOME at a time.
+	// Singleton guard: only one live daemon may own this GATEHOUSE_HOME at a time.
 	// This must be acquired before recoverOnStartup (global stale-run
 	// recovery and orphan-worktree cleanup) and before the IPC socket is
 	// bound, and held for the rest of the process lifetime - otherwise a
@@ -199,7 +199,7 @@ func runWithOptionsLocked(p *paths.Paths, d *db.DB, globalCfg *config.GlobalConf
 	// Refuse an unusable worktree placement before anything walks, sweeps, or
 	// removes a directory under it. This is the second half of worktree_roots
 	// validation: internal/config checks every entry it can judge without
-	// knowing NM_HOME, and this process is the one that knows.
+	// knowing GATEHOUSE_HOME, and this process is the one that knows.
 	layout, err := validatedWorktreeLayout(d, p, globalCfg)
 	if err != nil {
 		return err
@@ -598,7 +598,7 @@ func sweepableWorktrees(sets ...[]db.RunWorktree) []procreap.Worktree {
 }
 
 // leftoverRecordedRunWorktrees returns the run worktrees this machine placed
-// outside <NM_HOME>/worktrees that are still on disk, as the runs that created
+// outside <GATEHOUSE_HOME>/worktrees that are still on disk, as the runs that created
 // them recorded them (see internal/worktrees). It is what startup cleanup
 // removes there, so cleanup depends on no configuration at all: an operator who
 // edits or drops a worktree_roots entry after a crash would otherwise hide a
@@ -717,7 +717,7 @@ func registeredCheckouts(d *db.DB) ([]string, error) {
 // checkout - or one that differs from the recorded path in a way this
 // filesystem does not consider equal, such as letter case - silently places
 // nothing, which has no other symptom than runs continuing to appear under
-// NM_HOME. That is the one placement worth only a log line: a root that does
+// GATEHOUSE_HOME. That is the one placement worth only a log line: a root that does
 // not work at all already refused startup (see
 // validatedWorktreeLayout and worktrees.Layout.Validate).
 func reportUnusableWorktreeRoots(d *db.DB, layout *worktrees.Layout) {
@@ -790,7 +790,7 @@ type orphanWorktree struct {
 	runID   string
 }
 
-// defaultTreeOrphanWorktrees walks <NM_HOME>/worktrees, which no-mistakes owns
+// defaultTreeOrphanWorktrees walks <GATEHOUSE_HOME>/worktrees, which gatehouse owns
 // outright, and returns the run worktrees no run still owns plus the repository
 // directories to drop once they are empty.
 func defaultTreeOrphanWorktrees(d *db.DB, p *paths.Paths) (removable []orphanWorktree, repoDirs []string) {
@@ -828,9 +828,9 @@ func defaultTreeOrphanWorktrees(d *db.DB, p *paths.Paths) (removable []orphanWor
 }
 
 // recordedOrphanWorktrees names the leftover worktrees of runs the operator
-// placed outside <NM_HOME>/worktrees (see worktree_roots in the global config).
+// placed outside <GATEHOUSE_HOME>/worktrees (see worktree_roots in the global config).
 //
-// That directory belongs to the operator, not to no-mistakes: it holds the
+// That directory belongs to the operator, not to gatehouse: it holds the
 // mise.local.toml, .envrc, or scratch checkout that motivated pointing runs at
 // it in the first place, and it can hold a run-shaped directory this daemon
 // never created - another tool's, or one left by a repository that used to

@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // evidenceFixture builds a DB plus an evidence root and returns helpers for
@@ -83,7 +83,7 @@ func (f *evidenceFixture) exists(runID string) bool {
 }
 
 // TestReapEvidenceHonorsRetentionAndSparesActiveRuns is the core reaper
-// contract: no-mistakes bounds its own evidence directory on both axes, and
+// contract: gatehouse bounds its own evidence directory on both axes, and
 // never removes a directory belonging to a run that is still in flight.
 func TestReapEvidenceHonorsRetentionAndSparesActiveRuns(t *testing.T) {
 	f := newEvidenceFixture(t)

@@ -12,12 +12,12 @@ import (
 
 	toon "github.com/toon-format/toon-go"
 
-	"github.com/kunchenguid/no-mistakes/internal/branchsync"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/branchsync"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 type cliSyncFixture struct {
@@ -27,7 +27,7 @@ type cliSyncFixture struct {
 func newCLISyncFixture(t *testing.T) cliSyncFixture {
 	t.Helper()
 	nmHome := filepath.Join(t.TempDir(), "nm-home")
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	root := t.TempDir()
 	remote := filepath.Join(root, "remote.git")
 	cliGit(t, root, "init", "--bare", remote)
@@ -156,7 +156,7 @@ func TestSyncHelpAndReferenceExposeGuardedModes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"## no-mistakes sync", "## no-mistakes axi sync", "no-mistakes axi sync --check"} {
+	for _, want := range []string{"## gatehouse sync", "## gatehouse axi sync", "gatehouse axi sync --check"} {
 		if !strings.Contains(string(doc), want) {
 			t.Errorf("CLI reference missing %q", want)
 		}
@@ -171,7 +171,7 @@ func TestAxiSyncCheckAndApplyReturnFullStructuredState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("check: %v\n%s", err, out)
 	}
-	for _, want := range []string{"branch_sync:", "state: behind", "safety: safe_fast_forward", "freshness: live", f.old, f.pushed, "refs/heads/feature/sync", "command: no-mistakes axi sync"} {
+	for _, want := range []string{"branch_sync:", "state: behind", "safety: safe_fast_forward", "freshness: live", f.old, f.pushed, "refs/heads/feature/sync", "command: gatehouse axi sync"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("check missing %q:\n%s", want, out)
 		}
@@ -205,7 +205,7 @@ func TestAxiSyncEquivalentDivergedCheckAndApply(t *testing.T) {
 	if err != nil {
 		t.Fatalf("check: %v\n%s", err, out)
 	}
-	for _, want := range []string{"state: diverged", "safety: safe_equivalent_advance", "relation: diverged", "command: no-mistakes axi sync"} {
+	for _, want := range []string{"state: diverged", "safety: safe_equivalent_advance", "relation: diverged", "command: gatehouse axi sync"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("check missing %q:\n%s", want, out)
 		}
@@ -223,7 +223,7 @@ func TestAxiSyncEquivalentDivergedCheckAndApply(t *testing.T) {
 	if got := cliGit(t, f.local, "rev-parse", "HEAD"); got != f.pushed {
 		t.Fatalf("HEAD = %s, want %s", got, f.pushed)
 	}
-	if got := cliGit(t, f.local, "rev-parse", "refs/no-mistakes/sync-anchor/"+f.runID); got != f.old {
+	if got := cliGit(t, f.local, "rev-parse", "refs/gatehouse/sync-anchor/"+f.runID); got != f.old {
 		t.Fatalf("anchor = %s, want %s", got, f.old)
 	}
 }
@@ -257,7 +257,7 @@ func TestHumanSyncRequiresConfirmationOutsideTTY(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected refusal:\n%s", out)
 	}
-	if !strings.Contains(out, "Re-run with `no-mistakes sync --yes`") {
+	if !strings.Contains(out, "Re-run with `gatehouse sync --yes`") {
 		t.Fatalf("output:\n%s", out)
 	}
 	if got := cliGit(t, f.local, "rev-parse", "HEAD"); got != f.old {
@@ -352,12 +352,12 @@ type cliRecoverFixture struct {
 
 // newCLIRecoverFixture reproduces the stranded custody state end to end for
 // the CLI surface: a cancelled pre-push run whose pipeline fix commit exists
-// only in the repo's local gate at <NM_HOME>/repos/<id>.git, while the
+// only in the repo's local gate at <GATEHOUSE_HOME>/repos/<id>.git, while the
 // operator worktree sits at the submitted head with no push binding.
 func newCLIRecoverFixture(t *testing.T) cliRecoverFixture {
 	t.Helper()
 	nmHome := filepath.Join(t.TempDir(), "nm-home")
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	root := t.TempDir()
 	remote := filepath.Join(root, "remote.git")
 	cliGit(t, root, "init", "--bare", remote)
@@ -410,7 +410,7 @@ func newCLIRecoverFixture(t *testing.T) cliRecoverFixture {
 		t.Fatal(err)
 	}
 	cliGit(t, pipeline, "add", "fix.txt")
-	cliGit(t, pipeline, "commit", "-m", "no-mistakes(review): fix")
+	cliGit(t, pipeline, "commit", "-m", "gatehouse(review): fix")
 	preserved := cliGit(t, pipeline, "rev-parse", "HEAD")
 	cliGit(t, pipeline, "push", "origin", "HEAD:refs/heads/feature/recover")
 
@@ -438,7 +438,7 @@ func newCLIRecoverFixture(t *testing.T) cliRecoverFixture {
 func newCLIUnmovedAbortFixture(t *testing.T) cliRecoverFixture {
 	t.Helper()
 	nmHome := filepath.Join(t.TempDir(), "nm-home")
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	root := t.TempDir()
 	remote := filepath.Join(root, "remote.git")
 	cliGit(t, root, "init", "--bare", remote)
@@ -646,7 +646,7 @@ func newCLIStaleUnpublishedFixtureWithRelation(t *testing.T, pushedDescendant bo
 func newCLIStaleUnpublishedFixtureWithOptions(t *testing.T, pushedDescendant bool, provenance olderTargetProvenance) cliStaleUnpublishedFixture {
 	t.Helper()
 	nmHome := filepath.Join(t.TempDir(), "nm-home")
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	root := t.TempDir()
 	remote := filepath.Join(root, "remote.git")
 	cliGit(t, root, "init", "--bare", remote)
@@ -882,8 +882,8 @@ func TestAxiSyncCheckSurfacesRecoveryForTerminalPrePushRun(t *testing.T) {
 		"status: cancelled",
 		"safety: blocked_pipeline_owned_recoverable",
 		"code: recover_custody",
-		"command: no-mistakes axi sync --recover",
-		"no-mistakes rerun",
+		"command: gatehouse axi sync --recover",
+		"gatehouse rerun",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("stranded check missing %q:\n%s", want, out)
@@ -900,7 +900,7 @@ func TestAxiSyncRecoverReturnsCustodyEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recover: %v\n%s", err, out)
 	}
-	for _, want := range []string{"recovered: true", "state: custody_returned", "changed: true", "relation: equal", "no-mistakes axi run --intent"} {
+	for _, want := range []string{"recovered: true", "state: custody_returned", "changed: true", "relation: equal", "gatehouse axi run --intent"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("recover output missing %q:\n%s", want, out)
 		}
@@ -932,7 +932,7 @@ func TestAxiSyncRecoverDivergedRefusesThenKeepLocalSucceeds(t *testing.T) {
 	if err == nil || !asExitError(err, &ee) || ee.code != 1 {
 		t.Fatalf("diverged recover should exit 1, got %#v\n%s", err, out)
 	}
-	for _, want := range []string{"safety: blocked_recover_diverged", "refs/no-mistakes/recover/", "--keep-local"} {
+	for _, want := range []string{"safety: blocked_recover_diverged", "refs/gatehouse/recover/", "--keep-local"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("diverged refusal missing %q:\n%s", want, out)
 		}
@@ -1013,7 +1013,7 @@ func TestHumanSyncRecoverRequiresConfirmationOutsideTTY(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected refusal:\n%s", out)
 	}
-	if !strings.Contains(out, "Re-run with `no-mistakes sync --recover --yes`") {
+	if !strings.Contains(out, "Re-run with `gatehouse sync --recover --yes`") {
 		t.Fatalf("output:\n%s", out)
 	}
 	if got := cliGit(t, f.local, "rev-parse", "HEAD"); got != f.submitted {

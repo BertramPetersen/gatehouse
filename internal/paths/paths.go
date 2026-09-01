@@ -8,26 +8,26 @@ import (
 	"testing"
 )
 
-// Paths provides access to all no-mistakes filesystem locations.
-// The root defaults to ~/.no-mistakes but can be overridden via NM_HOME
+// Paths provides access to all gatehouse filesystem locations.
+// The root defaults to ~/.gatehouse but can be overridden via GATEHOUSE_HOME
 // or by using WithRoot (for testing).
 type Paths struct {
 	root string
 }
 
-// New returns Paths rooted at NM_HOME or ~/.no-mistakes.
+// New returns Paths rooted at GATEHOUSE_HOME or ~/.gatehouse.
 func New() (*Paths, error) {
-	if env := os.Getenv("NM_HOME"); env != "" {
+	if env := os.Getenv("GATEHOUSE_HOME"); env != "" {
 		return &Paths{root: env}, nil
 	}
-	if testing.Testing() && os.Getenv("NO_MISTAKES_ALLOW_DEFAULT_ROOT_IN_TESTS") != "1" {
-		return nil, fmt.Errorf("NM_HOME must be set under go test to avoid touching the real no-mistakes daemon root")
+	if testing.Testing() && os.Getenv("GATEHOUSE_ALLOW_DEFAULT_ROOT_IN_TESTS") != "1" {
+		return nil, fmt.Errorf("GATEHOUSE_HOME must be set under go test to avoid touching the real gatehouse daemon root")
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
 	}
-	return &Paths{root: filepath.Join(home, ".no-mistakes")}, nil
+	return &Paths{root: filepath.Join(home, ".gatehouse")}, nil
 }
 
 // WithRoot returns Paths rooted at a custom directory (for testing).
@@ -42,7 +42,7 @@ func (p *Paths) PIDFile() string    { return filepath.Join(p.root, "daemon.pid")
 func (p *Paths) ConfigFile() string { return filepath.Join(p.root, "config.yaml") }
 
 // LockFile is the OS-level advisory lock used to enforce a single live daemon
-// per NM_HOME (see the singleton lock in internal/daemon). Distinct from
+// per GATEHOUSE_HOME (see the singleton lock in internal/daemon). Distinct from
 // PIDFile, which is an informational record a live daemon writes for
 // CLI/status consumers: LockFile is what actually prevents two daemons from
 // ever running startup recovery or binding the socket concurrently for the
@@ -72,7 +72,7 @@ func (p *Paths) EvalDir() string { return filepath.Join(p.root, "eval") }
 // shared /tmp - which current Ubuntu mounts as a systemd tmpfs, putting every
 // screenshot and rendered-HTML artifact in RAM. The app root is disk backed on
 // macOS, Linux, and Windows alike, so this needs no per-OS branch, and it is
-// the directory no-mistakes already reaps for itself (see the daemon's
+// the directory gatehouse already reaps for itself (see the daemon's
 // evidence reaper) instead of waiting on an OS timer that may never run.
 //
 // EnsureDirs deliberately leaves creation to the test step, so a machine that

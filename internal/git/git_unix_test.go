@@ -42,8 +42,8 @@ func TestRun_CancellationStopsPipeHoldingDescendant(t *testing.T) {
 	dir := t.TempDir()
 	pidFile := filepath.Join(dir, "descendant.pid")
 	readyFile := filepath.Join(dir, "ready")
-	t.Setenv("NM_GIT_TEST_PID_FILE", pidFile)
-	t.Setenv("NM_GIT_TEST_READY_FILE", readyFile)
+	t.Setenv("GATEHOUSE_GIT_TEST_PID_FILE", pidFile)
+	t.Setenv("GATEHOUSE_GIT_TEST_READY_FILE", readyFile)
 	installFakeGit(t, `
 (
 	while :; do
@@ -51,8 +51,8 @@ func TestRun_CancellationStopsPipeHoldingDescendant(t *testing.T) {
 	done
 ) &
 descendant=$!
-printf '%s\n' "$descendant" > "$NM_GIT_TEST_PID_FILE"
-printf 'ready\n' > "$NM_GIT_TEST_READY_FILE"
+printf '%s\n' "$descendant" > "$GATEHOUSE_GIT_TEST_PID_FILE"
+printf 'ready\n' > "$GATEHOUSE_GIT_TEST_READY_FILE"
 wait "$descendant"
 `)
 

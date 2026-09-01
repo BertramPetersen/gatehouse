@@ -52,7 +52,7 @@ acceptedCheckpoint: `6859d1e827f5ab2592a4703d3bab8734a38c9aa5`
 ## Program Integration Line Strategy
 
 Implement on `feat/native-grok-agent` in
-`/Users/boriza/Documents/dev/tmp/no-mistakes`, based on the immutable checkpoint
+`/Users/boriza/Documents/dev/tmp/gatehouse`, based on the immutable checkpoint
 above. Commit only the Grok adapter, its tests, configuration/docs projections,
 and this plan. Push to a PR branch rather than upstream `main`. Agent Platform
 consumes the feature only after a tested binary is available locally and on the
@@ -88,7 +88,7 @@ remote host; its independent activation plan owns its repo policy change.
   ./internal/e2e -run 'TestUserJourney/grok' -count=1` passed after the doctor
   correction and exercised every agent-driven pipeline step.
 - **2026-08-19:** A standalone Grok 1.0.5 inspection probe in
-  `/tmp/no-mistakes-grok-isolation.FZ9kYU` showed that Grok still discovers the
+  `/tmp/gatehouse-grok-isolation.FZ9kYU` showed that Grok still discovers the
   repository's native `Agents.md` even with `--system-prompt-override` and all
   exposed Claude/Cursor compatibility discovery disabled. Changed
   `NeutralizesGateInstructions()` to return false and added negative gate
@@ -106,14 +106,14 @@ remote host; its independent activation plan owns its repo policy change.
   margin while individual wait deadlines still surface stuck journeys.
 - **2026-08-19:** Post-rebase verification passed: focused affected-package
   tests, the focused Grok e2e journey, `make lint`, `go test -race ./...`, the
-  full `make e2e` rerun, and `go build -o ./bin/no-mistakes
-  ./cmd/no-mistakes`. The only non-passing proof is the explicitly blocked
+  full `make e2e` rerun, and `go build -o ./bin/gatehouse
+  ./cmd/gatehouse`. The only non-passing proof is the explicitly blocked
   provider-backed smoke (HTTP 402); no success is claimed for it.
 - **2026-08-19:** Initialized the repository gate with
-  `kunchenguid/no-mistakes` as upstream and
-  `p3ngu1nx/no-mistakes` as the fork. AXI run
+  `BertramPetersen/gatehouse` as upstream and
+  `p3ngu1nx/gatehouse` as the fork. AXI run
   `01M0CVF0Y466C7CRWCC3HV0ATD` reached `checks-passed` and opened
-  `https://github.com/kunchenguid/no-mistakes/pull/776`. The pipeline fixed the
+  `https://github.com/BertramPetersen/gatehouse/pull/776`. The pipeline fixed the
   missed invocation-environment propagation in commit `c60ea0d5`, added its
   process-level regression, clarified Grok's pipeline-only skill role in
   `dff83ad6`, and then passed targeted Test, documentation, lint, push, PR, and
@@ -156,7 +156,7 @@ remote host; its independent activation plan owns its repo policy change.
 | Instruction isolation | standalone Grok inspect probe + neutralization/gate tests | either every project surface is inert or Grok is refused under the trusted opt-out | negative provider capability observed; fail-closed refusal implemented and focused tests previously passed |
 | Process safety | cancellation/reaping tests and existing shell helper contract | invocation uses configured process groups and leaves no child behind | passed in full race suite |
 | Focused verification | `go test ./cmd/fakeagent ./internal/agent ./internal/config ./internal/daemon ./internal/types`; targeted doctor and Grok e2e journey | exit 0 | passed |
-| Full verification | `make lint`; `go test -race ./...`; `make e2e`; `go build -o ./bin/no-mistakes ./cmd/no-mistakes` | all exit 0 | passed |
+| Full verification | `make lint`; `go test -race ./...`; `make e2e`; `go build -o ./bin/gatehouse ./cmd/gatehouse` | all exit 0 | passed |
 | Live smoke | installed branch binary invokes Grok without a model override | successful structured response reports Grok backend | blocked: provider returned HTTP 402 usage balance exhausted; no success claimed |
 | Consumer proof | Agent Platform trusted config remains valid locally and remotely | unsafe `[codex, grok]` is rejected while `disable_project_settings: true`; existing safe fallback remains configured | passed: Grok absent and opt-out enabled on both; activation intentionally held |
 | Publication proof | AXI run `01M0CVF0Y466C7CRWCC3HV0ATD`; PR #776 | fork push, upstream PR, and hosted checks pass without direct upstream-main write | passed; `checks-passed`, PR open and mergeable |

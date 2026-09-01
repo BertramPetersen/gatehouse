@@ -106,7 +106,7 @@ func TestSteeringNamesTheConfiguredEvidenceRoot(t *testing.T) {
 	if !strings.Contains(firstPreamble, first) {
 		t.Fatalf("steering preamble does not allow the configured evidence directory %q:\n%s", first, firstPreamble)
 	}
-	if strings.Contains(firstPreamble, os.TempDir()+string(filepath.Separator)+"no-mistakes-evidence") {
+	if strings.Contains(firstPreamble, os.TempDir()+string(filepath.Separator)+"gatehouse-evidence") {
 		t.Fatalf("steering preamble still names the legacy shared temp directory:\n%s", firstPreamble)
 	}
 

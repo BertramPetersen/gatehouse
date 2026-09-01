@@ -319,7 +319,7 @@ func TestSweepNeverSignalsItselfOrItsAncestors(t *testing.T) {
 	wt := filepath.Join(root, "repo1", "run1")
 	fake := &fakeSystem{
 		procs: []Process{
-			{PID: self, PPID: parent, PGID: self, Command: "no-mistakes daemon run", Elapsed: time.Hour},
+			{PID: self, PPID: parent, PGID: self, Command: "gatehouse daemon run", Elapsed: time.Hour},
 			{PID: parent, PPID: 1, PGID: parent, Command: "launcher", Elapsed: time.Hour},
 			{PID: 999, PPID: 1, PGID: 999, Command: "leaked", Elapsed: time.Hour},
 		},

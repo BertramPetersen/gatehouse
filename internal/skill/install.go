@@ -62,7 +62,7 @@ func Install(root string) ([]string, error) {
 }
 
 // Vendored reports the repo-relative paths of legacy vendored skill copies
-// under repoRoot. Older no-mistakes versions wrote SKILL.md into each
+// under repoRoot. Older gatehouse versions wrote SKILL.md into each
 // initialized repo; init uses this to tell users those copies are no longer
 // needed. It never modifies the repo.
 func Vendored(repoRoot string) []string {

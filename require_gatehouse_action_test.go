@@ -11,7 +11,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // The shared composite action lives in this repository and every enforcing
@@ -20,7 +20,7 @@ import (
 // and operator copy out - rather than reading its source text.
 
 const (
-	requireActionDir    = ".github/actions/require-no-mistakes"
+	requireActionDir    = ".github/actions/require-gatehouse"
 	requireActionScript = requireActionDir + "/verify.py"
 )
 
@@ -115,9 +115,9 @@ func runRequireAction(t *testing.T, run actionRun) actionResult {
 		"PR_HEAD_REF="+run.headRef,
 		"PR_AUTHOR="+run.author,
 		"PR_NUMBER="+run.number,
-		"NM_EXEMPT_AUTHORS="+run.exemptUsers,
-		"NM_EXEMPT_BOT_AUTHORS="+run.exemptBots,
-		"NM_EXEMPT_HEAD_BRANCHES="+run.exemptRefs,
+		"GATEHOUSE_EXEMPT_AUTHORS="+run.exemptUsers,
+		"GATEHOUSE_EXEMPT_BOT_AUTHORS="+run.exemptBots,
+		"GATEHOUSE_EXEMPT_HEAD_BRANCHES="+run.exemptRefs,
 		"GITHUB_EVENT_PATH="+run.eventPath,
 		"GITHUB_OUTPUT="+outputFile,
 	)
@@ -184,7 +184,7 @@ func TestRequireActionIsAComposite(t *testing.T) {
 	// Every PR fact the script reads must be forwarded by the composite step,
 	// otherwise the runner would silently judge an empty body.
 	env := action.Runs.Steps[0].Env
-	for _, key := range []string{"PR_BODY", "PR_HEAD_SHA", "PR_HEAD_REF", "PR_AUTHOR", "NM_EXEMPT_AUTHORS", "NM_EXEMPT_BOT_AUTHORS", "NM_EXEMPT_HEAD_BRANCHES"} {
+	for _, key := range []string{"PR_BODY", "PR_HEAD_SHA", "PR_HEAD_REF", "PR_AUTHOR", "GATEHOUSE_EXEMPT_AUTHORS", "GATEHOUSE_EXEMPT_BOT_AUTHORS", "GATEHOUSE_EXEMPT_HEAD_BRANCHES"} {
 		if _, ok := env[key]; !ok {
 			t.Errorf("composite step must forward %q to the verification script", key)
 		}
@@ -194,7 +194,7 @@ func TestRequireActionIsAComposite(t *testing.T) {
 // TestRequireActionEnforcesTheGate is the behavioral contract: it runs the real
 // entrypoint over PR bodies the pipeline itself generates.
 func TestRequireActionEnforcesTheGate(t *testing.T) {
-	signature := "Updates from [git push no-mistakes](https://github.com/kunchenguid/no-mistakes)"
+	signature := "Updates from [git push gatehouse](https://github.com/BertramPetersen/gatehouse)"
 	compliant := pipelineSummaryWithStatuses(t, types.StepStatusCompleted, types.StepStatusCompleted, types.StepStatusCompleted)
 
 	tests := []struct {
@@ -209,7 +209,7 @@ func TestRequireActionEnforcesTheGate(t *testing.T) {
 			run:  actionRun{body: compliant, headSHA: requiredWorkflowTestHeadSHA, number: "549"},
 			want: "success",
 			wantOut: []string{
-				"Found no-mistakes signature in PR #549 body.",
+				"Found gatehouse signature in PR #549 body.",
 				"Found structurally compliant pipeline step attestation.",
 				"PR-body attestation is author-editable and is not cryptographic proof",
 			},
@@ -218,7 +218,7 @@ func TestRequireActionEnforcesTheGate(t *testing.T) {
 			name:       "missing signature fails without naming the version floor",
 			run:        actionRun{body: "a regular pull request", headSHA: requiredWorkflowTestHeadSHA},
 			want:       "failure",
-			wantOut:    []string{"This PR was not raised through no-mistakes.", "git push no-mistakes", "CONTRIBUTING.md"},
+			wantOut:    []string{"This PR was not raised through gatehouse.", "git push gatehouse", "CONTRIBUTING.md"},
 			notWantOut: []string{">= 1.46.0"},
 		},
 		{
@@ -229,13 +229,13 @@ func TestRequireActionEnforcesTheGate(t *testing.T) {
 		},
 		{
 			name:    "unparseable attestation names the version floor",
-			run:     actionRun{body: "## Pipeline\n\n" + signature + "\n\n<!-- no-mistakes-pipeline-attestation:v1 {not-json} -->\n", headSHA: requiredWorkflowTestHeadSHA},
+			run:     actionRun{body: "## Pipeline\n\n" + signature + "\n\n<!-- gatehouse-pipeline-attestation:v1 {not-json} -->\n", headSHA: requiredWorkflowTestHeadSHA},
 			want:    "failure",
 			wantOut: []string{">= 1.46.0", "https://github.com/kunchenguid/no-mistakes/pull/670", "only writes the signature"},
 		},
 		{
 			name:    "attestation missing required JSON fields names the version floor",
-			run:     actionRun{body: "## Pipeline\n\n" + signature + "\n\n<!-- no-mistakes-pipeline-attestation:v1 {\"steps\":[]} -->\n", headSHA: requiredWorkflowTestHeadSHA},
+			run:     actionRun{body: "## Pipeline\n\n" + signature + "\n\n<!-- gatehouse-pipeline-attestation:v1 {\"steps\":[]} -->\n", headSHA: requiredWorkflowTestHeadSHA},
 			want:    "failure",
 			wantOut: []string{">= 1.46.0", "https://github.com/kunchenguid/no-mistakes/pull/670"},
 		},
@@ -248,7 +248,7 @@ func TestRequireActionEnforcesTheGate(t *testing.T) {
 		},
 		{
 			name:       "empty attestation head_sha fails",
-			run:        actionRun{body: "## Pipeline\n\n" + signature + "\n\n<!-- no-mistakes-pipeline-attestation:v1 {\"head_sha\":\"\",\"steps\":[{\"step\":\"review\",\"status\":\"completed\"},{\"step\":\"test\",\"status\":\"completed\"},{\"step\":\"document\",\"status\":\"completed\"}]} -->\n", headSHA: requiredWorkflowTestHeadSHA},
+			run:        actionRun{body: "## Pipeline\n\n" + signature + "\n\n<!-- gatehouse-pipeline-attestation:v1 {\"head_sha\":\"\",\"steps\":[{\"step\":\"review\",\"status\":\"completed\"},{\"step\":\"test\",\"status\":\"completed\"},{\"step\":\"document\",\"status\":\"completed\"}]} -->\n", headSHA: requiredWorkflowTestHeadSHA},
 			want:       "failure",
 			wantOut:    []string{"head_sha", "does not match"},
 			notWantOut: []string{">= 1.46.0"},
@@ -269,7 +269,7 @@ func TestRequireActionEnforcesTheGate(t *testing.T) {
 		},
 		{
 			name:    "missing review step fails",
-			run:     actionRun{body: "## Pipeline\n\n" + signature + "\n\n<!-- no-mistakes-pipeline-attestation:v1 {\"head_sha\":\"abc\",\"steps\":[{\"step\":\"test\",\"status\":\"completed\"},{\"step\":\"document\",\"status\":\"completed\"}]} -->\n", headSHA: "abc"},
+			run:     actionRun{body: "## Pipeline\n\n" + signature + "\n\n<!-- gatehouse-pipeline-attestation:v1 {\"head_sha\":\"abc\",\"steps\":[{\"step\":\"test\",\"status\":\"completed\"},{\"step\":\"document\",\"status\":\"completed\"}]} -->\n", headSHA: "abc"},
 			want:    "failure",
 			wantOut: []string{"review", "missing"},
 		},
@@ -360,7 +360,7 @@ func TestRequireActionExemptions(t *testing.T) {
 		},
 		{
 			name: "human author matching no exemption is judged",
-			run:  actionRun{body: nonCompliant, author: "kunchenguid", headRef: "feature", exemptUsers: "dependabot[bot]", exemptBots: "true", exemptRefs: "release-please--*"},
+			run:  actionRun{body: nonCompliant, author: "someone", headRef: "feature", exemptUsers: "dependabot[bot]", exemptBots: "true", exemptRefs: "release-please--*"},
 			want: "failure",
 		},
 		{
@@ -405,7 +405,7 @@ func TestRequireActionReadsTheEventPayloadWhenInputsAreOmitted(t *testing.T) {
 	compliant := pipelineSummaryWithStatuses(t, types.StepStatusCompleted, types.StepStatusCompleted, types.StepStatusCompleted)
 	eventPath := filepath.Join(t.TempDir(), "event.json")
 	payload := `{"pull_request":{"number":812,"body":` + mustJSONString(t, compliant) +
-		`,"head":{"sha":"` + requiredWorkflowTestHeadSHA + `","ref":"fm/example"},"user":{"login":"kunchenguid"}}}`
+		`,"head":{"sha":"` + requiredWorkflowTestHeadSHA + `","ref":"fm/example"},"user":{"login":"someone"}}}`
 	if err := os.WriteFile(eventPath, []byte(payload), 0o644); err != nil {
 		t.Fatalf("write event payload: %v", err)
 	}

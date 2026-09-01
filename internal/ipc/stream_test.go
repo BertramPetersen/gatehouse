@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
 )
 
 func TestStreamHandler(t *testing.T) {

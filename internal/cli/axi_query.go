@@ -12,11 +12,11 @@ import (
 
 	toon "github.com/toon-format/toon-go"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -152,7 +152,7 @@ func configQuietWarning(env *axiEnv) time.Duration {
 }
 
 func startRunHelp() string {
-	return `Run no-mistakes axi run --intent "the user's goal" --yes to validate the current branch`
+	return `Run gatehouse axi run --intent "the user's goal" --yes to validate the current branch`
 }
 
 func noRunLogsHelp() string {
@@ -190,7 +190,7 @@ func newAxiLogsCmd() *cobra.Command {
 // command gate emits tells the operator to read it with exactly this command,
 // so the gate names have to be accepted here.
 const validLogStepsHelp = "Valid steps: intent, rebase, review, test, document, lint, push, pr, ci, " +
-	"or a repository gate step name as shown in `no-mistakes axi status` (for example gate.test.mutation-budget)"
+	"or a repository gate step name as shown in `gatehouse axi status` (for example gate.test.mutation-budget)"
 
 // runAxiLogs renders a step log and returns a run+step telemetry fingerprint:
 // repeated reads of the same step's log carry no distinct analytics signal,
@@ -248,7 +248,7 @@ func runAxiLogs(cmd *cobra.Command, step, runID string, full bool) (string, erro
 		fields = append(fields,
 			toon.Field{Key: "lines", Value: fmt.Sprintf("%d of %d total (tail)", len(shown), len(lines))},
 			toon.Field{Key: "log", Value: logRows(shown)},
-			toon.Field{Key: "help", Value: []string{fmt.Sprintf("Run `no-mistakes axi logs --step %s --full` to see the entire log", step)}},
+			toon.Field{Key: "help", Value: []string{fmt.Sprintf("Run `gatehouse axi logs --step %s --full` to see the entire log", step)}},
 		)
 		emitDoc(cmd, fields...)
 		return fingerprint, nil

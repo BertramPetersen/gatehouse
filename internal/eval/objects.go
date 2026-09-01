@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/safeurl"
-	"github.com/kunchenguid/no-mistakes/internal/shellenv"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/safeurl"
+	"github.com/BertramPetersen/gatehouse/internal/shellenv"
 )
 
 // Every case pins the same four commits. They are named rather than positional
@@ -21,7 +21,7 @@ const (
 	refSourceHead    = "source-head"
 	refBase          = "base"
 	refTrustedConfig = "trusted-config"
-	caseRefNamespace = "refs/no-mistakes/eval/"
+	caseRefNamespace = "refs/gatehouse/eval/"
 )
 
 func caseRefNames() []string {

@@ -7,11 +7,11 @@ import (
 
 	toon "github.com/toon-format/toon-go"
 
-	"github.com/kunchenguid/no-mistakes/internal/daemon"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/gatecontext"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/daemon"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/gatecontext"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 	"github.com/spf13/cobra"
 )
 
@@ -35,12 +35,12 @@ func guardGateControl(cmd *cobra.Command) error {
 func mutatesPipelineControl(cmd *cobra.Command) bool {
 	path := cmd.CommandPath()
 	switch path {
-	case "no-mistakes", "no-mistakes init", "no-mistakes eject", "no-mistakes rerun",
-		"no-mistakes axi run", "no-mistakes axi respond", "no-mistakes axi abort",
-		"no-mistakes daemon start", "no-mistakes daemon stop", "no-mistakes daemon restart",
-		"no-mistakes update":
+	case "gatehouse", "gatehouse init", "gatehouse eject", "gatehouse rerun",
+		"gatehouse axi run", "gatehouse axi respond", "gatehouse axi abort",
+		"gatehouse daemon start", "gatehouse daemon stop", "gatehouse daemon restart",
+		"gatehouse update":
 		return true
-	case "no-mistakes sync", "no-mistakes axi sync":
+	case "gatehouse sync", "gatehouse axi sync":
 		check, err := cmd.Flags().GetBool("check")
 		return err != nil || !check
 	default:
@@ -103,7 +103,7 @@ func classifyGateControlCaller(ctx context.Context) (gatecontext.Result, error) 
 func emitGateContextRefusal(cmd *cobra.Command, result gatecontext.Result) error {
 	errorFields := []toon.Field{
 		{Key: "code", Value: gatecontext.ErrorCode},
-		{Key: "message", Value: "refusing pipeline control from an active no-mistakes validation step"},
+		{Key: "message", Value: "refusing pipeline control from an active gatehouse validation step"},
 	}
 	if result.RunID != "" {
 		errorFields = append(errorFields, toon.Field{Key: "run", Value: result.RunID})
@@ -111,10 +111,10 @@ func emitGateContextRefusal(cmd *cobra.Command, result gatecontext.Result) error
 	if result.Phase != "" {
 		errorFields = append(errorFields, toon.Field{Key: "phase", Value: string(result.Phase)})
 	}
-	allowed := []string{"no-mistakes axi status", "no-mistakes axi logs --step <phase>", "no-mistakes doctor"}
+	allowed := []string{"gatehouse axi status", "gatehouse axi logs --step <phase>", "gatehouse doctor"}
 	if result.RunID != "" {
-		allowed[0] = "no-mistakes axi status --run " + result.RunID
-		allowed[1] = "no-mistakes axi logs --run " + result.RunID + " --step <phase>"
+		allowed[0] = "gatehouse axi status --run " + result.RunID
+		allowed[1] = "gatehouse axi logs --run " + result.RunID + " --step <phase>"
 	}
 	emitDoc(cmd,
 		toon.Field{Key: "error", Value: toon.NewObject(errorFields...)},

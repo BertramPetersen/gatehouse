@@ -1,7 +1,7 @@
 // Package procreap finds and terminates processes that outlived the pipeline
 // run whose worktree they were launched in.
 //
-// Why a sweep is needed at all. Every subprocess no-mistakes spawns is already
+// Why a sweep is needed at all. Every subprocess gatehouse spawns is already
 // isolated in its own process group by internal/shellenv, and that group is
 // killed on cancellation and on every exit path. A process group is, however,
 // only a *lineage* container: a descendant that calls setsid(2) or setpgid(2)
@@ -15,7 +15,7 @@
 // The one identity that survives lineage loss is where the process is
 // standing: its current working directory. Pipeline children are launched in
 // (or below) the run's worktree, so a live process whose cwd resolves under
-// <NM_HOME>/worktrees/<repoID>/<runID> belongs to that run, no matter who its
+// <GATEHOUSE_HOME>/worktrees/<repoID>/<runID> belongs to that run, no matter who its
 // parent is now. That is the association this package matches on.
 //
 // Deliberately NOT matched: the command line. A path can appear in argv for
@@ -33,7 +33,7 @@
 //     started moments ago is never mistaken for a leak.
 //   - SIGTERM first; SIGKILL only for what is still alive after Options.Grace.
 //
-// A process whose cwd is outside <NM_HOME>/worktrees and outside the run
+// A process whose cwd is outside <GATEHOUSE_HOME>/worktrees and outside the run
 // worktrees the caller names explicitly (Options.Worktrees) can never match,
 // which is what keeps long-lived unrelated daemons (a user's LaunchAgent
 // worker, an editor, another tool's background job) out of reach by
@@ -48,7 +48,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/worktrees"
+	"github.com/BertramPetersen/gatehouse/internal/worktrees"
 )
 
 const (
@@ -89,7 +89,7 @@ type Worktree struct {
 
 // Options configures a sweep.
 type Options struct {
-	// WorktreesRoot is <NM_HOME>/worktrees. Required.
+	// WorktreesRoot is <GATEHOUSE_HOME>/worktrees. Required.
 	WorktreesRoot string
 
 	// Worktrees are run worktrees that do not live under WorktreesRoot,
@@ -235,7 +235,7 @@ func SweepAndLog(opts Options, reason string) {
 // It is one entry point because the removal sites are spread across packages -
 // run cleanup, startup cleanup, and eject - and a directory removed without this
 // leaves a process that escaped its group holding a deleted cwd. Under
-// <NM_HOME>/worktrees that process stays reachable through the surviving root
+// <GATEHOUSE_HOME>/worktrees that process stays reachable through the surviving root
 // prefix, but a worktree the operator placed elsewhere is named only by the run
 // record, so removing the directory (and, at eject, the record too) is the last
 // moment anything can reach it.

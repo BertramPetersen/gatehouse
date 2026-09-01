@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/kunchenguid/no-mistakes/internal/runenv"
+	"github.com/BertramPetersen/gatehouse/internal/runenv"
 )
 
 type environmentContextKey struct{}

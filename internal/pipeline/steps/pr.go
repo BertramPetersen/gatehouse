@@ -7,14 +7,14 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/conventional"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/safepath"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/conventional"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/safepath"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // PRStep creates or updates a pull request via the provider CLI or API.
@@ -409,7 +409,7 @@ func appendGeneratedSectionsToCleanBody(body, riskLine, testingMD, pipelineMD st
 // what-changed, intent, risk, and above all the Testing section, which embeds
 // artifact captions, captured output, and whole files read from the evidence
 // directory - is agent-derived and can carry a foreign attestation comment. The
-// compliance check (.github/actions/require-no-mistakes/verify.py) scans the raw
+// compliance check (.github/actions/require-gatehouse/verify.py) scans the raw
 // body and binds the FIRST marker it finds to the PR head, so a foreign copy
 // placed before pipelineMD fails a PR the pipeline did produce.
 //

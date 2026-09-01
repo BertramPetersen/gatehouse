@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 var dialNetworkWithTimeout = func(network, address string, timeout time.Duration) (net.Conn, error) {
@@ -43,7 +43,7 @@ func IsConnectTimeout(err error) bool {
 }
 
 func connectTimeout() time.Duration {
-	value := os.Getenv("NM_DAEMON_CONNECT_TIMEOUT")
+	value := os.Getenv("GATEHOUSE_DAEMON_CONNECT_TIMEOUT")
 	if value == "" {
 		p, err := paths.New()
 		if err != nil {

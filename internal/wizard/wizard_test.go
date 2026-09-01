@@ -70,7 +70,7 @@ func baseConfig(r *recorder) Config {
 	cfg.DefaultBranch = "main"
 	cfg.NeedsBranch = true
 	cfg.IsDirty = true
-	cfg.GateRemote = "no-mistakes"
+	cfg.GateRemote = "gatehouse"
 	return cfg
 }
 

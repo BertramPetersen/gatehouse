@@ -59,7 +59,7 @@ func TestPreserveRecoveryHeadRejectsNonCommitAnchorWithoutOverwriting(t *testing
 func TestPreserveRecoveryAnchorRejectsDanglingSymbolicRefWithoutCreatingTarget(t *testing.T) {
 	repo, head := recoveryTestRepo(t)
 	ref := RecoveryLocalRef("run-1")
-	target := "refs/no-mistakes/evidence/run-1"
+	target := "refs/gatehouse/evidence/run-1"
 	gitRun(t, repo, "symbolic-ref", ref, target)
 
 	if err := PreserveRecoveryAnchor(context.Background(), repo, ref, head); err == nil {
@@ -98,7 +98,7 @@ func recoveryTestRepo(t *testing.T) (string, string) {
 	repo := t.TempDir()
 	gitRun(t, repo, "init")
 	gitRun(t, repo, "config", "core.autocrlf", "false")
-	gitRun(t, repo, "config", "user.name", "No Mistakes Test")
+	gitRun(t, repo, "config", "user.name", "Gate House Test")
 	gitRun(t, repo, "config", "user.email", "test@example.com")
 	gitRun(t, repo, "commit", "--allow-empty", "-m", "base")
 	return repo, gitOutput(t, repo, "rev-parse", "HEAD")

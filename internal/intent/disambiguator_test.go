@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
 )
 
 type mutatingAgent struct {

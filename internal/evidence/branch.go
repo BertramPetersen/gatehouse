@@ -18,19 +18,19 @@ import (
 )
 
 // DefaultBranch is the evidence branch used when the config sets no name.
-const DefaultBranch = "no-mistakes/evidence"
+const DefaultBranch = "gatehouse/evidence"
 
-// MarkerPath is the file every no-mistakes evidence branch carries at its
+// MarkerPath is the file every gatehouse evidence branch carries at its
 // root. Publishing refuses to append to an existing branch that does not have
 // it, which is what keeps a misconfigured (or hostile) branch name - "main",
 // a release branch, someone's feature branch - from receiving evidence
 // commits. The check is on content, not on the name, so it holds regardless of
 // where the name came from.
-const MarkerPath = ".no-mistakes-evidence"
+const MarkerPath = ".gatehouse-evidence"
 
 // MarkerContent is written verbatim at MarkerPath. Keep it byte-stable: a
 // changed blob would make every publish rewrite the marker.
-const MarkerContent = `This branch holds test evidence published by no-mistakes.
+const MarkerContent = `This branch holds test evidence published by gatehouse.
 
 It is an orphan branch: it shares no history with the repository's code
 branches, and nothing here is part of any release. Pull request bodies link

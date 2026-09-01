@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/daemon"
-	"github.com/kunchenguid/no-mistakes/internal/e2edaemon"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/daemon"
+	"github.com/BertramPetersen/gatehouse/internal/e2edaemon"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
-// The daemon's exclusive OS lock on NM_HOME is released by the kernel only
+// The daemon's exclusive OS lock on GATEHOUSE_HOME is released by the kernel only
 // when the owning process actually dies, so "the daemon stopped" has to mean
 // "the daemon process is gone" for the next start to be able to take the
 // root. When it did not, `daemon restart` raced its own predecessor: the

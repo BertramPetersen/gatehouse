@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/shellenv"
-	"github.com/kunchenguid/no-mistakes/internal/winproc"
+	"github.com/BertramPetersen/gatehouse/internal/shellenv"
+	"github.com/BertramPetersen/gatehouse/internal/winproc"
 	"gopkg.in/yaml.v3"
 )
 

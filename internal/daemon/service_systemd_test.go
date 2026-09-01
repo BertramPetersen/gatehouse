@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 func TestStartInstallsSystemdUnitAndStartsManagedDaemon(t *testing.T) {
@@ -26,7 +26,7 @@ func TestStartInstallsSystemdUnitAndStartsManagedDaemon(t *testing.T) {
 	defer cleanup()
 	runtimeGOOS = "linux"
 	serviceUserHomeDir = func() (string, error) { return home, nil }
-	serviceExecutablePath = func() (string, error) { return "/usr/local/bin/no-mistakes", nil }
+	serviceExecutablePath = func() (string, error) { return "/usr/local/bin/gatehouse", nil }
 
 	var commands []string
 	serviceCommandRunner = func(name string, args ...string) ([]byte, error) {
@@ -50,8 +50,8 @@ func TestStartInstallsSystemdUnitAndStartsManagedDaemon(t *testing.T) {
 	}
 	text := string(data)
 	for _, want := range []string{
-		"Description=no-mistakes background daemon",
-		"ExecStart=/usr/local/bin/no-mistakes daemon run --root " + p.Root(),
+		"Description=gatehouse background daemon",
+		"ExecStart=/usr/local/bin/gatehouse daemon run --root " + p.Root(),
 		"WorkingDirectory=" + p.Root(),
 		"Environment=\"HOME=" + home + "\"",
 		"Restart=always",
@@ -93,7 +93,7 @@ func TestInstallSystemdUserServiceDoesNotRemoveLegacyUnitForDifferentRoot(t *tes
 		t.Fatal(err)
 	}
 	otherRoot := filepath.Join(t.TempDir(), "other-nm-home")
-	legacyUnit := renderSystemdUnit("/usr/local/bin/no-mistakes", paths.WithRoot(otherRoot), home)
+	legacyUnit := renderSystemdUnit("/usr/local/bin/gatehouse", paths.WithRoot(otherRoot), home)
 	if err := os.WriteFile(legacyPath, []byte(legacyUnit), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func TestInstallSystemdUserServiceDoesNotRemoveLegacyUnitForDifferentRoot(t *tes
 		return nil, nil
 	}
 
-	if err := installSystemdUserService(p, "/usr/local/bin/no-mistakes"); err != nil {
+	if err := installSystemdUserService(p, "/usr/local/bin/gatehouse"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(legacyPath); err != nil {
@@ -145,7 +145,7 @@ func TestInstallSystemdUserServiceKeepsLegacyUnitOnEnableFailure(t *testing.T) {
 		return nil, nil
 	}
 
-	err := installSystemdUserService(p, "/usr/local/bin/no-mistakes")
+	err := installSystemdUserService(p, "/usr/local/bin/gatehouse")
 	if err == nil {
 		t.Fatal("installSystemdUserService should fail when enable fails")
 	}
@@ -249,7 +249,7 @@ func TestRenderSystemdUnitForwardsProxyEnv(t *testing.T) {
 	t.Setenv("HTTPS_PROXY", "http://127.0.0.1:7897")
 	t.Setenv("NO_PROXY", "localhost,127.0.0.1")
 
-	unit := renderSystemdUnit("/usr/local/bin/no-mistakes", paths.WithRoot(t.TempDir()), "/home/u")
+	unit := renderSystemdUnit("/usr/local/bin/gatehouse", paths.WithRoot(t.TempDir()), "/home/u")
 	for _, want := range []string{
 		`Environment="HTTPS_PROXY=http://127.0.0.1:7897"`,
 		`Environment="NO_PROXY=localhost,127.0.0.1"`,
@@ -274,7 +274,7 @@ func TestRenderSystemdUnitForwardsEveryProxyEnvKey(t *testing.T) {
 		proxyEnv = append(proxyEnv, [2]string{key, "val-" + key})
 	}
 
-	unit := renderSystemdUnitWithProxyEnv("/usr/local/bin/no-mistakes", paths.WithRoot(t.TempDir()), "/home/u", proxyEnv)
+	unit := renderSystemdUnitWithProxyEnv("/usr/local/bin/gatehouse", paths.WithRoot(t.TempDir()), "/home/u", proxyEnv)
 	for _, key := range proxyEnvKeys {
 		want := `Environment="` + key + "=val-" + key + `"`
 		if !strings.Contains(unit, want) {
@@ -297,7 +297,7 @@ func TestRenderSystemdUnitEscapesPercentInProxyEnv(t *testing.T) {
 		{"HTTPS_PROXY", "http://user:p%40ss%3Aw0rd@proxy:8080"},
 	}
 
-	unit := renderSystemdUnitWithProxyEnv("/usr/local/bin/no-mistakes", paths.WithRoot(t.TempDir()), "/home/u", proxyEnv)
+	unit := renderSystemdUnitWithProxyEnv("/usr/local/bin/gatehouse", paths.WithRoot(t.TempDir()), "/home/u", proxyEnv)
 	want := `Environment="HTTPS_PROXY=http://user:p%%40ss%%3Aw0rd@proxy:8080"`
 	if !strings.Contains(unit, want) {
 		t.Fatalf("systemd unit should double %% in proxy env so it survives specifier expansion, want %q, got:\n%s", want, unit)

@@ -12,19 +12,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/logstore"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/logstore"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestMain(m *testing.M) {
-	switch os.Getenv("NM_DAEMON_HELPER_PROCESS") {
+	switch os.Getenv("GATEHOUSE_DAEMON_HELPER_PROCESS") {
 	case "1":
-		if capturePath := os.Getenv("NM_CAPTURE_NM_HOME_FILE"); capturePath != "" {
-			_ = os.WriteFile(capturePath, []byte(os.Getenv("NM_HOME")), 0o644)
+		if capturePath := os.Getenv("GATEHOUSE_CAPTURE_GATEHOUSE_HOME_FILE"); capturePath != "" {
+			_ = os.WriteFile(capturePath, []byte(os.Getenv("GATEHOUSE_HOME")), 0o644)
 		}
 		// Stay alive long enough for tests with a synthetic health transition
 		// to distinguish launch from readiness. The production exit regression
@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 		}
 		os.Exit(0)
 	case "capture-output":
-		p := paths.WithRoot(os.Getenv("NM_HOME"))
+		p := paths.WithRoot(os.Getenv("GATEHOUSE_HOME"))
 		if err := p.EnsureDirs(); err != nil {
 			os.Exit(2)
 		}
@@ -65,13 +65,13 @@ func TestMain(m *testing.M) {
 		}
 		os.Exit(0)
 	}
-	// The post-receive hook embeds os.Executable() as NM_BIN. In tests that
+	// The post-receive hook embeds os.Executable() as GATEHOUSE_BIN. In tests that
 	// path is the test binary itself, so every `git push` to a bare gate
 	// would re-enter TestMain and run the whole daemon test suite inside
 	// the hook. Short-circuit: when we're being invoked as the hook's
 	// notifier, exit 0 immediately. Tests that care about the daemon seeing
 	// the push call push_received via IPC directly.
-	if os.Getenv("NM_HOOK_HELPER") == "1" {
+	if os.Getenv("GATEHOUSE_HOOK_HELPER") == "1" {
 		os.Exit(0)
 	}
 	// Agent harnesses inject git config (e.g. safe.bareRepository=explicit)
@@ -262,7 +262,7 @@ func setupTestGitRepo(t *testing.T, p *paths.Paths, d *db.DB, repoID string) (*d
 		t.Fatal(err)
 	}
 	// Disable auto-fix so approval-based tests pause immediately.
-	if err := os.WriteFile(filepath.Join(workDir, ".no-mistakes.yaml"), []byte("auto_fix:\n  lint: 0\n  test: 0\n  review: 0\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(workDir, ".gatehouse.yaml"), []byte("auto_fix:\n  lint: 0\n  test: 0\n  review: 0\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	gitCmd(t, workDir, "add", ".")

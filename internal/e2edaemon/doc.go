@@ -1,4 +1,4 @@
-// Package e2edaemon owns isolated temporary no-mistakes process lifecycle:
+// Package e2edaemon owns isolated temporary gatehouse process lifecycle:
 // exact inventory, a reaper with bounded ownership checks, and a concurrency
 // slot cap.
 //

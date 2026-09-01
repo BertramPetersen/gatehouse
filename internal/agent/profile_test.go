@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/agentcfg"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agentcfg"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // nativeExtraArgs recovers the argv fragment a constructed native adapter will

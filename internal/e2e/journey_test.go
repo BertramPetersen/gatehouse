@@ -14,24 +14,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/daemon"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/daemon"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // TestUserJourney is the consolidated end-to-end test. It walks through
 // the full pipeline once per agent, exercising:
 //
-//   - `no-mistakes init` (gate setup, daemon bootstrap, post-receive
+//   - `gatehouse init` (gate setup, daemon bootstrap, post-receive
 //     hook installation)
-//   - `git push no-mistakes <branch>` (real git transport, hook fires,
+//   - `git push gatehouse <branch>` (real git transport, hook fires,
 //     daemon receives push notification)
 //   - the eight pipeline steps in sequence (rebase, review, test,
 //     document, lint, push, pr, ci)
 //   - real subprocess invocations of the agent binary, parsed by
-//     no-mistakes' real agent package
+//     gatehouse' real agent package
 //   - SQLite persistence and IPC retrieval of run state
 //
 // PR and CI steps gracefully skip because the upstream is a local file://
@@ -67,7 +67,7 @@ func TestAXIControlByteFailureGateRemainsReadable(t *testing.T) {
 		t.Fatalf("write control-byte test command: %v", err)
 	}
 	config := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  test: nm-control-byte-test-e2e\n  lint: true\n"
-	h.CommitChange("control-byte-test-gate", ".no-mistakes.yaml", config, "configure control-byte test failure")
+	h.CommitChange("control-byte-test-gate", ".gatehouse.yaml", config, "configure control-byte test failure")
 	h.PushToGate("control-byte-test-gate")
 	run := waitForStepStatus(t, h, "control-byte-test-gate", types.StepTest, types.StepStatusAwaitingApproval, 60*time.Second)
 
@@ -170,7 +170,7 @@ func runHappyPath(t *testing.T, agentName string) {
 		t.Fatalf("init worktree branch changed before init")
 	}
 
-	// `no-mistakes init` sets up the gate and starts the daemon.
+	// `gatehouse init` sets up the gate and starts the daemon.
 	out, err := h.RunInDir(initWorktree, "init")
 	if err != nil {
 		t.Fatalf("nm init from worktree: %v\n%s", err, out)
@@ -549,7 +549,7 @@ func assertRootVersion(t *testing.T, h *Harness) {
 	if err != nil {
 		t.Fatalf("nm --version: %v\n%s", err, out)
 	}
-	if !strings.HasPrefix(out, "no-mistakes version ") {
+	if !strings.HasPrefix(out, "gatehouse version ") {
 		t.Errorf("version output should include command name and version prefix, got %q", out)
 	}
 	if !strings.Contains(out, "(unknown) unknown") {
@@ -627,8 +627,8 @@ func assertDoctorMissingSystemDeps(t *testing.T, h *Harness) {
 	t.Helper()
 	missingHome := filepath.Join(t.TempDir(), "missing-nm-home")
 	out, err := h.RunInDirWithEnv(h.WorkDir, map[string]string{
-		"NM_HOME": missingHome,
-		"PATH":    "/nonexistent",
+		"GATEHOUSE_HOME": missingHome,
+		"PATH":           "/nonexistent",
 	}, "doctor")
 	if err != nil {
 		t.Fatalf("nm doctor with missing system deps should not exit non-zero: %v\n%s", err, out)
@@ -835,7 +835,7 @@ func assertInitOutput(t *testing.T, h *Harness, out string) {
 	if path, err := filepath.EvalSymlinks(h.WorkDir); err == nil {
 		resolved = path
 	}
-	for _, want := range []string{resolved, "git push no-mistakes", "|__| |_/", "Gate initialized"} {
+	for _, want := range []string{resolved, "git push gatehouse", "|__| |_/", "Gate initialized"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("init output should contain %q, got:\n%s", want, out)
 		}
@@ -881,7 +881,7 @@ func assertRunsEmpty(t *testing.T, h *Harness) {
 	if err != nil {
 		t.Fatalf("nm runs before push: %v\n%s", err, out)
 	}
-	for _, want := range []string{"no runs", "git push no-mistakes <branch>"} {
+	for _, want := range []string{"no runs", "git push gatehouse <branch>"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("runs output should contain %q before any push, got:\n%s", want, out)
 		}
@@ -914,7 +914,7 @@ func assertRootNoActiveRun(t *testing.T, h *Harness) {
 	if err != nil {
 		t.Fatalf("bare nm before push: %v\n%s", err, out)
 	}
-	for _, want := range []string{"No active run", "git push no-mistakes"} {
+	for _, want := range []string{"No active run", "git push gatehouse"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("bare nm output should contain %q before any push, got:\n%s", want, out)
 		}
@@ -947,7 +947,7 @@ func assertRootNoActiveRunOnOtherBranch(t *testing.T, h *Harness, activeRun *ipc
 	if err != nil {
 		t.Fatalf("bare nm on main while %s is active: %v\n%s", activeRun.Branch, err, out)
 	}
-	for _, want := range []string{"No active run", "Recent runs", activeRun.Branch, string(activeRun.Status), "git push no-mistakes"} {
+	for _, want := range []string{"No active run", "Recent runs", activeRun.Branch, string(activeRun.Status), "git push gatehouse"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("bare nm output should contain %q while another branch is active, got:\n%s", want, out)
 		}
@@ -964,7 +964,7 @@ func assertRootRecentRuns(t *testing.T, h *Harness, run *ipc.RunInfo) {
 	if len(sha) > 8 {
 		sha = sha[:8]
 	}
-	for _, want := range []string{"No active run", "Recent runs", run.Branch, string(run.Status), sha, "git push no-mistakes"} {
+	for _, want := range []string{"No active run", "Recent runs", run.Branch, string(run.Status), sha, "git push gatehouse"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("bare nm output should contain %q after completed pipeline, got:\n%s", want, out)
 		}
@@ -1075,7 +1075,7 @@ func assertAgentEditCommitRun(t *testing.T, h *Harness) {
 	}
 	h.CommitChange("agent-edits", "agent-edits.txt", "feature before agent\n", "add agent-edits branch")
 	config := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  format: \"nm-format-e2e\"\n"
-	originalHead := h.CommitChange("agent-edits", ".no-mistakes.yaml", config, "configure formatter")
+	originalHead := h.CommitChange("agent-edits", ".gatehouse.yaml", config, "configure formatter")
 	h.PushToGate("agent-edits")
 	run := h.WaitForRun("agent-edits", 60*time.Second)
 	if run.Status != types.RunCompleted {
@@ -1099,7 +1099,7 @@ func assertAgentEditCommitRun(t *testing.T, h *Harness) {
 	if err != nil {
 		t.Fatalf("read agent-edits upstream commit message: %v\n%s", err, message)
 	}
-	if strings.TrimSpace(string(message)) != "no-mistakes: apply agent fixes" {
+	if strings.TrimSpace(string(message)) != "gatehouse: apply agent fixes" {
 		t.Fatalf("agent-edits upstream commit message = %q", strings.TrimSpace(string(message)))
 	}
 	contents, err := h.runGit(ctx, h.UpstreamDir, "show", "refs/heads/agent-edits:agent-edit.txt")
@@ -1122,7 +1122,7 @@ func assertFormatFailureWarningRun(t *testing.T, h *Harness) {
 	t.Helper()
 	h.CommitChange("format-fails", "format-fails.txt", "feature with failing formatter\n", "add format-fails branch")
 	config := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  format: \"exit 1\"\n"
-	h.CommitChange("format-fails", ".no-mistakes.yaml", config, "configure failing formatter")
+	h.CommitChange("format-fails", ".gatehouse.yaml", config, "configure failing formatter")
 	h.PushToGate("format-fails")
 	run := h.WaitForRun("format-fails", 60*time.Second)
 	if run.Status != types.RunCompleted {
@@ -1315,7 +1315,7 @@ func assertGateRefDeletionDoesNotCreateRun(t *testing.T, h *Harness, branch stri
 	before := h.Runs()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	out, err := h.runGit(ctx, h.WorkDir, "push", "no-mistakes", ":"+branch)
+	out, err := h.runGit(ctx, h.WorkDir, "push", "gatehouse", ":"+branch)
 	if err != nil {
 		t.Fatalf("delete gate branch %s should not fail git push: %v\n%s", branch, err, out)
 	}
@@ -1343,7 +1343,7 @@ func assertConfiguredCommandRun(t *testing.T, h *Harness) {
 		t.Fatalf("write e2e lint command: %v", err)
 	}
 	config := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  test: nm-test-e2e\n  lint: nm-lint-e2e\n"
-	head := h.CommitChange("configured-commands", ".no-mistakes.yaml", config, "enable configured checks")
+	head := h.CommitChange("configured-commands", ".gatehouse.yaml", config, "enable configured checks")
 	h.PushToGate("configured-commands")
 	run := h.WaitForRun("configured-commands", 60*time.Second)
 	if run.Status != types.RunCompleted {
@@ -1648,7 +1648,7 @@ func assertExplicitAttachUsesRepoWideActiveRun(t *testing.T, h *Harness) {
 	if err := os.WriteFile(slowCommand, []byte("#!/bin/sh\nsleep 60\n"), 0o755); err != nil {
 		t.Fatalf("write explicit attach slow test command: %v", err)
 	}
-	h.CommitChange("explicit-attach-active", ".no-mistakes.yaml", config, "configure explicit attach slow test")
+	h.CommitChange("explicit-attach-active", ".gatehouse.yaml", config, "configure explicit attach slow test")
 	h.PushToGate("explicit-attach-active")
 	run := waitForStepStatus(t, h, "explicit-attach-active", types.StepTest, types.StepStatusRunning, 60*time.Second)
 	if repoWide := h.ActiveRun(""); repoWide == nil || repoWide.ID != run.ID {
@@ -2012,7 +2012,7 @@ func assertSupersededRunCancellation(t *testing.T, h *Harness) {
 		t.Fatalf("write superseded slow test command: %v", err)
 	}
 	config := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  test: nm-superseded-test-e2e\n  lint: true\n"
-	h.CommitChange("superseded-run", ".no-mistakes.yaml", config, "configure superseded slow test")
+	h.CommitChange("superseded-run", ".gatehouse.yaml", config, "configure superseded slow test")
 	h.PushToGate("superseded-run")
 	first := waitForStepStatus(t, h, "superseded-run", types.StepTest, types.StepStatusRunning, 60*time.Second)
 	if err := os.WriteFile(slowCommand, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
@@ -2040,11 +2040,11 @@ func assertDifferentBranchDoesNotCancelActiveRun(t *testing.T, h *Harness) {
 		t.Fatalf("write different-branch slow test command: %v", err)
 	}
 	slowConfig := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  test: nm-different-branch-slow-e2e\n  lint: true\n"
-	h.CommitChange("different-branch-slow", ".no-mistakes.yaml", slowConfig, "configure different-branch slow test")
+	h.CommitChange("different-branch-slow", ".gatehouse.yaml", slowConfig, "configure different-branch slow test")
 	h.PushToGate("different-branch-slow")
 	slowRun := waitForStepStatus(t, h, "different-branch-slow", types.StepTest, types.StepStatusRunning, 60*time.Second)
 	fastConfig := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  test: true\n  lint: true\n"
-	h.CommitChange("different-branch-fast", ".no-mistakes.yaml", fastConfig, "configure different-branch fast checks")
+	h.CommitChange("different-branch-fast", ".gatehouse.yaml", fastConfig, "configure different-branch fast checks")
 	h.PushToGate("different-branch-fast")
 	fastRun := h.WaitForRun("different-branch-fast", 60*time.Second)
 	if fastRun.Status != types.RunCompleted {
@@ -2071,7 +2071,7 @@ func assertCancelRunStopsActivePipeline(t *testing.T, h *Harness) {
 		t.Fatalf("write cancel slow test command: %v", err)
 	}
 	config := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  test: nm-cancel-test-e2e\n  lint: true\n"
-	h.CommitChange("cancel-run", ".no-mistakes.yaml", config, "configure cancel slow test")
+	h.CommitChange("cancel-run", ".gatehouse.yaml", config, "configure cancel slow test")
 	h.PushToGate("cancel-run")
 	run := waitForStepStatus(t, h, "cancel-run", types.StepTest, types.StepStatusRunning, 60*time.Second)
 	h.CancelRun(run.ID)
@@ -2092,7 +2092,7 @@ func assertAbortByRunIDReapsRunFromOutsideWorktree(t *testing.T, h *Harness) {
 		t.Fatalf("write abort-by-id slow test command: %v", err)
 	}
 	config := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  test: nm-abort-byid-test-e2e\n  lint: true\n"
-	h.CommitChange("abort-by-id", ".no-mistakes.yaml", config, "configure abort-by-id slow test")
+	h.CommitChange("abort-by-id", ".gatehouse.yaml", config, "configure abort-by-id slow test")
 	h.PushToGate("abort-by-id")
 	run := waitForStepStatus(t, h, "abort-by-id", types.StepTest, types.StepStatusRunning, 60*time.Second)
 
@@ -2128,7 +2128,7 @@ func assertRespondNoWaitingStepRun(t *testing.T, h *Harness) {
 		t.Fatalf("write slow e2e test command: %v", err)
 	}
 	config := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  test: nm-slow-test-e2e\n  lint: true\n"
-	h.CommitChange("respond-no-waiting", ".no-mistakes.yaml", config, "configure slow test command")
+	h.CommitChange("respond-no-waiting", ".gatehouse.yaml", config, "configure slow test command")
 	h.PushToGate("respond-no-waiting")
 	run := waitForStepStatus(t, h, "respond-no-waiting", types.StepTest, types.StepStatusRunning, 60*time.Second)
 	err := h.RespondError(run.ID, types.StepTest, types.ActionApprove)
@@ -2151,7 +2151,7 @@ func assertFailingTestCommandRun(t *testing.T, h *Harness) {
 		t.Fatalf("write failing e2e test command: %v", err)
 	}
 	config := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  test: nm-test-fails-e2e\n  lint: true\n"
-	h.CommitChange("failing-test-command", ".no-mistakes.yaml", config, "configure failing test command")
+	h.CommitChange("failing-test-command", ".gatehouse.yaml", config, "configure failing test command")
 	h.PushToGate("failing-test-command")
 	run := waitForStepStatus(t, h, "failing-test-command", types.StepTest, types.StepStatusAwaitingApproval, 60*time.Second)
 	testStep, ok := findStep(run.Steps, types.StepTest)
@@ -2218,7 +2218,7 @@ func assertFailingLintCommandRun(t *testing.T, h *Harness) {
 		t.Fatalf("write failing e2e lint command: %v", err)
 	}
 	config := "ignore_patterns:\n  - '*.generated.go'\n  - 'vendor/**'\ncommands:\n  test: true\n  lint: nm-lint-fails-e2e\n"
-	h.CommitChange("failing-lint-command", ".no-mistakes.yaml", config, "configure failing lint command")
+	h.CommitChange("failing-lint-command", ".gatehouse.yaml", config, "configure failing lint command")
 	h.PushToGate("failing-lint-command")
 	run := waitForStepStatus(t, h, "failing-lint-command", types.StepLint, types.StepStatusAwaitingApproval, 60*time.Second)
 	lintStep, ok := findStep(run.Steps, types.StepLint)
@@ -2513,7 +2513,7 @@ func assertRootDefaultsToHistory(t *testing.T, h *Harness) {
 	if strings.Contains(out, "oldest/skipped") {
 		t.Fatalf("oldest root history run should be omitted once recent-runs limit is hit, got:\n%s", out)
 	}
-	if !strings.Contains(out, "more - run 'no-mistakes runs' to see all") {
+	if !strings.Contains(out, "more - run 'gatehouse runs' to see all") {
 		t.Fatalf("expected root history overflow hint, got:\n%s", out)
 	}
 }
@@ -2575,21 +2575,21 @@ func assertStatusInitializedStopped(t *testing.T, h *Harness) {
 
 func assertGateRemotePresent(t *testing.T, h *Harness) {
 	t.Helper()
-	out, err := h.runGit(context.Background(), h.WorkDir, "remote", "get-url", "no-mistakes")
+	out, err := h.runGit(context.Background(), h.WorkDir, "remote", "get-url", "gatehouse")
 	if err != nil {
-		t.Fatalf("no-mistakes remote not found: %v\n%s", err, out)
+		t.Fatalf("gatehouse remote not found: %v\n%s", err, out)
 	}
 	want := filepath.Join(h.NMHome, "repos", h.repoID()+".git")
 	if strings.TrimSpace(string(out)) != want {
-		t.Errorf("no-mistakes remote URL = %q, want %q", strings.TrimSpace(string(out)), want)
+		t.Errorf("gatehouse remote URL = %q, want %q", strings.TrimSpace(string(out)), want)
 	}
 }
 
 func assertGateRemoteAbsent(t *testing.T, h *Harness) {
 	t.Helper()
-	out, err := h.runGit(context.Background(), h.WorkDir, "remote", "get-url", "no-mistakes")
+	out, err := h.runGit(context.Background(), h.WorkDir, "remote", "get-url", "gatehouse")
 	if err == nil {
-		t.Fatalf("no-mistakes remote should have been removed after eject, got %s", out)
+		t.Fatalf("gatehouse remote should have been removed after eject, got %s", out)
 	}
 }
 

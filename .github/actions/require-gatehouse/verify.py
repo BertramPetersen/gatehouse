@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Enforce that a pull request was raised through the no-mistakes pipeline.
+"""Enforce that a pull request was raised through the gatehouse pipeline.
 
 This is the single shared implementation of the `PR must be raised via
-no-mistakes` gate. Enforcing repositories can call the `require-no-mistakes`
+gatehouse` gate. Enforcing repositories can call the `require-gatehouse`
 composite action instead of copying this logic into their own workflows; the
 inline copies drifted (several fleet copies never gained the head_sha bind),
 which is exactly what this file exists to prevent.
 
 The verdict is a pure function of the pull request body plus the PR head SHA:
 
-  1. the body carries the no-mistakes signature line;
+  1. the body carries the gatehouse signature line;
   2. the body carries a parseable v1 pipeline-step attestation comment;
   3. the attestation's head_sha equals the current PR head SHA, so a later push
      cannot pass on an older attestation;
@@ -40,9 +40,9 @@ import os
 import sys
 
 SIGNATURE_MARKER = (
-    "Updates from [git push no-mistakes](https://github.com/kunchenguid/no-mistakes)"
+    "Updates from [git push gatehouse](https://github.com/BertramPetersen/gatehouse)"
 )
-ATTESTATION_PREFIX = "<!-- no-mistakes-pipeline-attestation:v1 "
+ATTESTATION_PREFIX = "<!-- gatehouse-pipeline-attestation:v1 "
 ATTESTATION_CLOSING = " -->"
 
 # Fixed on purpose: these are the steps whose completion the gate certifies. A
@@ -51,6 +51,9 @@ ATTESTATION_CLOSING = " -->"
 REQUIRED_STEPS = ("review", "test", "document")
 
 VERSION_FLOOR = "1.46.0"
+# The v1 pipeline-step attestation format originated in the upstream project this
+# one forked from, so the version floor cites that PR: it is where the format
+# landed, and the link resolves. Do not rewrite it to a local PR number.
 VERSION_FLOOR_PR = "https://github.com/kunchenguid/no-mistakes/pull/670"
 
 
@@ -130,14 +133,14 @@ def _payload_str(payload: dict, key: str) -> str:
 
 def exemption_reason(facts: Facts) -> str:
     """Return why this PR is exempt from the gate, or "" when it is not."""
-    authors = parse_list(os.environ.get("NM_EXEMPT_AUTHORS") or "")
+    authors = parse_list(os.environ.get("GATEHOUSE_EXEMPT_AUTHORS") or "")
     if facts.author and facts.author in authors:
         return f"author {facts.author} is a configured exempt author"
 
-    if parse_bool(os.environ.get("NM_EXEMPT_BOT_AUTHORS") or "") and facts.author.endswith("[bot]"):
+    if parse_bool(os.environ.get("GATEHOUSE_EXEMPT_BOT_AUTHORS") or "") and facts.author.endswith("[bot]"):
         return f"author {facts.author} is a bot and bot authors are exempt"
 
-    for pattern in parse_list(os.environ.get("NM_EXEMPT_HEAD_BRANCHES") or ""):
+    for pattern in parse_list(os.environ.get("GATEHOUSE_EXEMPT_HEAD_BRANCHES") or ""):
         if facts.head_ref and fnmatch.fnmatchcase(facts.head_ref, pattern):
             return f"head branch {facts.head_ref} matches exempt pattern {pattern}"
 
@@ -148,8 +151,8 @@ def check_signature(facts: Facts) -> None:
     if SIGNATURE_MARKER in facts.body:
         return
     fail(
-        "::error::This PR was not raised through no-mistakes.\n\n"
-        "Contributions to this repository must be submitted via 'git push no-mistakes'.\n"
+        "::error::This PR was not raised through gatehouse.\n\n"
+        "Contributions to this repository must be submitted via 'git push gatehouse'.\n"
         "That pipeline runs the required review/test/lint/CI steps and writes a\n"
         "deterministic '## Pipeline' section into the PR body containing:\n\n"
         f"    {SIGNATURE_MARKER}\n\n"
@@ -161,12 +164,12 @@ def check_signature(facts: Facts) -> None:
 def fail_missing_attestation(facts: Facts) -> "NoReturn":  # type: ignore[name-defined]
     fail(
         "::error::This PR is missing structured pipeline step attestation.\n\n"
-        f"This repository requires no-mistakes >= {VERSION_FLOOR} "
+        f"This repository requires gatehouse >= {VERSION_FLOOR} "
         f"({VERSION_FLOOR_PR}). "
-        "Older no-mistakes that only writes the signature line is not enough.\n\n"
+        "Older gatehouse that only writes the signature line is not enough.\n\n"
         "The PR body must include a comment of the form:\n"
-        '    <!-- no-mistakes-pipeline-attestation:v1 {"head_sha":"...","steps":[...]} -->\n\n'
-        "Contributions to this repository must be submitted via 'git push no-mistakes'.\n"
+        '    <!-- gatehouse-pipeline-attestation:v1 {"head_sha":"...","steps":[...]} -->\n\n'
+        "Contributions to this repository must be submitted via 'git push gatehouse'.\n"
         "See CONTRIBUTING.md for setup and the full workflow.\n\n"
         f"PR author: {facts.author}\n"
     )
@@ -205,7 +208,7 @@ def check_head_bind(facts: Facts, attested_head: str) -> None:
         f"attestation.head_sha: {attested_head or '(missing)'}\n"
         f"PR head: {facts.head_sha or '(missing)'}\n\n"
         "A later push must not pass on an older attestation. "
-        "Re-run 'git push no-mistakes' so the PR body attestation binds to the current head.\n\n"
+        "Re-run 'git push gatehouse' so the PR body attestation binds to the current head.\n\n"
         "See CONTRIBUTING.md for setup and the full workflow.\n\n"
         f"PR author: {facts.author}\n"
     )
@@ -236,11 +239,11 @@ def check_required_steps(facts: Facts, steps: list) -> None:
         return
     listed = ", ".join(incomplete)
     fail(
-        f"::error::Required no-mistakes pipeline steps are not completed: {listed}.\n\n"
+        f"::error::Required gatehouse pipeline steps are not completed: {listed}.\n\n"
         "This repository requires "
         f"{', '.join(REQUIRED_STEPS)} to have status=completed. "
         "Quota skips and agent skips are not compliant.\n\n"
-        "Contributions to this repository must be submitted via 'git push no-mistakes'.\n"
+        "Contributions to this repository must be submitted via 'git push gatehouse'.\n"
         "See CONTRIBUTING.md for setup and the full workflow.\n\n"
         f"PR author: {facts.author}\n"
     )
@@ -251,7 +254,7 @@ def main() -> int:
 
     reason = exemption_reason(facts)
     if reason:
-        print(f"Skipping no-mistakes enforcement: {reason}.")
+        print(f"Skipping gatehouse enforcement: {reason}.")
         emit_output("exempt", "true")
         emit_output("exempt-reason", reason)
         # Exemption is an explicit caller policy, not evidence that the PR ran
@@ -263,7 +266,7 @@ def main() -> int:
 
     check_signature(facts)
     label = f"PR #{facts.number}" if facts.number else "PR"
-    print(f"Found no-mistakes signature in {label} body.")
+    print(f"Found gatehouse signature in {label} body.")
 
     payload = parse_attestation(facts)
     check_head_bind(facts, payload["head_sha"])
@@ -272,7 +275,7 @@ def main() -> int:
     print("Found structurally compliant pipeline step attestation.")
     print(
         "::warning::PR-body attestation is author-editable and is not cryptographic proof "
-        "that no-mistakes produced it."
+        "that gatehouse produced it."
     )
     emit_output("compliant", "true")
     return 0

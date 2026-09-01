@@ -519,8 +519,8 @@ func TestClaudeAgent_LargePromptUsesExactStdinForColdAndResumedRuns(t *testing.T
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			observationPath := filepath.Join(t.TempDir(), "observation.json")
-			t.Setenv("NM_CLAUDE_STDIN_HELPER", "read")
-			t.Setenv("NM_CLAUDE_STDIN_OBSERVATION", observationPath)
+			t.Setenv("GATEHOUSE_CLAUDE_STDIN_HELPER", "read")
+			t.Setenv("GATEHOUSE_CLAUDE_STDIN_OBSERVATION", observationPath)
 			a := newClaudeStdinHelperAgent(t)
 			opts := RunOpts{Prompt: prompt, CWD: t.TempDir(), JSONSchema: schema}
 			if tc.sessionID != "" {
@@ -573,7 +573,7 @@ func TestClaudeAgent_LargePromptUsesExactStdinForColdAndResumedRuns(t *testing.T
 }
 
 func TestClaudeAgent_EarlyExitWithoutReadingLargeStdinDoesNotLeakGoroutines(t *testing.T) {
-	t.Setenv("NM_CLAUDE_STDIN_HELPER", "exit-early")
+	t.Setenv("GATEHOUSE_CLAUDE_STDIN_HELPER", "exit-early")
 	a := newClaudeStdinHelperAgent(t)
 	prompt := strings.Repeat("e", 2*1024*1024)
 	before := runtime.NumGoroutine()
@@ -602,10 +602,10 @@ func TestClaudeAgent_EarlyExitWithoutReadingLargeStdinDoesNotLeakGoroutines(t *t
 func TestClaudeAgent_CancellationWithBlockedStdinAndInheritedPipesIsBounded(t *testing.T) {
 	for _, mode := range []string{"block", "spawn-grandchild"} {
 		t.Run(mode, func(t *testing.T) {
-			t.Setenv("NM_CLAUDE_STDIN_HELPER", mode)
+			t.Setenv("GATEHOUSE_CLAUDE_STDIN_HELPER", mode)
 			ready := filepath.Join(t.TempDir(), "ready")
-			t.Setenv("NM_CLAUDE_STDIN_READY", ready)
-			t.Setenv("NM_CLAUDE_STDIN_PID", filepath.Join(t.TempDir(), "grandchild.pid"))
+			t.Setenv("GATEHOUSE_CLAUDE_STDIN_READY", ready)
+			t.Setenv("GATEHOUSE_CLAUDE_STDIN_PID", filepath.Join(t.TempDir(), "grandchild.pid"))
 			a := newClaudeStdinHelperAgent(t)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -643,7 +643,7 @@ func newClaudeStdinHelperAgent(t *testing.T) *claudeAgent {
 }
 
 func TestClaudeStdinHelper(t *testing.T) {
-	mode := os.Getenv("NM_CLAUDE_STDIN_HELPER")
+	mode := os.Getenv("GATEHOUSE_CLAUDE_STDIN_HELPER")
 	if mode == "" {
 		return
 	}
@@ -652,20 +652,20 @@ func TestClaudeStdinHelper(t *testing.T) {
 	case "exit-early":
 		os.Exit(0)
 	case "block":
-		_ = os.WriteFile(os.Getenv("NM_CLAUDE_STDIN_READY"), []byte("ready"), 0o644)
+		_ = os.WriteFile(os.Getenv("GATEHOUSE_CLAUDE_STDIN_READY"), []byte("ready"), 0o644)
 		for {
 			time.Sleep(time.Second)
 		}
 	case "spawn-grandchild":
 		child := exec.Command(os.Args[0], "-test.run=^TestClaudeStdinHelper$")
-		child.Env = append(os.Environ(), "NM_CLAUDE_STDIN_HELPER=grandchild")
+		child.Env = append(os.Environ(), "GATEHOUSE_CLAUDE_STDIN_HELPER=grandchild")
 		child.Stdout = os.Stdout
 		child.Stderr = os.Stderr
 		if err := child.Start(); err != nil {
 			os.Exit(2)
 		}
-		_ = os.WriteFile(os.Getenv("NM_CLAUDE_STDIN_PID"), []byte(strconv.Itoa(child.Process.Pid)), 0o644)
-		_ = os.WriteFile(os.Getenv("NM_CLAUDE_STDIN_READY"), []byte("ready"), 0o644)
+		_ = os.WriteFile(os.Getenv("GATEHOUSE_CLAUDE_STDIN_PID"), []byte(strconv.Itoa(child.Process.Pid)), 0o644)
+		_ = os.WriteFile(os.Getenv("GATEHOUSE_CLAUDE_STDIN_READY"), []byte("ready"), 0o644)
 		emitClaudeHelperResult()
 		return
 	case "grandchild":
@@ -685,7 +685,7 @@ func TestClaudeStdinHelper(t *testing.T) {
 			EOF:    true,
 		}
 		data, _ := json.Marshal(observation)
-		if err := os.WriteFile(os.Getenv("NM_CLAUDE_STDIN_OBSERVATION"), data, 0o644); err != nil {
+		if err := os.WriteFile(os.Getenv("GATEHOUSE_CLAUDE_STDIN_OBSERVATION"), data, 0o644); err != nil {
 			os.Exit(4)
 		}
 		emitClaudeHelperResult()

@@ -13,13 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/safeurl"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/safeurl"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	"gopkg.in/yaml.v3"
 )
 
@@ -52,17 +52,17 @@ func portableRound(round *db.StepRound, stepName types.StepName) sourceRound {
 }
 
 type sourceRun struct {
-	ID                 string `json:"id"`
-	Branch             string `json:"branch"`
-	HeadSHA            string `json:"head_sha"`
-	BaseSHA            string `json:"base_sha"`
-	Status             string `json:"status"`
-	Intent             string `json:"intent,omitempty"`
-	IntentSource       string `json:"intent_source,omitempty"`
-	NoMistakesVersion  string `json:"no_mistakes_version,omitempty"`
-	NoMistakesBuildSHA string `json:"no_mistakes_build_sha,omitempty"`
-	CreatedAt          int64  `json:"created_at"`
-	UpdatedAt          int64  `json:"updated_at"`
+	ID                string `json:"id"`
+	Branch            string `json:"branch"`
+	HeadSHA           string `json:"head_sha"`
+	BaseSHA           string `json:"base_sha"`
+	Status            string `json:"status"`
+	Intent            string `json:"intent,omitempty"`
+	IntentSource      string `json:"intent_source,omitempty"`
+	GatehouseVersion  string `json:"gatehouse_version,omitempty"`
+	GatehouseBuildSHA string `json:"gatehouse_build_sha,omitempty"`
+	CreatedAt         int64  `json:"created_at"`
+	UpdatedAt         int64  `json:"updated_at"`
 }
 
 type sourceStep struct {
@@ -246,11 +246,11 @@ func Capture(ctx context.Context, store *Store, p *paths.Paths, database *db.DB,
 		if run.IntentSource != nil {
 			manifest.IntentSource = *run.IntentSource
 		}
-		if run.NoMistakesVersion != nil {
-			manifest.VersionAtCapture = *run.NoMistakesVersion
+		if run.GatehouseVersion != nil {
+			manifest.VersionAtCapture = *run.GatehouseVersion
 		}
-		if run.NoMistakesBuildSHA != nil {
-			manifest.BuildSHA = *run.NoMistakesBuildSHA
+		if run.GatehouseBuildSHA != nil {
+			manifest.BuildSHA = *run.GatehouseBuildSHA
 		}
 		baseline := baselineForRound(invocations, round.Round)
 		c := Case{Manifest: manifest, Labels: labels, Decision: decision, Baseline: baseline, Dir: caseDir}
@@ -293,14 +293,14 @@ func repoConfigAt(ctx context.Context, gateDir, sha string) (*config.RepoConfig,
 	if _, err := git.ResolveRef(ctx, gateDir, sha); err != nil {
 		return nil, err
 	}
-	entry, err := git.Run(ctx, gateDir, "ls-tree", sha, "--", ".no-mistakes.yaml")
+	entry, err := git.Run(ctx, gateDir, "ls-tree", sha, "--", ".gatehouse.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("inspect repository config: %w", err)
 	}
 	if strings.TrimSpace(entry) == "" {
 		return &config.RepoConfig{}, nil
 	}
-	content, err := git.ShowFile(ctx, gateDir, sha, ".no-mistakes.yaml")
+	content, err := git.ShowFile(ctx, gateDir, sha, ".gatehouse.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("read repository config: %w", err)
 	}
@@ -397,11 +397,11 @@ func sourceRunFor(run *db.Run) sourceRun {
 	if run.IntentSource != nil {
 		out.IntentSource = *run.IntentSource
 	}
-	if run.NoMistakesVersion != nil {
-		out.NoMistakesVersion = *run.NoMistakesVersion
+	if run.GatehouseVersion != nil {
+		out.GatehouseVersion = *run.GatehouseVersion
 	}
-	if run.NoMistakesBuildSHA != nil {
-		out.NoMistakesBuildSHA = *run.NoMistakesBuildSHA
+	if run.GatehouseBuildSHA != nil {
+		out.GatehouseBuildSHA = *run.GatehouseBuildSHA
 	}
 	return out
 }

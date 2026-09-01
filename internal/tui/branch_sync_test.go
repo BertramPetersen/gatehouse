@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/BertramPetersen/gatehouse/internal/branchsync"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/kunchenguid/no-mistakes/internal/branchsync"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/types"
 )
 
 func TestBranchSyncActionRefreshesBeforeConfirmationAndAppliesThroughSharedPath(t *testing.T) {
@@ -18,7 +18,7 @@ func TestBranchSyncActionRefreshesBeforeConfirmationAndAppliesThroughSharedPath(
 		Local:      branchsync.LocalState{Branch: "feature", Head: strings.Repeat("a", 40), Clean: true},
 		Pipeline:   branchsync.PipelineState{RunID: "run-1", PushedHead: strings.Repeat("b", 40)},
 		Target:     branchsync.TargetState{Kind: "fork", Remote: "fork", Ref: "refs/heads/feature"},
-		NextAction: &branchsync.NextAction{Code: "sync", Command: "no-mistakes axi sync"},
+		NextAction: &branchsync.NextAction{Code: "sync", Command: "gatehouse axi sync"},
 	}
 	m.branchSync = &cached
 	refreshCalls := 0
@@ -82,7 +82,7 @@ func TestLocalBranchStatusIsCompactAndOnlyOffersEligibleAction(t *testing.T) {
 	if !strings.Contains(view, "diverged") || strings.Contains(view, "u sync branch") {
 		t.Fatalf("diverged view:\n%s", view)
 	}
-	state.NextAction = &branchsync.NextAction{Code: "sync", Command: "no-mistakes axi sync"}
+	state.NextAction = &branchsync.NextAction{Code: "sync", Command: "gatehouse axi sync"}
 	view = stripANSI(renderLocalBranchStatus(&state, false, 80))
 	if !strings.Contains(view, "equivalent work") || !strings.Contains(view, "u sync branch") {
 		t.Fatalf("equivalent candidate view:\n%s", view)
@@ -101,7 +101,7 @@ func TestBranchSyncActionRefreshesEquivalentDivergedBeforeConfirmation(t *testin
 		Local:      branchsync.LocalState{Branch: "feature", Head: strings.Repeat("a", 40), Clean: true},
 		Pipeline:   branchsync.PipelineState{RunID: "run-1", PushedHead: strings.Repeat("b", 40)},
 		Target:     branchsync.TargetState{Kind: "fork", Remote: "fork", Ref: "refs/heads/feature"},
-		NextAction: &branchsync.NextAction{Code: "sync", Command: "no-mistakes axi sync"},
+		NextAction: &branchsync.NextAction{Code: "sync", Command: "gatehouse axi sync"},
 	}
 	m.branchSync = &cached
 	refreshCalls := 0

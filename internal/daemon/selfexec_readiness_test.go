@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 func TestStartDetachedDaemonDetectsChildExitPromptly(t *testing.T) {
@@ -19,10 +19,10 @@ func TestStartDetachedDaemonDetectsChildExitPromptly(t *testing.T) {
 	if err := p.EnsureDirs(); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("NM_TEST_START_DAEMON", "1")
-	t.Setenv("NM_DAEMON_HELPER_PROCESS", "exit")
-	t.Setenv("NM_TEST_DAEMON_START_TIMEOUT", "3s")
-	t.Setenv("NM_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
+	t.Setenv("GATEHOUSE_TEST_START_DAEMON", "1")
+	t.Setenv("GATEHOUSE_DAEMON_HELPER_PROCESS", "exit")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_TIMEOUT", "3s")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
 
 	oldHealth := daemonHealthCheck
 	daemonHealthCheck = func(*paths.Paths) (bool, error) { return false, nil }
@@ -60,11 +60,11 @@ func TestWaitForManagedDaemonStartDetectsPublishedChildExit(t *testing.T) {
 	if err := p.EnsureDirs(); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("NM_TEST_DAEMON_START_TIMEOUT", "3s")
-	t.Setenv("NM_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_TIMEOUT", "3s")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
 
 	cmd := exec.Command(os.Args[0])
-	cmd.Env = append(os.Environ(), "NM_DAEMON_HELPER_PROCESS=block")
+	cmd.Env = append(os.Environ(), "GATEHOUSE_DAEMON_HELPER_PROCESS=block")
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -112,8 +112,8 @@ func TestWaitForManagedDaemonStartDetectsExitAfterPIDFileRemoval(t *testing.T) {
 	if err := p.EnsureDirs(); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("NM_TEST_DAEMON_START_TIMEOUT", "3s")
-	t.Setenv("NM_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_TIMEOUT", "3s")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
 
 	oldHealth := daemonHealthCheck
 	daemonHealthCheck = func(*paths.Paths) (bool, error) { return false, nil }
@@ -148,10 +148,10 @@ func TestStartDetachedDaemonTimeoutKillsAndReapsChild(t *testing.T) {
 	if err := p.EnsureDirs(); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("NM_TEST_START_DAEMON", "1")
-	t.Setenv("NM_DAEMON_HELPER_PROCESS", "block")
-	t.Setenv("NM_TEST_DAEMON_START_TIMEOUT", "40ms")
-	t.Setenv("NM_TEST_DAEMON_START_POLL_INTERVAL", "5ms")
+	t.Setenv("GATEHOUSE_TEST_START_DAEMON", "1")
+	t.Setenv("GATEHOUSE_DAEMON_HELPER_PROCESS", "block")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_TIMEOUT", "40ms")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_POLL_INTERVAL", "5ms")
 
 	oldHealth := daemonHealthCheck
 	daemonHealthCheck = func(*paths.Paths) (bool, error) { return false, nil }
@@ -186,14 +186,14 @@ func TestStartPreservesManagedAndDetachedFallbackErrors(t *testing.T) {
 
 	cleanup := stubServiceRuntime(t)
 	defer cleanup()
-	t.Setenv("NM_TEST_START_DAEMON", "1")
-	t.Setenv("NM_DAEMON_HELPER_PROCESS", "exit")
-	t.Setenv("NM_TEST_DAEMON_START_TIMEOUT", "3s")
-	t.Setenv("NM_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
+	t.Setenv("GATEHOUSE_TEST_START_DAEMON", "1")
+	t.Setenv("GATEHOUSE_DAEMON_HELPER_PROCESS", "exit")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_TIMEOUT", "3s")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
 	runtimeGOOS = "linux"
 	serviceUserHomeDir = func() (string, error) { return home, nil }
 	serviceCurrentUser = func() (*user.User, error) { return &user.User{Uid: "501"}, nil }
-	serviceExecutablePath = func() (string, error) { return "/usr/local/bin/no-mistakes", nil }
+	serviceExecutablePath = func() (string, error) { return "/usr/local/bin/gatehouse", nil }
 	serviceCommandRunner = func(name string, args ...string) ([]byte, error) {
 		command := name + " " + strings.Join(args, " ")
 		if command == "systemctl --user start "+systemdServiceName(p) {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/evidence"
+	"github.com/BertramPetersen/gatehouse/internal/evidence"
 )
 
 func TestTestEvidenceDefaults(t *testing.T) {
@@ -14,8 +14,8 @@ func TestTestEvidenceDefaults(t *testing.T) {
 	if got.Evidence.StoreInRepo {
 		t.Error("default StoreInRepo should be false (opt-in)")
 	}
-	if got.Evidence.Dir != ".no-mistakes/evidence" {
-		t.Errorf("default Dir = %q, want .no-mistakes/evidence", got.Evidence.Dir)
+	if got.Evidence.Dir != ".gatehouse/evidence" {
+		t.Errorf("default Dir = %q, want .gatehouse/evidence", got.Evidence.Dir)
 	}
 	if got.Evidence.Branch != evidence.DefaultBranch {
 		t.Errorf("default Branch = %q, want %q", got.Evidence.Branch, evidence.DefaultBranch)
@@ -32,7 +32,7 @@ func TestTestEvidenceMerge_GlobalEnable(t *testing.T) {
 		t.Error("global enable should propagate")
 	}
 	// Defaults preserved when not overridden.
-	if cfg.Test.Evidence.Dir != ".no-mistakes/evidence" {
+	if cfg.Test.Evidence.Dir != ".gatehouse/evidence" {
 		t.Errorf("dir = %q, want default", cfg.Test.Evidence.Dir)
 	}
 	if cfg.Test.Evidence.Branch != evidence.DefaultBranch {
@@ -44,7 +44,7 @@ func TestTestEvidenceMerge_RepoOverridesGlobal(t *testing.T) {
 	enabled := true
 	disabled := false
 	dir := "docs/evidence"
-	globalBranch := "no-mistakes/global-evidence"
+	globalBranch := "gatehouse/global-evidence"
 	repoBranch := "team/ci/evidence"
 	global := &GlobalConfig{Test: TestRaw{Evidence: EvidenceRaw{StoreInRepo: &disabled, Branch: &globalBranch}}}
 	repo := &RepoConfig{Test: TestRaw{Evidence: EvidenceRaw{StoreInRepo: &enabled, Dir: &dir, Branch: &repoBranch}}}
@@ -62,7 +62,7 @@ func TestTestEvidenceMerge_RepoOverridesGlobal(t *testing.T) {
 }
 
 func TestTestEvidenceMerge_GlobalBranchAppliesWithoutRepoOverride(t *testing.T) {
-	branch := "no-mistakes/global-evidence"
+	branch := "gatehouse/global-evidence"
 	global := &GlobalConfig{Test: TestRaw{Evidence: EvidenceRaw{Branch: &branch}}}
 
 	cfg := Merge(global, &RepoConfig{})
@@ -76,7 +76,7 @@ func TestTestEvidenceMerge_BlankDirIgnored(t *testing.T) {
 	repo := &RepoConfig{Test: TestRaw{Evidence: EvidenceRaw{Dir: &blank}}}
 
 	cfg := Merge(&GlobalConfig{}, repo)
-	if cfg.Test.Evidence.Dir != ".no-mistakes/evidence" {
+	if cfg.Test.Evidence.Dir != ".gatehouse/evidence" {
 		t.Errorf("blank dir should fall back to default, got %q", cfg.Test.Evidence.Dir)
 	}
 }
@@ -150,7 +150,7 @@ test:
     store_in_repo: true
     branch: team/ci/evidence
 `
-	if err := os.WriteFile(filepath.Join(dir, ".no-mistakes.yaml"), []byte(yaml), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".gatehouse.yaml"), []byte(yaml), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 
@@ -173,7 +173,7 @@ test:
   evidence:
     branch: "evidence..branch"
 `
-	if err := os.WriteFile(filepath.Join(dir, ".no-mistakes.yaml"), []byte(yaml), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".gatehouse.yaml"), []byte(yaml), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 

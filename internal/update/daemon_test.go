@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 func TestEnsureDaemonUsesCurrentExecutableAllowsWindowsCaseDifferences(t *testing.T) {
@@ -28,11 +28,11 @@ func TestEnsureDaemonUsesCurrentExecutableAllowsWindowsCaseDifferences(t *testin
 		return true, nil
 	}
 	daemonExecutablePath = func(*paths.Paths) (string, error) {
-		return `c:\program files\no-mistakes\NO-MISTAKES.exe`, nil
+		return `c:\program files\gatehouse\GATEHOUSE.exe`, nil
 	}
 
 	u := &updater{
-		executablePath: `C:\Program Files\No-Mistakes\no-mistakes.exe`,
+		executablePath: `C:\Program Files\Gatehouse\gatehouse.exe`,
 		paths:          paths.WithRoot(t.TempDir()),
 	}
 
@@ -101,7 +101,7 @@ func TestRunningDaemonExecutablePathUsesPIDFile(t *testing.T) {
 }
 
 func TestRunningDaemonExecutablePathHandlesExecutablePathsWithSpaces(t *testing.T) {
-	if os.Getenv("NO_MISTAKES_TEST_CHILD") == "1" {
+	if os.Getenv("GATEHOUSE_TEST_CHILD") == "1" {
 		time.Sleep(10 * time.Second)
 		return
 	}
@@ -123,13 +123,13 @@ func TestRunningDaemonExecutablePathHandlesExecutablePathsWithSpaces(t *testing.
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	copyPath := filepath.Join(dir, "no mistakes test binary"+filepath.Ext(originalPath))
+	copyPath := filepath.Join(dir, "gate house test binary"+filepath.Ext(originalPath))
 	if err := os.WriteFile(copyPath, binary, originalInfo.Mode().Perm()); err != nil {
 		t.Fatal(err)
 	}
 
 	cmd := exec.Command(copyPath, "-test.run=^TestRunningDaemonExecutablePathHandlesExecutablePathsWithSpaces$")
-	cmd.Env = append(os.Environ(), "NO_MISTAKES_TEST_CHILD=1")
+	cmd.Env = append(os.Environ(), "GATEHOUSE_TEST_CHILD=1")
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestExecutablePathForPIDUsesWindowsResolver(t *testing.T) {
 		if pid != 4321 {
 			t.Fatalf("pid = %d, want %d", pid, 4321)
 		}
-		return `C:\Program Files\no-mistakes\no-mistakes.exe`, nil
+		return `C:\Program Files\gatehouse\gatehouse.exe`, nil
 	}
 
 	got, err := executablePathForPID(4321)
@@ -177,7 +177,7 @@ func TestExecutablePathForPIDUsesWindowsResolver(t *testing.T) {
 	if !called {
 		t.Fatal("expected windows resolver to be used")
 	}
-	if got != `C:\Program Files\no-mistakes\no-mistakes.exe` {
+	if got != `C:\Program Files\gatehouse\gatehouse.exe` {
 		t.Fatalf("executablePathForPID = %q", got)
 	}
 }

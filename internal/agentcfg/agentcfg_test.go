@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // TestNativeArgsMapsEachHarnessToItsOwnSpelling pins the whole point of the
@@ -175,7 +175,7 @@ func TestNativeArgsDoesNotMutateRawArgs(t *testing.T) {
 }
 
 // TestACPModelIsMappedThroughAcpx closes the gap that made ACP targets
-// unpinnable: no-mistakes drives them through acpx, whose --model is a real
+// unpinnable: gatehouse drives them through acpx, whose --model is a real
 // mechanism.
 func TestACPModelIsMappedThroughAcpx(t *testing.T) {
 	for _, name := range []types.AgentName{types.AgentCursor, "acp:gemini"} {

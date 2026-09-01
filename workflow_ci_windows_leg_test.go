@@ -231,13 +231,13 @@ func TestCIWorkflow_WindowsHangSurfacesAsGoTimeoutNotJobCancellation(t *testing.
 	coreFromFilter := filterPackages(all, exclude, false)
 	gitFromArgs := goListPackages(t, goTestPackagePatterns(gitCommand)...)
 	if !slices.Equal(gitFromArgs, gitFromFilter) {
-		t.Fatalf("git-heavy shard packages %v do not match NM_CI_WINDOWS_GIT_EXCLUDE %q -> %v", gitFromArgs, exclude, gitFromFilter)
+		t.Fatalf("git-heavy shard packages %v do not match GATEHOUSE_CI_WINDOWS_GIT_EXCLUDE %q -> %v", gitFromArgs, exclude, gitFromFilter)
 	}
 
 	requiredGitHeavy := []string{
-		"github.com/kunchenguid/no-mistakes/internal/git",
-		"github.com/kunchenguid/no-mistakes/internal/branchsync",
-		"github.com/kunchenguid/no-mistakes/internal/pipeline/steps",
+		"github.com/BertramPetersen/gatehouse/internal/git",
+		"github.com/BertramPetersen/gatehouse/internal/branchsync",
+		"github.com/BertramPetersen/gatehouse/internal/pipeline/steps",
 	}
 	for _, pkg := range requiredGitHeavy {
 		if !slices.Contains(gitFromFilter, pkg) {
@@ -259,13 +259,13 @@ func TestCIWorkflow_WindowsHangSurfacesAsGoTimeoutNotJobCancellation(t *testing.
 
 func windowsGitExcludePattern(t *testing.T, step wfStep) *regexp.Regexp {
 	t.Helper()
-	pattern := step.Env["NM_CI_WINDOWS_GIT_EXCLUDE"]
+	pattern := step.Env["GATEHOUSE_CI_WINDOWS_GIT_EXCLUDE"]
 	if pattern == "" {
-		t.Fatal("Windows core shard must set NM_CI_WINDOWS_GIT_EXCLUDE so the remainder filter is a typed contract")
+		t.Fatal("Windows core shard must set GATEHOUSE_CI_WINDOWS_GIT_EXCLUDE so the remainder filter is a typed contract")
 	}
 	compiled, err := regexp.Compile(pattern)
 	if err != nil {
-		t.Fatalf("NM_CI_WINDOWS_GIT_EXCLUDE %q: %v", pattern, err)
+		t.Fatalf("GATEHOUSE_CI_WINDOWS_GIT_EXCLUDE %q: %v", pattern, err)
 	}
 	return compiled
 }

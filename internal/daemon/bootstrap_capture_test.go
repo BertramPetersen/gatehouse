@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/logstore"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/logstore"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 func TestBootstrapCaptureBoundsDirectProcessOutput(t *testing.T) {
@@ -28,8 +28,8 @@ func TestBootstrapCaptureBoundsDirectProcessOutput(t *testing.T) {
 
 	cmd := exec.Command(os.Args[0], "-test.run=^$")
 	cmd.Env = append(os.Environ(),
-		"NM_HOME="+root,
-		"NM_DAEMON_HELPER_PROCESS=capture-output",
+		"GATEHOUSE_HOME="+root,
+		"GATEHOUSE_DAEMON_HELPER_PROCESS=capture-output",
 	)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("capture helper: %v\n%s", err, output)
@@ -57,7 +57,7 @@ func TestBootstrapCaptureBoundsDirectProcessOutput(t *testing.T) {
 
 func TestRunRejectsCompetingDaemonBeforeBootstrapCapture(t *testing.T) {
 	root := t.TempDir()
-	t.Setenv("NM_HOME", root)
+	t.Setenv("GATEHOUSE_HOME", root)
 	p := paths.WithRoot(root)
 	if err := p.EnsureDirs(); err != nil {
 		t.Fatal(err)

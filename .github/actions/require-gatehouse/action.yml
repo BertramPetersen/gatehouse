@@ -1,6 +1,6 @@
-name: Require no-mistakes
+name: Require gatehouse
 description: >-
-  Verify that a pull request body declares a no-mistakes pipeline run: the body
+  Verify that a pull request body declares a gatehouse pipeline run: the body
   carries the signature line and a v1 pipeline-step attestation bound to the
   current PR head, with review, test, and document all completed.
 
@@ -71,7 +71,7 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Verify no-mistakes signature and pipeline attestation
+    - name: Verify gatehouse signature and pipeline attestation
       id: verify
       shell: bash
       env:
@@ -80,9 +80,9 @@ runs:
         PR_HEAD_REF: ${{ inputs.pr-head-ref }}
         PR_AUTHOR: ${{ inputs.pr-author }}
         PR_NUMBER: ${{ inputs.pr-number }}
-        NM_EXEMPT_AUTHORS: ${{ inputs.exempt-authors }}
-        NM_EXEMPT_BOT_AUTHORS: ${{ inputs.exempt-bot-authors }}
-        NM_EXEMPT_HEAD_BRANCHES: ${{ inputs.exempt-head-branches }}
+        GATEHOUSE_EXEMPT_AUTHORS: ${{ inputs.exempt-authors }}
+        GATEHOUSE_EXEMPT_BOT_AUTHORS: ${{ inputs.exempt-bot-authors }}
+        GATEHOUSE_EXEMPT_HEAD_BRANCHES: ${{ inputs.exempt-head-branches }}
       run: |
         set -eu
         if command -v python3 >/dev/null 2>&1; then

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/config"
 
 	_ "modernc.org/sqlite"
 )
@@ -593,7 +593,7 @@ func loadCase(dir string) (Case, error) {
 		return Case{}, err
 	}
 	if manifest.Version != manifestVersion {
-		return Case{}, fmt.Errorf("unsupported case manifest version %d (captured by an older no-mistakes whose case format is no longer readable; remove the eval directory to start a fresh corpus, which now refills itself)", manifest.Version)
+		return Case{}, fmt.Errorf("unsupported case manifest version %d (captured by an older gatehouse whose case format is no longer readable; remove the eval directory to start a fresh corpus, which now refills itself)", manifest.Version)
 	}
 	var labels Labels
 	if err := readJSON(filepath.Join(dir, "labels.json"), &labels); err != nil {

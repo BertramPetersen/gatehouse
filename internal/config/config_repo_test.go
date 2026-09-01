@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestLoadRepo_Defaults(t *testing.T) {
-	// Non-existent directory or no .no-mistakes.yaml
+	// Non-existent directory or no .gatehouse.yaml
 	cfg, err := LoadRepo("/nonexistent/dir")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -35,7 +35,7 @@ func TestLoadRepo_Defaults(t *testing.T) {
 
 func TestLoadRepo_FromFile(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".no-mistakes.yaml")
+	path := filepath.Join(dir, ".gatehouse.yaml")
 	data := `agent: codex
 commands:
   lint: "golangci-lint run ./..."
@@ -77,14 +77,14 @@ ignore_patterns:
 }
 
 // TestLoadRepo_BranchSyncRemoteTimeoutIsNotARepoSetting proves
-// branch_sync_remote_timeout is inert in .no-mistakes.yaml: RepoConfig has
+// branch_sync_remote_timeout is inert in .gatehouse.yaml: RepoConfig has
 // no matching field, so a pushed branch cannot widen or narrow how long
 // guarded branch synchronization waits before failing closed. It is a
 // global-only operator machine setting (config.GlobalConfig,
 // DefaultBranchSyncRemoteTimeout).
 func TestLoadRepo_BranchSyncRemoteTimeoutIsNotARepoSetting(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".no-mistakes.yaml")
+	path := filepath.Join(dir, ".gatehouse.yaml")
 	data := `branch_sync_remote_timeout: "999s"`
 	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
 		t.Fatal(err)
@@ -100,12 +100,12 @@ func TestLoadRepo_BranchSyncRemoteTimeoutIsNotARepoSetting(t *testing.T) {
 }
 
 // TestLoadRepo_AgentTimeoutIsNotARepoSetting proves agent_timeout is inert in
-// .no-mistakes.yaml: RepoConfig has no matching field, so a pushed branch
+// .gatehouse.yaml: RepoConfig has no matching field, so a pushed branch
 // cannot widen or remove the default per-invocation agent bound. It is a
 // global-only operator machine setting (config.GlobalConfig, DefaultAgentTimeout).
 func TestLoadRepo_AgentTimeoutIsNotARepoSetting(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".no-mistakes.yaml")
+	path := filepath.Join(dir, ".gatehouse.yaml")
 	data := `agent_timeout: "999s"`
 	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
 		t.Fatal(err)
@@ -121,13 +121,13 @@ func TestLoadRepo_AgentTimeoutIsNotARepoSetting(t *testing.T) {
 }
 
 // TestLoadRepo_TestAgentTimeoutIsNotARepoSetting proves test_agent_timeout is
-// inert in .no-mistakes.yaml: RepoConfig has no matching field, so a pushed
+// inert in .gatehouse.yaml: RepoConfig has no matching field, so a pushed
 // branch cannot widen or remove the Test-step evidence-agent bound. It is a
 // global-only operator machine setting (config.GlobalConfig,
 // DefaultTestAgentTimeout).
 func TestLoadRepo_TestAgentTimeoutIsNotARepoSetting(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".no-mistakes.yaml")
+	path := filepath.Join(dir, ".gatehouse.yaml")
 	data := `test_agent_timeout: "999s"`
 	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
 		t.Fatal(err)
@@ -146,7 +146,7 @@ func TestLoadRepo_AgentAcceptsList(t *testing.T) {
 	dir := t.TempDir()
 	data := `agent: [codex, claude]
 `
-	if err := os.WriteFile(filepath.Join(dir, ".no-mistakes.yaml"), []byte(data), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".gatehouse.yaml"), []byte(data), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -172,7 +172,7 @@ func TestLoadRepo_AgentStringPreservesSingleAgent(t *testing.T) {
 	dir := t.TempDir()
 	data := `agent: codex
 `
-	if err := os.WriteFile(filepath.Join(dir, ".no-mistakes.yaml"), []byte(data), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".gatehouse.yaml"), []byte(data), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -190,7 +190,7 @@ func TestLoadRepo_AgentStringPreservesSingleAgent(t *testing.T) {
 
 func TestLoadRepo_PartialCommands(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".no-mistakes.yaml")
+	path := filepath.Join(dir, ".gatehouse.yaml")
 	data := `commands:
   test: "make test"
 `
@@ -215,7 +215,7 @@ func TestLoadRepo_PartialCommands(t *testing.T) {
 
 func TestLoadRepo_InvalidYAML(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".no-mistakes.yaml")
+	path := filepath.Join(dir, ".gatehouse.yaml")
 	if err := os.WriteFile(path, []byte("{{invalid"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -228,7 +228,7 @@ func TestLoadRepo_InvalidYAML(t *testing.T) {
 
 func TestLoadRepo_AutoFixFromFile(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".no-mistakes.yaml")
+	path := filepath.Join(dir, ".gatehouse.yaml")
 	data := `auto_fix:
   review: 0
   ci: 2
@@ -271,7 +271,7 @@ func TestMerge_CIRerunTransientFromRepoConfig(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
-			if err := os.WriteFile(filepath.Join(dir, ".no-mistakes.yaml"), []byte(tc.yaml), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(dir, ".gatehouse.yaml"), []byte(tc.yaml), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			repo, err := LoadRepo(dir)
@@ -364,7 +364,7 @@ func TestEffectiveRepoConfig_CIRerunTransientTrustedOnly(t *testing.T) {
 
 func TestLoadRepo_ReviewPathInstructions(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".no-mistakes.yaml")
+	path := filepath.Join(dir, ".gatehouse.yaml")
 	data := `review:
   path_instructions:
     - path: "internal/scm/**"
@@ -576,7 +576,7 @@ func TestReviewPathInstructionsBytes_CountsTheWholeSection(t *testing.T) {
 
 func TestLoadRepo_LegacyAutoFixBabysit(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".no-mistakes.yaml")
+	path := filepath.Join(dir, ".gatehouse.yaml")
 	if err := os.WriteFile(path, []byte("auto_fix:\n  babysit: 0\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}

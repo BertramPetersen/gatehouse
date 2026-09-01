@@ -9,16 +9,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/gate"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
-	"github.com/kunchenguid/no-mistakes/internal/types"
-	"github.com/kunchenguid/no-mistakes/internal/wizard"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/gate"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/wizard"
 )
 
 var resolveWizardAgent = func(ctx context.Context, cfg *config.Config) error {
@@ -323,7 +323,7 @@ func awaitDaemonRunRegistration(ctx context.Context, client *ipc.Client, repoID,
 		return err
 	}
 	if run == nil {
-		logPath := filepath.Join("~/.no-mistakes", "repos", repoID+".git", "notify-push.log")
+		logPath := filepath.Join("~/.gatehouse", "repos", repoID+".git", "notify-push.log")
 		if p, pathErr := paths.New(); pathErr == nil {
 			logPath = filepath.Join(p.RepoDir(repoID), "notify-push.log")
 		}

@@ -10,13 +10,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
-	"github.com/kunchenguid/no-mistakes/internal/worktrees"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/worktrees"
 )
 
 // mockWorkDirStep records the directory the pipeline executed it in, which is
@@ -81,7 +81,7 @@ func configureWorktreeRoot(t *testing.T, p *paths.Paths, workingPath, root strin
 }
 
 // TestRunWorktreeIsCreatedInConfiguredRoot is the end of the operator's
-// problem: a run worktree under NM_HOME inherits no directory-scoped toolchain
+// problem: a run worktree under GATEHOUSE_HOME inherits no directory-scoped toolchain
 // configuration, so a repository with a worktree_roots entry must have its run
 // created under that directory instead - and removed from it afterwards,
 // leaving the operator's own files in the same directory untouched.
@@ -473,12 +473,12 @@ func TestDaemonRefusesToStartWithWorktreeRootInsideAnotherRegisteredCheckout(t *
 }
 
 // TestDaemonRefusesToStartWithWorktreeRootInsideItsOwnWorktreesDirectory is the
-// reviewer's scenario for the destructive misconfiguration: <NM_HOME>/worktrees
+// reviewer's scenario for the destructive misconfiguration: <GATEHOUSE_HOME>/worktrees
 // holds one ULID-named directory per repository, a run ID is a ULID too, so a
 // worktree root pointed at that directory would have every repository's
 // directory read as a leftover run worktree - including the ones holding
 // another repository's pending and running run worktrees. Config loading cannot
-// catch it (it never learns where NM_HOME is), so the daemon refuses to start
+// catch it (it never learns where GATEHOUSE_HOME is), so the daemon refuses to start
 // rather than starting and sweeping.
 func TestDaemonRefusesToStartWithWorktreeRootInsideItsOwnWorktreesDirectory(t *testing.T) {
 	p := paths.WithRoot(t.TempDir())
@@ -914,7 +914,7 @@ func TestPrepareRecoveredRun_UnrecordedRunKeepsItsDefaultPlacement(t *testing.T)
 // failure mode of a path-keyed setting: an entry whose key does not match a
 // registered checkout - a stale key after a move, a spelling this filesystem
 // does not consider equal - places nothing at all, with no other symptom than
-// runs continuing to appear under NM_HOME.
+// runs continuing to appear under GATEHOUSE_HOME.
 func TestReportUnusableWorktreeRoots_NamesEntriesThatDoNothing(t *testing.T) {
 	p := paths.WithRoot(t.TempDir())
 	if err := p.EnsureDirs(); err != nil {

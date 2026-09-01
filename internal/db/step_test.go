@@ -3,7 +3,7 @@ package db
 import (
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestGetStepResult_LegacyBabysitStepName(t *testing.T) {

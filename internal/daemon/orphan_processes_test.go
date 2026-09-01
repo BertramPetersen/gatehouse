@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // TestSweepOrphanRunProcessesReapsFinishedRunAndSparesActiveOne is the daemon
@@ -368,14 +368,14 @@ func TestRunSetupFailureSweepsTheWorktreeItRemoves(t *testing.T) {
 	}
 }
 
-// commitInvalidRepoConfig pushes a commit whose .no-mistakes.yaml cannot be
+// commitInvalidRepoConfig pushes a commit whose .gatehouse.yaml cannot be
 // parsed, which fails run setup after the worktree has been created.
 func commitInvalidRepoConfig(t *testing.T, workDir string) string {
 	t.Helper()
-	if err := os.WriteFile(filepath.Join(workDir, ".no-mistakes.yaml"), []byte("auto_fix: [not, a, mapping\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(workDir, ".gatehouse.yaml"), []byte("auto_fix: [not, a, mapping\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	gitCmd(t, workDir, "add", ".no-mistakes.yaml")
+	gitCmd(t, workDir, "add", ".gatehouse.yaml")
 	gitCmd(t, workDir, "commit", "-m", "invalid config")
 	gitCmd(t, workDir, "push", "gate", "HEAD:refs/heads/main")
 	return gitOutput(t, workDir, "rev-parse", "HEAD")

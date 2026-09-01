@@ -10,13 +10,13 @@ import (
 // TestEvidenceRootResolvesUnderAppRoot pins evidence to the app root.
 //
 // It asserts structural equality against the root Paths already owns rather
-// than "the result is not under os.TempDir()": under `go test`, NM_HOME is
+// than "the result is not under os.TempDir()": under `go test`, GATEHOUSE_HOME is
 // itself a t.TempDir() beneath TMPDIR, so a not-under-temp assertion would pass
 // even if the old os.TempDir() join came back. Naming the expected path is what
 // actually catches the regression.
 func TestEvidenceRootResolvesUnderAppRoot(t *testing.T) {
 	root := t.TempDir()
-	t.Setenv("NM_HOME", root)
+	t.Setenv("GATEHOUSE_HOME", root)
 
 	p, err := New()
 	if err != nil {
@@ -35,11 +35,11 @@ func TestEvidenceRootResolvesUnderAppRoot(t *testing.T) {
 }
 
 // TestEvidenceRootIsNeverTheLegacySharedTempDirectory guards the specific path
-// this relocation removed: a fixed "no-mistakes-evidence" directory created
+// this relocation removed: a fixed "gatehouse-evidence" directory created
 // straight inside the system temp directory, which on Linux is the shared /tmp
 // that current Ubuntu backs with RAM.
 func TestEvidenceRootIsNeverTheLegacySharedTempDirectory(t *testing.T) {
-	legacy := filepath.Join(os.TempDir(), "no-mistakes-evidence")
+	legacy := filepath.Join(os.TempDir(), "gatehouse-evidence")
 
 	for _, root := range []string{t.TempDir(), filepath.Join(t.TempDir(), "nested")} {
 		p := WithRoot(root)

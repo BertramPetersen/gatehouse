@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/runenv"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/runenv"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestPiAgent_BuildArgs(t *testing.T) {
@@ -148,7 +148,7 @@ func TestPiAgent_BuildPromptIncludesSchema(t *testing.T) {
 	if !strings.Contains(prompt, "do a thing") {
 		t.Errorf("prompt missing user prompt: %s", prompt)
 	}
-	if !strings.Contains(prompt, "no-mistakes final output contract") {
+	if !strings.Contains(prompt, "gatehouse final output contract") {
 		t.Errorf("prompt missing contract header: %s", prompt)
 	}
 	if !strings.Contains(prompt, "summary") {

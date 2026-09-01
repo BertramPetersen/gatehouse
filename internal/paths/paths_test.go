@@ -74,7 +74,7 @@ func TestLogPaths(t *testing.T) {
 
 func TestNewWithEnvOverride(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("NM_HOME", dir)
+	t.Setenv("GATEHOUSE_HOME", dir)
 
 	p, err := New()
 	if err != nil {
@@ -86,8 +86,8 @@ func TestNewWithEnvOverride(t *testing.T) {
 }
 
 func TestNewRejectsDefaultRootInTests(t *testing.T) {
-	t.Setenv("NM_HOME", "")
-	t.Setenv("NO_MISTAKES_ALLOW_DEFAULT_ROOT_IN_TESTS", "")
+	t.Setenv("GATEHOUSE_HOME", "")
+	t.Setenv("GATEHOUSE_ALLOW_DEFAULT_ROOT_IN_TESTS", "")
 
 	_, err := New()
 	if err == nil {
@@ -96,15 +96,15 @@ func TestNewRejectsDefaultRootInTests(t *testing.T) {
 }
 
 func TestNewDefault(t *testing.T) {
-	t.Setenv("NM_HOME", "")
-	t.Setenv("NO_MISTAKES_ALLOW_DEFAULT_ROOT_IN_TESTS", "1")
+	t.Setenv("GATEHOUSE_HOME", "")
+	t.Setenv("GATEHOUSE_ALLOW_DEFAULT_ROOT_IN_TESTS", "1")
 
 	p, err := New()
 	if err != nil {
 		t.Fatal(err)
 	}
 	home, _ := os.UserHomeDir()
-	want := filepath.Join(home, ".no-mistakes")
+	want := filepath.Join(home, ".gatehouse")
 	if p.Root() != want {
 		t.Errorf("Root() = %q, want %q", p.Root(), want)
 	}

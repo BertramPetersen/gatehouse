@@ -37,15 +37,15 @@ func buildTestNMBin(t *testing.T) string {
 		t.Fatalf("repo root: %v", err)
 	}
 	outDir := t.TempDir()
-	bin := filepath.Join(outDir, "no-mistakes")
+	bin := filepath.Join(outDir, "gatehouse")
 	if runtime.GOOS == "windows" {
 		bin += ".exe"
 	}
-	cmd := exec.Command("go", "build", "-o", bin, "./cmd/no-mistakes")
+	cmd := exec.Command("go", "build", "-o", bin, "./cmd/gatehouse")
 	cmd.Dir = repoRoot
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("build no-mistakes: %v\n%s", err, out)
+		t.Fatalf("build gatehouse: %v\n%s", err, out)
 	}
 	return bin
 }
@@ -84,10 +84,10 @@ func startDetachedTestDaemon(t *testing.T, bin, nmHome string) int {
 	}
 	cmd := exec.Command(bin, "daemon", "run", "--root", nmHome)
 	cmd.Env = append(os.Environ(),
-		"NM_HOME="+nmHome,
-		"NM_TEST_START_DAEMON=1",
-		"NO_MISTAKES_TELEMETRY=off",
-		"NO_MISTAKES_NO_UPDATE_CHECK=1",
+		"GATEHOUSE_HOME="+nmHome,
+		"GATEHOUSE_TEST_START_DAEMON=1",
+		"GATEHOUSE_TELEMETRY=off",
+		"GATEHOUSE_NO_UPDATE_CHECK=1",
 	)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
@@ -106,10 +106,10 @@ func startDetachedTestDaemon(t *testing.T, bin, nmHome string) int {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			status := exec.CommandContext(ctx, bin, "daemon", "status")
 			status.Env = append(os.Environ(),
-				"NM_HOME="+nmHome,
-				"NM_TEST_START_DAEMON=1",
-				"NO_MISTAKES_TELEMETRY=off",
-				"NO_MISTAKES_NO_UPDATE_CHECK=1",
+				"GATEHOUSE_HOME="+nmHome,
+				"GATEHOUSE_TEST_START_DAEMON=1",
+				"GATEHOUSE_TELEMETRY=off",
+				"GATEHOUSE_NO_UPDATE_CHECK=1",
 			)
 			out, _ := status.CombinedOutput()
 			cancel()
@@ -395,10 +395,10 @@ func runSigkillChildHelper() {
 	}
 	cmd := exec.Command(bin, "daemon", "run", "--root", nmHome)
 	cmd.Env = append(os.Environ(),
-		"NM_HOME="+nmHome,
-		"NM_TEST_START_DAEMON=1",
-		"NO_MISTAKES_TELEMETRY=off",
-		"NO_MISTAKES_NO_UPDATE_CHECK=1",
+		"GATEHOUSE_HOME="+nmHome,
+		"GATEHOUSE_TEST_START_DAEMON=1",
+		"GATEHOUSE_TELEMETRY=off",
+		"GATEHOUSE_NO_UPDATE_CHECK=1",
 	)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
@@ -469,7 +469,7 @@ func TestReapAll_DoesNotTouchSharedDaemon(t *testing.T) {
 	lab := labRoot(t)
 	t.Setenv(EnvInventory, filepath.Join(lab, "inv"))
 
-	sharedHome := filepath.Join(mustUserHome(t), ".no-mistakes")
+	sharedHome := filepath.Join(mustUserHome(t), ".gatehouse")
 	before, _ := FindDaemonsForRoot(sharedHome)
 
 	inv, err := Open()

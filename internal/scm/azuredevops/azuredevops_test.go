@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
 )
 
 const (

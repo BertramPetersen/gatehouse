@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/config"
 )
 
 // fileAtRef reports whether path exists in the tree at ref in the given repo.
@@ -17,7 +17,7 @@ func fileAtRef(t *testing.T, dir, ref, path string) bool {
 	return cmd.Run() == nil
 }
 
-// Issue #281: after no-mistakes opens a PR, a reviewed commit is pushed to
+// Issue #281: after gatehouse opens a PR, a reviewed commit is pushed to
 // origin only (not through the gate). When main moves and the CI monitor
 // auto-fixes the merge conflict, it rebases from the gate's stale local state
 // and force-pushes - discarding the origin-only commit. The lease was anchored
@@ -47,7 +47,7 @@ func TestCIStep_CommitAndPush_DoesNotClobberUnseenUpstreamCommit(t *testing.T) {
 	gitCmd(t, dir, "add", "-A")
 	gitCmd(t, dir, "commit", "-m", "feature")
 	headSHA := gitCmd(t, dir, "rev-parse", "HEAD")
-	gitCmd(t, dir, "push", "origin", "feature") // origin feature == H1, what no-mistakes last saw
+	gitCmd(t, dir, "push", "origin", "feature") // origin feature == H1, what gatehouse last saw
 
 	// Out-of-band: a reviewed commit is pushed to origin only, via a separate
 	// clone, so the gate worktree never sees it.
@@ -91,7 +91,7 @@ func TestCIStep_CommitAndPush_DoesNotClobberUnseenUpstreamCommit(t *testing.T) {
 	}
 }
 
-// Issue #305: no-mistakes rebased onto a stale view of upstream and then the
+// Issue #305: gatehouse rebased onto a stale view of upstream and then the
 // push step force-pushed the result over an origin head that had advanced
 // out-of-band, dropping the commits that landed upstream in the meantime. The
 // push step must refuse to force-push over commits it never incorporated.

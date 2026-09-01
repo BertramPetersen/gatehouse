@@ -9,14 +9,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	gitpkg "github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/lifecycle"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline/steps"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	gitpkg "github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/lifecycle"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline/steps"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestSubscribeReceivesEvents(t *testing.T) {
@@ -937,7 +937,7 @@ func TestSkipWorktreeCleanup_CIMonitorInterrupted(t *testing.T) {
 			t.Fatal(err)
 		}
 		gitCmd(t, wtPath, "add", "-A")
-		gitCmd(t, wtPath, "commit", "-m", "no-mistakes: apply CI fixes")
+		gitCmd(t, wtPath, "commit", "-m", "gatehouse: apply CI fixes")
 		skip, reason := skipWorktreeCleanup(ctx, d, runID, wtPath)
 		if !skip {
 			t.Fatal("worktree with an unpushed commit must be preserved (skip=true)")
@@ -1031,11 +1031,11 @@ func TestRecoverRefreshesLegacyManagedGateHook(t *testing.T) {
 	}
 	hookPath := filepath.Join(bareDir, "hooks", "post-receive")
 	legacyHook := `#!/bin/sh
-# no-mistakes post-receive hook
+# gatehouse post-receive hook
 # Notify daemon of push. Non-blocking - push always succeeds.
-NM_BIN='/usr/local/bin/no-mistakes'
+GATEHOUSE_BIN='/usr/local/bin/gatehouse'
 while read oldrev newrev refname; do
-  NM_HOOK_HELPER=1 "$NM_BIN" daemon notify-push \
+  GATEHOUSE_HOOK_HELPER=1 "$GATEHOUSE_BIN" daemon notify-push \
     --gate "$(pwd)" \
     --ref "$refname" \
     --old "$oldrev" \

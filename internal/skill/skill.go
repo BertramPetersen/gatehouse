@@ -1,8 +1,8 @@
-// Package skill holds the canonical content of the no-mistakes agent skill.
+// Package skill holds the canonical content of the gatehouse agent skill.
 //
 // It is the single source of truth for the skill's identity (name and
 // trigger description) and its SKILL.md body. The genskill tool renders
-// Markdown() to the public skills/no-mistakes/SKILL.md (verified fresh in
+// Markdown() to the public skills/gatehouse/SKILL.md (verified fresh in
 // CI), and the init command installs the same rendering into the user-level
 // agent skill directories under the user's home.
 // The CLI's axi home view reuses Description so the two never drift.
@@ -11,23 +11,23 @@ package skill
 import (
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/gateguidance"
-	"github.com/kunchenguid/no-mistakes/internal/testguidance"
+	"github.com/BertramPetersen/gatehouse/internal/gateguidance"
+	"github.com/BertramPetersen/gatehouse/internal/testguidance"
 )
 
 // Name is the skill directory name and frontmatter name. It must match the
-// installed directory so the agent exposes it as the /no-mistakes command.
-const Name = "no-mistakes"
+// installed directory so the agent exposes it as the /gatehouse command.
+const Name = "gatehouse"
 
 // Description is the trigger-shaped frontmatter description: what the skill
 // does and when to use it. It is the single most important field for the
 // agent's decision to load the skill, so it leads with outcomes and keywords.
-const Description = "Validate your code changes through the no-mistakes pipeline - automated code review, tests, lint, docs, push, PR, and CI - before they reach the configured push target. Use when the user asks to run no-mistakes, gate or ship or validate their changes, push safely, asks you to do a task and then validate it, or invokes /no-mistakes."
+const Description = "Validate your code changes through the gatehouse pipeline - automated code review, tests, lint, docs, push, PR, and CI - before they reach the configured push target. Use when the user asks to run gatehouse, gate or ship or validate their changes, push safely, asks you to do a task and then validate it, or invokes /gatehouse."
 
 // Markdown returns the complete SKILL.md document (YAML frontmatter plus body).
 // The output is deterministic so it can be regenerated and diff-checked. It is
 // the single rendering: the canonical public skill (surfaced by discovery
-// tools, e.g. `npx skills add kunchenguid/no-mistakes`) and the copy init
+// tools, e.g. `npx skills add BertramPetersen/gatehouse`) and the copy init
 // installs at user level are identical. Older versions vendored a variant with
 // `metadata.internal: true` into each target repo to keep the vendored copy
 // out of repo skill listings; the user-level install is a genuine user
@@ -48,30 +48,30 @@ func Markdown() string {
 // Keep it focused: the operating loop, the command vocabulary, and how to read
 // the TOON output. Do not embed live state here - the skill is static.
 const body = `
-# no-mistakes
+# gatehouse
 
-` + "`no-mistakes`" + ` is a local gate that validates your code changes through a pipeline
+` + "`gatehouse`" + ` is a local gate that validates your code changes through a pipeline
 (intent, rebase, review, test, document, lint, push, PR, CI) before they reach
-the configured push target. You drive it through the ` + "`no-mistakes axi`" + ` command family, which prints
+the configured push target. You drive it through the ` + "`gatehouse axi`" + ` command family, which prints
 machine-readable [TOON](https://toonformat.dev) to stdout and progress to stderr.
 
 ` + gateguidance.SkillBoundary + `
 
-When the user invokes ` + "`/no-mistakes`" + `, report the outcome at the end. If the user
+When the user invokes ` + "`/gatehouse`" + `, report the outcome at the end. If the user
 asks for something specific, translate that request into the matching ` + "`axi run`" + `
 flags yourself - for example, "skip the lint step" becomes ` + "`--skip=lint`" + `. Run
-` + "`no-mistakes axi run --help`" + ` to see the available flags.
+` + "`gatehouse axi run --help`" + ` to see the available flags.
 
 ## Two ways to invoke
 
-` + "`/no-mistakes`" + ` works in two modes, depending on whether the user hands you a
+` + "`/gatehouse`" + ` works in two modes, depending on whether the user hands you a
 task along with the command:
 
-- **Validate-only** - bare ` + "`/no-mistakes`" + ` (optionally with flag-style requests
+- **Validate-only** - bare ` + "`/gatehouse`" + ` (optionally with flag-style requests
   like "skip the lint step"). The user's code changes are already committed;
   validate them and report the outcome.
-- **Task-first** - ` + "`/no-mistakes <task>`" + `, e.g.
-  ` + "`/no-mistakes add a --json flag to the status command`" + `. First carry out the
+- **Task-first** - ` + "`/gatehouse <task>`" + `, e.g.
+  ` + "`/gatehouse add a --json flag to the status command`" + `. First carry out the
   task yourself, then validate the result through the pipeline:
   1. **Check scope.** Inspect ` + "`git status`" + ` before you change or commit anything.
      Preserve unrelated pre-existing uncommitted changes, and when you commit,
@@ -99,24 +99,24 @@ the same way once the work is committed on a feature branch.
 - The work you want validated must be **committed** on a branch. The gate
   validates committed history, not your uncommitted working tree.
 - You must be on a **feature branch**, not the repository's default branch.
-- The repository must already be initialized with ` + "`no-mistakes init`" + `.
+- The repository must already be initialized with ` + "`gatehouse init`" + `.
 - The daemon must have a runnable configured pipeline agent: a supported native
   agent binary, the ` + "`agent: cursor`" + ` ACP alias, or an explicit ` + "`acp:<target>`" + ` through
   ` + "`acpx`" + `. You are the AXI driver, not
   an implicit pipeline-agent backend. If none is available, the run fails
-  before its first step; ` + "`no-mistakes doctor`" + ` reports the configuration problem.
+  before its first step; ` + "`gatehouse doctor`" + ` reports the configuration problem.
 
 If any of these is not met, ` + "`axi run`" + ` returns an ` + "`error:`" + ` with the exact command
 to fix it - read it and act on it (commit your work, or create a branch). If the
-repository is not initialized, run ` + "`no-mistakes init`" + ` first; if the ` + "`no-mistakes`" + `
-command itself is missing or misbehaving, ` + "`no-mistakes doctor`" + ` reports what is
+repository is not initialized, run ` + "`gatehouse init`" + ` first; if the ` + "`gatehouse`" + `
+command itself is missing or misbehaving, ` + "`gatehouse doctor`" + ` reports what is
 wrong.
-Before starting, run ` + "`no-mistakes axi`" + ` (home view).
-If it shows an active run on your current branch, inspect it with ` + "`no-mistakes axi status`" + `.
-If it is parked at a gate, drive it with ` + "`no-mistakes axi respond`" + `.
-Reattach an in-flight run by re-running ` + "`no-mistakes axi run`" + ` when it still matches your current ` + "`HEAD`" + ` - either as the submitted head or as the current pipeline head.
-Only ` + "`no-mistakes axi abort`" + ` it when you mean to discard that run before starting over; aborting is a between-runs action, never a way to take over or bypass a gate while a run is still going (see [Validate and decide](#validate-and-decide)).
-If it shows an active run on another branch, leave that run alone and start validation for your current branch with ` + "`no-mistakes axi run --intent \"...\"`" + `.
+Before starting, run ` + "`gatehouse axi`" + ` (home view).
+If it shows an active run on your current branch, inspect it with ` + "`gatehouse axi status`" + `.
+If it is parked at a gate, drive it with ` + "`gatehouse axi respond`" + `.
+Reattach an in-flight run by re-running ` + "`gatehouse axi run`" + ` when it still matches your current ` + "`HEAD`" + ` - either as the submitted head or as the current pipeline head.
+Only ` + "`gatehouse axi abort`" + ` it when you mean to discard that run before starting over; aborting is a between-runs action, never a way to take over or bypass a gate while a run is still going (see [Validate and decide](#validate-and-decide)).
+If it shows an active run on another branch, leave that run alone and start validation for your current branch with ` + "`gatehouse axi run --intent \"...\"`" + `.
 
 ## Intent is required
 
@@ -124,7 +124,7 @@ When you start a run you must pass ` + "`--intent`" + `: **what the user set out
 accomplish** - the goal or request behind this work, in their terms. This is not
 a description of the diff or the files you changed; it is the objective the
 change is meant to achieve. You know it from the conversation, so pass it
-directly - no-mistakes uses it verbatim instead of inferring it from local agent
+directly - gatehouse uses it verbatim instead of inferring it from local agent
 transcripts (slower and flakier).
 
 Err on the side of completeness, not brevity. The review step uses ` + "`--intent`" + `
@@ -142,13 +142,13 @@ Run the pipeline and decide on its findings as they come up:
 
 1. Start the run. It blocks until the first decision point or the end:
    ` + "```sh" + `
-   no-mistakes axi run --intent "<what the user set out to accomplish>"
+   gatehouse axi run --intent "<what the user set out to accomplish>"
    ` + "```" + `
    ` + "`axi run`" + ` and every ` + "`axi respond`" + ` block synchronously - the review, test,
    and CI steps can each take **several minutes**, so a single call may not
    return for a while. That is normal; allow a long timeout and do not cancel
    or re-issue the command because it seems slow. To check progress without
-   disturbing the run, use ` + "`no-mistakes axi status`" + ` from a separate call.
+   disturbing the run, use ` + "`gatehouse axi status`" + ` from a separate call.
    A long-running call is working, not stalled - background it if your harness
    needs to, but the run **never advances past a gate on its own**. Read every
    return; on a ` + "`gate:`" + `, respond; loop until an ` + "`outcome:`" + `. Never idle-wait
@@ -184,13 +184,13 @@ Run the pipeline and decide on its findings as they come up:
    Choose one response:
    ` + "```sh" + `
    # accept the step as-is and continue
-   no-mistakes axi respond --action approve
+   gatehouse axi respond --action approve
 
    # have the pipeline fix specific findings, then continue
-   no-mistakes axi respond --action fix --findings <id1,id2> --instructions "<optional guidance>"
+   gatehouse axi respond --action fix --findings <id1,id2> --instructions "<optional guidance>"
 
    # skip this step
-   no-mistakes axi respond --action skip
+   gatehouse axi respond --action skip
    ` + "```" + `
    While a run is active, never fix findings by editing the code yourself -
    the pipeline owns both the findings and the fixes. Your job at a gate is to
@@ -219,31 +219,31 @@ Run the pipeline and decide on its findings as they come up:
      the PR is not merged yet. **You are done driving the pipeline.** Do not
      wait for the merge: tell the user the PR is ready and ask them to review
      and merge it (the PR link is in the ` + "`help`" + ` line). A generic empty forge
-     check list without that declaration is not ready. no-mistakes keeps
+     check list without that declaration is not ready. gatehouse keeps
      monitoring the PR in the background until it is merged, closed, or its
      configured idle timeout elapses, so a human can watch it in the TUI.
    - ` + "`passed`" + ` - the changes cleared the gate and the PR was merged or closed.
    - ` + "`failed`" + ` or ` + "`cancelled`" + ` - they did not; read the output and address it.
      Fix whatever the output points at (a failing test, a lint error, a finding
      you skipped), commit the fix on the same feature branch, then drive the
-     pipeline again - ` + "`no-mistakes axi run --intent \"...\"`" + ` starts a fresh run,
-     or ` + "`no-mistakes rerun`" + ` re-runs the pipeline for the current branch. This
+     pipeline again - ` + "`gatehouse axi run --intent \"...\"`" + ` starts a fresh run,
+     or ` + "`gatehouse rerun`" + ` re-runs the pipeline for the current branch. This
      is the right place to start over: a fresh run or ` + "`rerun`" + ` is a
      *between-runs* action, correct only after a terminal outcome like this -
      never mid-run to circumvent a gate. Do not leave the user at a ` + "`failed`" + `
      outcome without either retrying or explaining what blocks it.
 
 Before any post-pipeline local commit or fresh run, read the structured ` + "`branch_sync`" + ` object returned by AXI home, status, or a drive result.
-Only when its ` + "`next_action.code`" + ` is ` + "`sync`" + `, run ` + "`no-mistakes axi sync`" + ` first.
+Only when its ` + "`next_action.code`" + ` is ` + "`sync`" + `, run ` + "`gatehouse axi sync`" + ` first.
 That guarded sync may be a strict fast-forward or a content-equivalent diverged advance that anchors the pre-sync head before moving the branch with reset semantics; genuine divergence stays blocked.
 If it reports ` + "`next_action.code`" + ` is ` + "`continue_active_run`" + `, the pipeline still owns the branch: run the reported command, keep driving the active run, and do not make local follow-up commits.
-When ` + "`next_action.code`" + ` is ` + "`recover_custody`" + `, a terminal run left unpublished pipeline commits preserved in the local gate: run ` + "`no-mistakes axi sync --recover`" + ` to return custody and take the preserved head, or ` + "`no-mistakes rerun`" + ` to resume validating it instead.
-Recovery takes that head by fast-forward, or by adopting a diverged preserved head proven to carry every local change - the ordinary result of the pipeline rebasing your commits onto a newer base - after anchoring your pre-recovery head under ` + "`refs/no-mistakes/recover-local/<run>`" + `.
+When ` + "`next_action.code`" + ` is ` + "`recover_custody`" + `, a terminal run left unpublished pipeline commits preserved in the local gate: run ` + "`gatehouse axi sync --recover`" + ` to return custody and take the preserved head, or ` + "`gatehouse rerun`" + ` to resume validating it instead.
+Recovery takes that head by fast-forward, or by adopting a diverged preserved head proven to carry every local change - the ordinary result of the pipeline rebasing your commits onto a newer base - after anchoring your pre-recovery head under ` + "`refs/gatehouse/recover-local/<run>`" + `.
 That proof is deliberately narrow, so a rebase whose fix rounds also rewrote your own lines refuses instead of being adopted: when nothing can tell a deliberate pipeline fix from a dropped change, the decision is yours.
 A ` + "`branch_sync.state`" + ` of ` + "`user_owned`" + ` means the run went terminal before changing the submitted head and cancellation released the branch: the exact branch and head are yours and immediately usable for whichever delivery path is authorized - no sync action is needed, and a repeated ` + "`--recover`" + ` there is a harmless no-op.
-A dirty worktree, or divergence that cannot be proven contained, makes the recovery refuse with explicit choices; ` + "`--keep-local`" + ` keeps your current head while the preserved commits stay anchored under ` + "`refs/no-mistakes/recover/<run>`" + `.
+A dirty worktree, or divergence that cannot be proven contained, makes the recovery refuse with explicit choices; ` + "`--keep-local`" + ` keeps your current head while the preserved commits stay anchored under ` + "`refs/gatehouse/recover/<run>`" + `.
 If synchronization is blocked, process that structured state instead of improvising reset, stash, merge, rebase, force, or branch replacement.
-After synchronization, commit the follow-up on top and re-run ` + "`no-mistakes axi run --intent \"...\"`" + ` with the original user intent.
+After synchronization, commit the follow-up on top and re-run ` + "`gatehouse axi run --intent \"...\"`" + ` with the original user intent.
 This preserves every prior gate-fix commit regardless of its configured subject.
 
 The CI step deliberately keeps watching the PR after checks pass, so
@@ -260,9 +260,9 @@ validation at Review, and re-pushes the branch through Push**; a PR that is mere
 either, since the platform merges it. The one exception is when that monitor is
 no longer running - the PR was closed, the run was aborted or superseded, it
 idle-timed-out, or its auto-fix attempts were exhausted - in which case recover
-with ` + "`no-mistakes rerun`" + `, which cancels the stale monitor and re-runs the full
+with ` + "`gatehouse rerun`" + `, which cancels the stale monitor and re-runs the full
 pipeline including a deterministic rebase step. Do **not** reach for
-` + "`no-mistakes axi run`" + ` to refresh a still-active PR: after ` + "`checks-passed`" + ` it
+` + "`gatehouse axi run`" + ` to refresh a still-active PR: after ` + "`checks-passed`" + ` it
 reattaches to the running monitor (HEAD unchanged) and returns its output
 without rebasing.
 
@@ -304,14 +304,14 @@ run without checking back.
 ## Inspecting state
 
 ` + "```sh" + `
-no-mistakes axi               # home view: current branch, active runs, next steps
-no-mistakes axi status        # full detail plus cached branch_sync when relevant
-no-mistakes axi sync --check  # freshly verify an offered synchronization plan
-no-mistakes axi sync          # apply only an offered guarded synchronization
-no-mistakes axi sync --recover  # return custody after a terminal run left unpublished pipeline commits
-no-mistakes axi logs --step <name> --full   # full log output of one step
-no-mistakes axi abort         # cancel the current-branch active run
-no-mistakes axi abort --run <id>   # cancel a specific run by id (works outside its worktree)
+gatehouse axi               # home view: current branch, active runs, next steps
+gatehouse axi status        # full detail plus cached branch_sync when relevant
+gatehouse axi sync --check  # freshly verify an offered synchronization plan
+gatehouse axi sync          # apply only an offered guarded synchronization
+gatehouse axi sync --recover  # return custody after a terminal run left unpublished pipeline commits
+gatehouse axi logs --step <name> --full   # full log output of one step
+gatehouse axi abort         # cancel the current-branch active run
+gatehouse axi abort --run <id>   # cancel a specific run by id (works outside its worktree)
 ` + "```" + `
 
 ## Reading the output
@@ -330,12 +330,12 @@ gate: review
 note: Review auto-fix is disabled by default (auto_fix.review: 0; a repo or global auto_fix.review > 0 override re-enables it), so blocking and ask-user review findings park for your decision rather than being silently self-fixed.
 findings[2]{id,severity,file,line,action,description}:
   r1,warning,internal/pipeline/executor.go,,auto-fix,Error from os.Remove is ignored
-  r2,error,cmd/no-mistakes/main.go,,ask-user,New --force flag bypasses the confirm prompt
+  r2,error,cmd/gatehouse/main.go,,ask-user,New --force flag bypasses the confirm prompt
 help[6]:
-  Run ` + "`no-mistakes axi respond --action approve`" + ` to accept this step and continue
-  Run ` + "`no-mistakes axi respond --action fix --findings <ids>`" + ` to have the pipeline fix the selected findings (do not edit files yourself)
-  Run ` + "`no-mistakes axi respond --action skip`" + ` to skip this step
-  Run ` + "`no-mistakes axi logs --step review --full`" + ` to read the full step log
+  Run ` + "`gatehouse axi respond --action approve`" + ` to accept this step and continue
+  Run ` + "`gatehouse axi respond --action fix --findings <ids>`" + ` to have the pipeline fix the selected findings (do not edit files yourself)
+  Run ` + "`gatehouse axi respond --action skip`" + ` to skip this step
+  Run ` + "`gatehouse axi logs --step review --full`" + ` to read the full step log
   A long-running call is working, not stalled - background it if your harness needs to, but the run never advances past a gate on its own. Read every return; on a ` + "`gate:`" + `, respond; loop until an ` + "`outcome:`" + `.
   Commit post-pipeline follow-up work on top of the existing branch so every pipeline fix commit remains present. Never abort-and-restart, reset, or replace the branch in a way that drops prior gate-fix commits.
 ` + "```" + `

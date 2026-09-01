@@ -14,7 +14,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/kunchenguid/no-mistakes/internal/winproc"
+	"github.com/BertramPetersen/gatehouse/internal/winproc"
 	"golang.org/x/sys/windows"
 )
 

@@ -10,21 +10,21 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kunchenguid/no-mistakes/internal/gatecontext"
-	"github.com/kunchenguid/no-mistakes/internal/gateguidance"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/skill"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/gatecontext"
+	"github.com/BertramPetersen/gatehouse/internal/gateguidance"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/skill"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // canonicalStaleMonitorPhrases are the load-bearing claims of the corrected
 // "PR fell behind / conflicted after checks pass" guidance: the live CI monitor
 // auto-rebases and re-pushes such a PR, so the agent runs no command and never
-// hand-rebases, and `no-mistakes rerun` is only the dead-monitor recovery.
+// hand-rebases, and `gatehouse rerun` is only the dead-monitor recovery.
 var canonicalStaleMonitorPhrases = []string{
 	"never hand-rebase",
 	"re-pushes",
-	"no-mistakes rerun",
+	"gatehouse rerun",
 }
 
 var canonicalPreserveGateFixPhrases = []string{
@@ -35,14 +35,14 @@ var canonicalPreserveGateFixPhrases = []string{
 
 var canonicalBranchSyncPhrases = []string{
 	"branch_sync",
-	"no-mistakes axi sync",
+	"gatehouse axi sync",
 	"blocked",
 	"reset, stash, merge, rebase, force, or branch replacement",
 	// Guarded custody recovery for a terminal run whose pipeline commits were
 	// never published (v1.38.1 dogfood catch): the action, its next_action
 	// code, and the preservation claim must stay on every guidance surface.
 	"recover_custody",
-	"no-mistakes axi sync --recover",
+	"gatehouse axi sync --recover",
 	"preserved in the local gate",
 	// Cancellation releases a run that never changed the submitted head
 	// (v1.44.2 dogfood catch): every surface must name the released state and

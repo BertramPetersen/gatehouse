@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/runenv"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/runenv"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestGitSafeEnvAppliesRunOverlayBeforeGateEnvironment(t *testing.T) {
@@ -81,7 +81,7 @@ func TestGitSafeEnv_CouplesPWDToWorkdir(t *testing.T) {
 }
 
 // TestGitSafeEnv_StampsGateRoleMarker locks in the ambient-authority containment
-// marker: every spawned gate agent must carry NO_MISTAKES_GATE=1 so a
+// marker: every spawned gate agent must carry GATEHOUSE_GATE=1 so a
 // cooperating orchestration harness in the target repo can recognize the gate
 // agent and refuse to let it drive the fleet. If this regresses, a gate agent
 // validating a firstmate-shaped repo becomes indistinguishable from a real
@@ -95,7 +95,7 @@ func TestGitSafeEnv_StampsGateRoleMarker(t *testing.T) {
 
 func TestGitSafeEnvIsObservedBySpawnedProcess(t *testing.T) {
 	cmd := exec.Command(os.Args[0], "-test.run=^TestAgentEnvProbe$")
-	cmd.Env = gitSafeEnv(t.TempDir(), []string{"NM_HOME=/isolated/eval", GateRoleEnvVar + "=0", "NM_TEST_ENV_PROBE=1"})
+	cmd.Env = gitSafeEnv(t.TempDir(), []string{"GATEHOUSE_HOME=/isolated/eval", GateRoleEnvVar + "=0", "GATEHOUSE_TEST_ENV_PROBE=1"})
 	output, err := cmd.Output()
 	if err != nil {
 		t.Fatalf("run environment probe: %v", err)
@@ -174,7 +174,7 @@ func TestEverySupportedAdapterCarriesTheRunOverlayAndGateMarker(t *testing.T) {
 // zero-overlay spelling of the overlay-aware one, so a caller that has no
 // run-scoped forge context cannot drift onto a different environment policy.
 func TestGitSafeEnvIsTheEmptyOverlayCase(t *testing.T) {
-	extra := []string{"NM_HOME=/isolated/eval"}
+	extra := []string{"GATEHOUSE_HOME=/isolated/eval"}
 	plain := gitSafeEnv("/work/dir", extra)
 	overlaid := gitSafeEnvWithOverlay("/work/dir", runenv.Overlay{}, extra)
 
@@ -185,16 +185,16 @@ func TestGitSafeEnvIsTheEmptyOverlayCase(t *testing.T) {
 	if resolved[GateRoleEnvVar] != "1" {
 		t.Errorf("%s = %q, want \"1\"", GateRoleEnvVar, resolved[GateRoleEnvVar])
 	}
-	if resolved["NM_HOME"] != "/isolated/eval" {
-		t.Errorf("NM_HOME = %q, want /isolated/eval", resolved["NM_HOME"])
+	if resolved["GATEHOUSE_HOME"] != "/isolated/eval" {
+		t.Errorf("GATEHOUSE_HOME = %q, want /isolated/eval", resolved["GATEHOUSE_HOME"])
 	}
 }
 
 func TestAgentEnvProbe(t *testing.T) {
-	if os.Getenv("NM_TEST_ENV_PROBE") != "1" {
+	if os.Getenv("GATEHOUSE_TEST_ENV_PROBE") != "1" {
 		return
 	}
-	fmt.Printf("%s|%s", os.Getenv("NM_HOME"), os.Getenv(GateRoleEnvVar))
+	fmt.Printf("%s|%s", os.Getenv("GATEHOUSE_HOME"), os.Getenv(GateRoleEnvVar))
 }
 
 // TestGitSafeEnv_GateMarkerWinsOverAmbient guards that a target repo (or a

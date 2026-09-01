@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 type failingRenameError string
@@ -79,7 +79,7 @@ func TestWaitForDaemonStopRetriesProcessProbeErrors(t *testing.T) {
 	if err := p.EnsureDirs(); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("NM_TEST_DAEMON_STOP_TIMEOUT", "500ms")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_STOP_TIMEOUT", "500ms")
 
 	oldHealthCheck := daemonHealthCheck
 	oldProcessRunning := daemonProcessRunning
@@ -113,7 +113,7 @@ func TestWaitForDaemonStopRetriesProcessProbeErrors(t *testing.T) {
 }
 
 func TestDaemonStartTimeoutCoversColdProductionWork(t *testing.T) {
-	t.Setenv("NM_TEST_DAEMON_START_TIMEOUT", "")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_TIMEOUT", "")
 	oldGOOS := runtimeGOOS
 	runtimeGOOS = "windows"
 	t.Cleanup(func() { runtimeGOOS = oldGOOS })

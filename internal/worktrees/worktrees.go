@@ -1,10 +1,10 @@
 // Package worktrees resolves where a repository's pipeline run worktrees
 // live.
 //
-// By default a run worktree is created at <NM_HOME>/worktrees/<repoID>/<runID>,
+// By default a run worktree is created at <GATEHOUSE_HOME>/worktrees/<repoID>/<runID>,
 // which is deliberately outside every checkout. That placement defeats
 // directory-scoped toolchain configuration: mise, direnv and friends resolve
-// their settings by path ancestry, so a worktree under NM_HOME inherits none
+// their settings by path ancestry, so a worktree under GATEHOUSE_HOME inherits none
 // of the configuration the operator applied to the directory their checkouts
 // live in. The worktree_roots map in the global config lets an operator name
 // the directory a repository's run worktrees are created in, and this package
@@ -22,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 // Layout maps a repository to the directory holding its run worktrees.
@@ -75,7 +75,7 @@ func (l *Layout) Dir(repoID, workingPath, runID string) string {
 // An empty value is the default placement, never a configured root. Such a row
 // was written before this column existed, and the column shipped with
 // worktree_roots itself, so a run that recorded nothing predates the setting and
-// can only have run under <NM_HOME>/worktrees. Consulting the current
+// can only have run under <GATEHOUSE_HOME>/worktrees. Consulting the current
 // configuration for it would send resume and cleanup to a directory that run
 // never used, and adding an entry for the checkout would be enough to strand a
 // parked run upgraded across that boundary.
@@ -98,19 +98,19 @@ func RecordedDir(p *paths.Paths, recorded, repoID, runID string) string {
 //
 // internal/config validates every worktree_roots entry it can judge on its own
 // (absolute paths, two checkouts sharing a root, a root equal to its checkout),
-// but it never learns where NM_HOME is, and it is not the owner of what a run
+// but it never learns where GATEHOUSE_HOME is, and it is not the owner of what a run
 // worktree does to the checkout it belongs to. Those two are this policy:
 //
-// A root inside NM_HOME collides with the daemon's own state. Inside
-// <NM_HOME>/worktrees the collision is total: those entries are the ULID-named
+// A root inside GATEHOUSE_HOME collides with the daemon's own state. Inside
+// <GATEHOUSE_HOME>/worktrees the collision is total: those entries are the ULID-named
 // per-repository directories the default placement owns and sweeps wholesale,
 // and a run ID is a ULID too, so a repository directory holding another
 // repository's live run worktrees looks exactly like one more leftover run.
-// Elsewhere under NM_HOME it is just as destructive for being narrower -
-// <NM_HOME>/logs makes a run's worktree its own log directory (paths.RunLogDir
-// is <NM_HOME>/logs/<runID>), so removing the worktree at run end destroys the
+// Elsewhere under GATEHOUSE_HOME it is just as destructive for being narrower -
+// <GATEHOUSE_HOME>/logs makes a run's worktree its own log directory (paths.RunLogDir
+// is <GATEHOUSE_HOME>/logs/<runID>), so removing the worktree at run end destroys the
 // logs of the run that just finished. Nothing an operator can want lives under
-// NM_HOME anyway: it carries none of the directory-scoped toolchain
+// GATEHOUSE_HOME anyway: it carries none of the directory-scoped toolchain
 // configuration the setting exists to reach.
 //
 // A root inside ANY checkout puts an untracked directory in that checkout for as
@@ -126,7 +126,7 @@ func RecordedDir(p *paths.Paths, recorded, repoID, runID string) string {
 func CheckPlacement(p *paths.Paths, checkout, root string, otherCheckouts ...string) error {
 	home := p.Root()
 	if Contains(home, root) {
-		return fmt.Errorf("%q is inside no-mistakes' own state directory (%q), where it would collide with the daemon's worktrees, logs, or gates; choose a directory outside it", root, home)
+		return fmt.Errorf("%q is inside gatehouse' own state directory (%q), where it would collide with the daemon's worktrees, logs, or gates; choose a directory outside it", root, home)
 	}
 	if strings.TrimSpace(checkout) != "" && Contains(checkout, root) {
 		return fmt.Errorf("%q is inside the checkout whose runs it would hold, which leaves that checkout with an untracked run worktree while a run executes and blocks branch synchronization; choose a directory outside the checkout", root)
@@ -256,12 +256,12 @@ func Canonical(path string) string {
 
 // Contains reports whether path is dir itself or sits below it. It is how the
 // pathological placements are recognized: a worktree root inside the checkout
-// whose runs it would hold, or inside the directory no-mistakes already owns.
+// whose runs it would hold, or inside the directory gatehouse already owns.
 //
 // Comparing spellings answers this for paths that do not exist yet, which a
 // configured worktree root usually does not. It is not the whole answer,
 // because on a case-insensitive volume - the macOS and Windows default -
-// <NM_HOME>/logs and <nm_home>/Logs are ONE directory that no spelling
+// <GATEHOUSE_HOME>/logs and <nm_home>/Logs are ONE directory that no spelling
 // comparison equates, and every placement guard would wave through a root that
 // then collides with the daemon's own state. So a spelling that says "outside"
 // is checked against the filesystem, which is the authority on whether two

@@ -1,17 +1,17 @@
 ---
 title: Repo Config Reference
-description: All fields for .no-mistakes.yaml.
+description: All fields for .gatehouse.yaml.
 ---
 
-Per-repo configuration lives in `.no-mistakes.yaml` at the root of your repository.
+Per-repo configuration lives in `.gatehouse.yaml` at the root of your repository.
 
 :::caution[Security: gate-control fields are read from the default branch]
 `commands.*` execute arbitrary shell on the daemon host via `sh -c` / `cmd.exe /c`, and `agent` selects which process launches there (including ordered fallback lists, ACP aliases such as `cursor`, and `acp:` targets) with the maintainer's credentials.
 To prevent a supply-chain attack where a contributor lands a hostile value on a gated branch, the daemon always reads **`commands` and `agent` from your default branch** (e.g. `origin/main`), never from the pushed SHA, and reads them at the exact commit a fresh fetch resolved (so a stale `origin/<default>` ref cannot serve a value the live default branch removed).
 The daemon also reads `document.instructions`, `review.path_instructions`, `gates`, `disable_project_settings`, `no_ci`, `ci.rerun_transient`, and `test.evidence.branch` only from that trusted copy.
 `pr.base_branch` is trusted-default-branch-only as well, but unlike those fields it follows the same `allow_repo_commands: true` opt-in exception as `commands`/`agent` (see [`pr.base_branch`](#prbase_branch) below).
-If the default branch cannot be fetched and resolved to a readable commit, or its present `.no-mistakes.yaml` cannot be read and parsed, the run aborts before launching an agent.
-A readable default-branch tree with no `.no-mistakes.yaml` is valid and uses defaults.
+If the default branch cannot be fetched and resolved to a readable commit, or its present `.gatehouse.yaml` cannot be read and parsed, the run aborts before launching an agent.
+A readable default-branch tree with no `.gatehouse.yaml` is valid and uses defaults.
 Commit the gate-control settings you want to your default branch.
 Non-executing fields (`ignore_patterns`, `auto_fix`, `commit`, `intent`, `test`) are still read from the pushed branch, except `test.evidence.branch`, which names a git ref the daemon pushes to.
 
@@ -19,7 +19,7 @@ If you genuinely want per-branch `commands` and `agent` (for example, a single-d
 :::
 
 ```yaml
-# .no-mistakes.yaml
+# .gatehouse.yaml
 
 agent: codex
 
@@ -75,7 +75,7 @@ ci:
   rerun_transient: 0
 
 commit:
-  fix_message: "chore(no-mistakes-{{.Step}}): {{.Summary}}"
+  fix_message: "chore(gatehouse-{{.Step}}): {{.Summary}}"
 
 intent:
   enabled: true
@@ -86,8 +86,8 @@ intent:
 test:
   evidence:
     store_in_repo: true
-    dir: .no-mistakes/evidence
-    branch: no-mistakes/evidence
+    dir: .gatehouse/evidence
+    branch: gatehouse/evidence
 ```
 
 ## Fields
@@ -119,9 +119,9 @@ agent: [codex, grok]
 The list is filtered to entries available to the daemon at run startup, and the first available entry becomes the primary agent.
 After resolving `auto`, entries that resolve to the same ACP target are deduplicated in list order, so `cursor` and `acp:cursor` provide one fallback and preserve whichever spelling appears first.
 If no entry is available, the gate fails before its first pipeline step.
-If a pipeline invocation fails because that agent process cannot start or exits with an error, no-mistakes retries that invocation with the next available fallback.
+If a pipeline invocation fails because that agent process cannot start or exits with an error, gatehouse retries that invocation with the next available fallback.
 Structured findings and schema/output validation problems do not trigger fallback.
-This per-repo `agent` value, including every fallback entry, is still read from the trusted default-branch `.no-mistakes.yaml` unless `allow_repo_commands` is enabled there.
+This per-repo `agent` value, including every fallback entry, is still read from the trusted default-branch `.gatehouse.yaml` unless `allow_repo_commands` is enabled there.
 
 ### allow_repo_commands
 
@@ -132,7 +132,7 @@ Opt in to honoring the code-executing selection fields (`commands.{test,lint,for
 | Type | `bool` |
 | Default | `false` |
 
-This field is itself read **only from the trusted default-branch copy** of `.no-mistakes.yaml`, never from the pushed SHA, so a contributor cannot self-enable it by setting it on a feature branch. By default the daemon reads `commands` and `agent` from your default branch (e.g. `origin/main`) so a pushed SHA cannot inject shell or pick the launched agent on the daemon host. This opt-in covers those two fields only; `document.instructions`, `review.path_instructions`, and `disable_project_settings` stay trusted-only either way. Leave this `false` for any repo that accepts contributions. Set it to `true` only for a single-developer environment where you trust every branch you push (for example, a personal repo gated by your own daemon).
+This field is itself read **only from the trusted default-branch copy** of `.gatehouse.yaml`, never from the pushed SHA, so a contributor cannot self-enable it by setting it on a feature branch. By default the daemon reads `commands` and `agent` from your default branch (e.g. `origin/main`) so a pushed SHA cannot inject shell or pick the launched agent on the daemon host. This opt-in covers those two fields only; `document.instructions`, `review.path_instructions`, and `disable_project_settings` stay trusted-only either way. Leave this `false` for any repo that accepts contributions. Set it to `true` only for a single-developer environment where you trust every branch you push (for example, a personal repo gated by your own daemon).
 
 ### disable_project_settings
 
@@ -144,7 +144,7 @@ Suppress project-level agent settings and instructions for every gate-agent star
 | Default | `false` |
 
 This opt-in is intended for agent-orchestration repositories whose `AGENTS.md`, `CLAUDE.md`, or harness-specific project settings would give a validation agent an operator identity and authority that it must not adopt.
-When enabled, no-mistakes suppresses the target checkout's project settings for every agent-driven gate step while preserving user-level agent configuration.
+When enabled, gatehouse suppresses the target checkout's project settings for every agent-driven gate step while preserving user-level agent configuration.
 Codex, Claude, and Pi are the currently verified agents: Codex receives `project_doc_max_bytes=0` and `--ignore-rules`, Claude loads only its user setting source, and Pi runs with `--no-context-files` (preserving a pinned `--no-context-files` or `-nc` spelling).
 Grok 1.0.5 still discovers native project instructions and `.grok` project surfaces, so it is not a verified agent for this boundary. A configuration that resolves Grok while this option is enabled therefore fails closed before launch.
 The setting applies to both new and resumed sessions.
@@ -153,7 +153,7 @@ The gate fails before launching an agent if any resolved agent or fallback lacks
 It also fails if `agent_args_override` defeats suppression, such as a nonzero Codex `project_doc_max_bytes` or Claude setting sources that include `project` or `local`.
 When this option is `false`, missing, or `null`, all agents retain their existing project-setting behavior.
 
-This field is honored **only from the trusted default-branch copy** of `.no-mistakes.yaml`, regardless of `allow_repo_commands`.
+This field is honored **only from the trusted default-branch copy** of `.gatehouse.yaml`, regardless of `allow_repo_commands`.
 A pushed branch cannot enable it or disable a trusted opt-in.
 If the trusted commit or its present config file cannot be read and parsed, the run aborts rather than guessing that the option is disabled.
 
@@ -172,7 +172,7 @@ Absence of this field means CI is expected. A zero-length check result then stay
 
 If checks still appear on a declared no-CI repository, their actual states are processed normally. The declaration never waives a registered pending or failing check.
 
-This field is honored **only from the trusted default-branch copy** of `.no-mistakes.yaml`, regardless of `allow_repo_commands`.
+This field is honored **only from the trusted default-branch copy** of `.gatehouse.yaml`, regardless of `allow_repo_commands`.
 A feature branch cannot self-declare `no_ci: true` to bypass checks, and cannot clear a trusted declaration either.
 
 ### pr.base_branch
@@ -187,7 +187,7 @@ Select the branch that newly created pull requests target.
 
 Use this when the repository's integration branch differs from its forge default branch, for example `develop` instead of `main`.
 The configured branch is used for PR creation, and as the integration base for the rebase step.
-When unset, no-mistakes preserves the existing behavior and targets `Repo.DefaultBranch`.
+When unset, gatehouse preserves the existing behavior and targets `Repo.DefaultBranch`.
 
 PR lookup matches an existing PR by branch alone, never filtered by base, so a `pr.base_branch` change after a PR was opened updates that PR instead of opening a duplicate against the new base.
 Once a PR exists, its actual forge base branch is authoritative over `pr.base_branch` for the CI step's merge-conflict auto-fix and base-branch tip monitoring, protecting a resumed run from a configuration change made after the PR was created.
@@ -208,7 +208,7 @@ Explicit **targeted** local test command. Run via the platform shell - `sh -c` o
 
 `commands.test` is local **targeted validation** of the change and requested intent, not a CI-parity repository-wide regression command.
 Broad regression belongs in remote CI and remains mandatory before a PR is ready; do not put a complete-suite walk here just to mirror CI.
-no-mistakes does not guess whether an arbitrary shell string is "too broad" - the contract is documented and dogfooded, not enforced with language- or filename-specific heuristics.
+gatehouse does not guess whether an arbitrary shell string is "too broad" - the contract is documented and dogfooded, not enforced with language- or filename-specific heuristics.
 
 When set, the test step runs this exact command first as the baseline and checks the exit code.
 When empty, the agent detects and runs the smallest relevant tests itself (and is instructed never to run the complete repository suite).
@@ -251,7 +251,7 @@ The document step always applies a built-in placement policy: every fact has exa
 `document.instructions` states this repository's ownership map or extra placement rules (for example, which file owns which class of facts).
 It augments or clarifies the built-in policy; it cannot disable documentation integrity.
 
-Like `commands.*` and `agent`, this field steers gate behavior, so it is honored **only from the trusted default-branch copy** of `.no-mistakes.yaml`: a contributor's pushed branch cannot weaken the documentation rules that gate its own review.
+Like `commands.*` and `agent`, this field steers gate behavior, so it is honored **only from the trusted default-branch copy** of `.gatehouse.yaml`: a contributor's pushed branch cannot weaken the documentation rules that gate its own review.
 
 ### review.path_instructions
 
@@ -294,7 +294,7 @@ Matching runs against the full changed-file list and is deliberately **not** fil
 
 Blocks augment the built-in review instructions; they cannot disable them, and a finding the reviewer raises from a block goes through the same severity and action model as any other finding.
 With nothing configured, or nothing matching the change, the review prompt is exactly what it would be without this setting.
-The step log names the rules it applied and the rules that matched nothing, so a rule that never fires is visible in `no-mistakes axi logs --step review`.
+The step log names the rules it applied and the rules that matched nothing, so a rule that never fires is visible in `gatehouse axi logs --step review`.
 
 #### Limits and validation
 
@@ -308,7 +308,7 @@ These checks run on whichever copy of the file is parsed, including the pushed b
 
 #### Trust
 
-Like `document.instructions`, this field steers gate behavior, so it is honored **only from the trusted default-branch copy** of `.no-mistakes.yaml`, regardless of [`allow_repo_commands`](#allow_repo_commands): a value present only on a pushed branch is ignored, so a contributor cannot inject instructions into the review that gates them.
+Like `document.instructions`, this field steers gate behavior, so it is honored **only from the trusted default-branch copy** of `.gatehouse.yaml`, regardless of [`allow_repo_commands`](#allow_repo_commands): a value present only on a pushed branch is ignored, so a contributor cannot inject instructions into the review that gates them.
 
 ### gates
 
@@ -351,11 +351,11 @@ A failing gate parks the run for a decision instead of auto-fixing: a gate state
 
 Answering that decision with `fix` is that authorization: the gate then runs a fix turn against the reported findings and its own requirement - the command that must exit `0`, or the rule an agent gate states - and re-runs its check, so the next verdict describes the repaired worktree. Answering `approve` accepts the change as it stands.
 
-Each gate keeps its own step log under the step name `gate.<anchor>.<name>`, so a gate declared as `name: mutation-budget` with `after: test` is read with `no-mistakes axi logs --step gate.test.mutation-budget`.
+Each gate keeps its own step log under the step name `gate.<anchor>.<name>`, so a gate declared as `name: mutation-budget` with `after: test` is read with `gatehouse axi logs --step gate.test.mutation-budget`.
 
-Because a gate can only add a verdict, a repository that configures gates makes a pass mean *more* than the core pipeline, never less. There is no way to switch a core step off here; to skip one for a single run, use the per-run [`--skip`](/no-mistakes/reference/cli/) instead.
+Because a gate can only add a verdict, a repository that configures gates makes a pass mean *more* than the core pipeline, never less. There is no way to switch a core step off here; to skip one for a single run, use the per-run [`--skip`](/gatehouse/reference/cli/) instead.
 
-A gate also cannot be pre-skipped: neither `--skip` nor the `no-mistakes.skip=` push option accepts a gate step name, so a pushed branch cannot switch off the maintainer's extra check before its own run starts. Answering a parked gate with `skip` stays available, like any other gate, as a decision made at the park.
+A gate also cannot be pre-skipped: neither `--skip` nor the `gatehouse.skip=` push option accepts a gate step name, so a pushed branch cannot switch off the maintainer's extra check before its own run starts. Answering a parked gate with `skip` stays available, like any other gate, as a decision made at the park.
 
 #### Limits and validation
 
@@ -367,7 +367,7 @@ A malformed entry fails when the config is parsed, so the run aborts before any 
 
 #### Trust
 
-A gate either executes shell on the daemon host or steers a gate agent, so it is honored **only from the trusted default-branch copy** of `.no-mistakes.yaml`, regardless of [`allow_repo_commands`](#allow_repo_commands).
+A gate either executes shell on the daemon host or steers a gate agent, so it is honored **only from the trusted default-branch copy** of `.gatehouse.yaml`, regardless of [`allow_repo_commands`](#allow_repo_commands).
 
 That opt-in deliberately does not extend here. It covers a pushed branch re-running its own suite through `commands.*`; a gate instead defines what validating the branch *means*, so a contributor must not be able to declare, retarget, or delete the check that clears them.
 
@@ -378,8 +378,8 @@ So when a contributor must not be able to weaken a gate, state it as `instructio
 ### Command process lifetime
 
 All configured `commands.*` entries are scoped to their step.
-After no-mistakes starts one of these commands, it terminates any remaining child processes from that command when the command exits, fails, or the step is cancelled.
-Do not rely on a configured command to leave a background server or watcher running after it returns; keep that service inside the command lifetime or start it outside no-mistakes.
+After gatehouse starts one of these commands, it terminates any remaining child processes from that command when the command exits, fails, or the step is cancelled.
+Do not rely on a configured command to leave a background server or watcher running after it returns; keep that service inside the command lifetime or start it outside gatehouse.
 
 ### ignore_patterns
 
@@ -442,9 +442,9 @@ Every rerun this budget authorizes is another provider-side workflow run billed 
 A pushed branch cannot raise its own rerun budget.
 The default is `0` because a cancelled conclusion does not identify its cause: the same value covers the provider aborting its own infrastructure, a maintainer stopping a runaway or unsafe job, and repository concurrency with `cancel-in-progress`.
 Rerunning on that ambiguity can restart work someone deliberately stopped, so raise this only for a repository whose cancellations are known to be provider-side.
-At `0`, no-mistakes makes no extra provider call to classify a GitHub setup failure, so that failure keeps the earlier CI failure and auto-fix behavior.
+At `0`, gatehouse makes no extra provider call to classify a GitHub setup failure, so that failure keeps the earlier CI failure and auto-fix behavior.
 
-With no trusted copy of this file, the operator's own [`ci.rerun_transient`](/no-mistakes/reference/global-config/#cirerun_transient) applies, then the built-in default.
+With no trusted copy of this file, the operator's own [`ci.rerun_transient`](/gatehouse/reference/global-config/#cirerun_transient) applies, then the built-in default.
 A value set here always wins over the global one, so the maintainer of the repository has the last word on how many workflow runs their project is billed for.
 
 With a positive budget, a rerun is requested when the provider attributes the outcome to itself rather than to the job, which is true in two cases:
@@ -457,7 +457,7 @@ The remaining outcomes are the job's own verdict on the commit and are never re-
 - `failure`, `error`, `action_required`, and `startup_failure` (after any repository step ran) are the job's verdict, so they escalate on the first failure with no added latency.
 - `timed_out` means the job exceeded its own `timeout-minutes`, which is usually the branch's own code hanging. Re-running it burns another full timeout window reproducing the same failure, so it is treated as a genuine failure and is not opt-in.
 - `stale` is already treated as skipped rather than failed, so it never reaches this decision.
-- An outcome no-mistakes recognizes as none of the above never earns a rerun either.
+- An outcome gatehouse recognizes as none of the above never earns a rerun either.
 
 A single genuine job failure, or a merge conflict, suppresses the rerun for that poll: the fix agent is needed regardless, and no rerun can clear a merge conflict.
 
@@ -467,7 +467,7 @@ Check names are not unique on a pull request, so same-named checks share one bud
 A rerun request returns as soon as the provider accepts it, while the new attempt replaces the provider-attributed check in the status rollup a moment later.
 A poll that still reads the exact completion the rerun was requested for has observed nothing new, so the monitor waits for a bounded couple of polls rather than escalating a check it never actually re-ran.
 A provider that accepts a rerun and never publishes it cannot stall the run past that.
-Once the provider publishes a conclusive replacement, no-mistakes durably stops treating that rerun as outstanding while preserving the spent budget; if the exact watched head is then green, the monitor reports `checks-passed` normally.
+Once the provider publishes a conclusive replacement, gatehouse durably stops treating that rerun as outstanding while preserving the spent budget; if the exact watched head is then green, the monitor reports `checks-passed` normally.
 
 A provider-attributed check that no rerun is going to replace pauses the step for user approval when it is the only remaining issue, so the pull request never looks green.
 That includes a check that came back cancelled after its rerun and a detected GitHub setup failure that persisted after its budget.
@@ -479,7 +479,7 @@ Reruns are skipped when:
 
 - The provider has no rerun API (only GitHub implements one today; GitLab, Forgejo, Bitbucket Cloud, Azure DevOps, and Gitea reach the approval gate without a rerun).
 - The check's details link names nothing the provider can re-run, for example a third-party status pointing at an external dashboard, or a link under a workflow run that names no job the API accepts. A link naming one job re-runs that job; a cancelled check naming only the workflow run re-runs the whole workflow, while other run-only links re-run failed jobs; an unrecognized link is widened into neither.
-- The published branch head no longer equals the commit the run delivered. That case terminates with the expected and observed commits instead: re-running checks against a different head would certify a revision this run never produced. See [pipeline steps: CI](/no-mistakes/reference/pipeline-steps/#ci).
+- The published branch head no longer equals the commit the run delivered. That case terminates with the expected and observed commits instead: re-running checks against a different head would certify a revision this run never produced. See [pipeline steps: CI](/gatehouse/reference/pipeline-steps/#ci).
 
 ### commit.fix_message
 
@@ -488,9 +488,9 @@ Override the auto-fix commit subject template for this repository.
 | | |
 | --- | --- |
 | Type | `string` |
-| Default | Inherits from global config, whose default is `no-mistakes({{.Step}}): {{.Summary}}` |
+| Default | Inherits from global config, whose default is `gatehouse({{.Step}}): {{.Summary}}` |
 
-The value follows the [global `commit.fix_message` template syntax and validation rules](/no-mistakes/reference/global-config/#commitfix_message).
+The value follows the [global `commit.fix_message` template syntax and validation rules](/gatehouse/reference/global-config/#commitfix_message).
 That includes the 1,024-byte template limit, 16-placeholder limit, 4,096-byte summary and rendered-subject limits, and rejection of bidi and invisible Unicode format characters.
 The setting applies to the Review, Test, Document, Lint, and CI repair paths, not commits created by the Rebase or Push steps.
 
@@ -518,10 +518,10 @@ Fields not set here inherit from global config and then the built-in defaults.
 | Field | Type | Default |
 | --- | --- | --- |
 | `test.evidence.store_in_repo` | `bool` | Inherits from global (default `false`) |
-| `test.evidence.dir` | `string` | Inherits from global (default `.no-mistakes/evidence`) |
-| `test.evidence.branch` | `string` | Inherits from global (default `no-mistakes/evidence`) |
+| `test.evidence.dir` | `string` | Inherits from global (default `.gatehouse/evidence`) |
+| `test.evidence.branch` | `string` | Inherits from global (default `gatehouse/evidence`) |
 
-By default, test evidence is written to `<NM_HOME>/evidence/<run-id>` and referenced by local path. Where it is stored locally and how long it is kept are global-only settings; see [`test.evidence`](/no-mistakes/reference/global-config/#testevidence).
+By default, test evidence is written to `<GATEHOUSE_HOME>/evidence/<run-id>` and referenced by local path. Where it is stored locally and how long it is kept are global-only settings; see [`test.evidence`](/gatehouse/reference/global-config/#testevidence).
 For GitHub repositories, set `store_in_repo: true` to publish it to an orphan evidence branch in the code branch's push-target repository and link the artifacts from the PR body; evidence is never committed to the pushed branch, so it never reaches the default branch.
 `test.evidence.branch` is read ONLY from the trusted default-branch copy of this file, because it names a git ref the daemon pushes to; a pushed branch cannot redirect evidence commits.
-See [global config](/no-mistakes/reference/global-config/#testevidence) for provider support, limits, validation, and fail-closed behavior.
+See [global config](/gatehouse/reference/global-config/#testevidence) for provider support, limits, validation, and fail-closed behavior.

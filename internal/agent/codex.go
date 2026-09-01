@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/shellenv"
+	"github.com/BertramPetersen/gatehouse/internal/shellenv"
 )
 
 // codexAgent spawns the codex CLI for each invocation.
@@ -62,7 +62,7 @@ func (a *codexAgent) runOnce(ctx context.Context, opts RunOpts) (*Result, error)
 	schemaPath := ""
 	validationSchema := opts.JSONSchema
 	if len(opts.JSONSchema) > 0 {
-		f, err := os.CreateTemp("", "no-mistakes-codex-schema-*.json")
+		f, err := os.CreateTemp("", "gatehouse-codex-schema-*.json")
 		if err != nil {
 			return nil, fmt.Errorf("codex schema temp file: %w", err)
 		}

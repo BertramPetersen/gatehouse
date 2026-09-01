@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agentcfg"
+	"github.com/BertramPetersen/gatehouse/internal/agentcfg"
 )
 
 func (a *opencodeAgent) ensureServer(ctx context.Context, cwd string, env []string) (string, error) {

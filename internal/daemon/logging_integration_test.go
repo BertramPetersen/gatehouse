@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 // TestDetachedDaemonUsesBoundedDedicatedLogSinks is a production-shaped
@@ -39,10 +39,10 @@ func TestDetachedDaemonUsesBoundedDedicatedLogSinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("SHELL", shellShim)
-	t.Setenv("NM_TEST_START_DAEMON", "1")
-	t.Setenv("NM_DAEMON_HELPER_PROCESS", "daemon")
-	t.Setenv("NM_TEST_DAEMON_START_TIMEOUT", "10s")
-	t.Setenv("NM_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
+	t.Setenv("GATEHOUSE_TEST_START_DAEMON", "1")
+	t.Setenv("GATEHOUSE_DAEMON_HELPER_PROCESS", "daemon")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_TIMEOUT", "10s")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
 
 	if err := startDetachedDaemon(p); err != nil {
 		t.Fatalf("start isolated daemon: %v", err)

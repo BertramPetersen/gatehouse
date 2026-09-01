@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/types"
 )
 
 func TestOpenBrowserCmd_WaitsForBrowserCommand(t *testing.T) {

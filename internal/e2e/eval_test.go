@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // TestEvalJourney drives the public CLI through a real captured pipeline run
-// and replays its review with a fakeagent scenario. The harness's NM_HOME owns
+// and replays its review with a fakeagent scenario. The harness's GATEHOUSE_HOME owns
 // the source daemon; eval itself must create its own temporary sandbox and
 // never reuse it. Nothing here enables eval: recording replay provenance is a
 // default, so an ordinary run is capturable and replayable as it stands.
@@ -93,7 +93,7 @@ func TestEvalJourney(t *testing.T) {
 	replay := invocations[len(invocations)-1]
 	replayCWD := replay.CWD
 	if !strings.Contains(replayCWD, "nm-eval-replay-") || strings.HasPrefix(replayCWD, h.NMHome) {
-		t.Fatalf("replay used non-isolated worktree %q (source NM_HOME %q)", replayCWD, h.NMHome)
+		t.Fatalf("replay used non-isolated worktree %q (source GATEHOUSE_HOME %q)", replayCWD, h.NMHome)
 	}
 	// The candidate's model and effort must reach the harness itself, in this
 	// harness's own spelling. Without this the candidate label would describe a

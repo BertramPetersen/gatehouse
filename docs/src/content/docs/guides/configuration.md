@@ -3,7 +3,7 @@ title: Configuration
 description: Global and per-repo configuration options.
 ---
 
-Configuration is optional. Without any config files, `no-mistakes` defaults to
+Configuration is optional. Without any config files, `gatehouse` defaults to
 `agent: auto`, which picks the first supported native agent or ACP alias available on your system,
 with sensible defaults for everything else.
 
@@ -18,18 +18,18 @@ work. Config exists for the parts that genuinely vary by machine or repo:
 - which subject template pipeline-generated fix commits should use
 - how soon AXI should call an active step quiet
 - whether the review loop reuses supported native agent sessions
-- whether no-mistakes should infer intent from recent local agent transcripts
+- whether gatehouse should infer intent from recent local agent transcripts
 
 Config is split across two files:
 
 | File                         | Scope                         | Full field reference                                          |
 | ---------------------------- | ----------------------------- | ------------------------------------------------------------- |
-| `~/.no-mistakes/config.yaml` | Global defaults for all repos | [Global Config Reference](/no-mistakes/reference/global-config/) |
-| `<repo>/.no-mistakes.yaml`   | Per-repo overrides            | [Repo Config Reference](/no-mistakes/reference/repo-config/)     |
+| `~/.gatehouse/config.yaml` | Global defaults for all repos | [Global Config Reference](/gatehouse/reference/global-config/) |
+| `<repo>/.gatehouse.yaml`   | Per-repo overrides            | [Repo Config Reference](/gatehouse/reference/repo-config/)     |
 
-Set `NM_HOME` to relocate the global config directory (the global file becomes `$NM_HOME/config.yaml`).
+Set `GATEHOUSE_HOME` to relocate the global config directory (the global file becomes `$GATEHOUSE_HOME/config.yaml`).
 Bitbucket Cloud credentials come from environment variables rather than config files.
-For Azure DevOps, authenticate the `az` CLI with either `az devops login` or `AZURE_DEVOPS_EXT_PAT` for non-interactive daemon auth; see [Environment Variables](/no-mistakes/reference/environment/).
+For Azure DevOps, authenticate the `az` CLI with either `az devops login` or `AZURE_DEVOPS_EXT_PAT` for non-interactive daemon auth; see [Environment Variables](/gatehouse/reference/environment/).
 
 ## How to think about config
 
@@ -54,23 +54,23 @@ The rest of this page covers only the cross-cutting rules that involve both file
 
 ## Precedence
 
-- Repo config overrides global config field by field: repo `agent` replaces the global `agent` (including a full ordered fallback list), while `auto_fix`, `ci`, `commit`, `intent`, and the repository-scoped `test.evidence` fields overlay individual fields and fall through to the global default for anything unset (`intent.disabled_readers` adds to the globally disabled readers instead of replacing them). Local evidence location and retention are machine-wide and remain global-only; the [Global Config Reference](/no-mistakes/reference/global-config/#testevidence) owns the exact boundary.
+- Repo config overrides global config field by field: repo `agent` replaces the global `agent` (including a full ordered fallback list), while `auto_fix`, `ci`, `commit`, `intent`, and the repository-scoped `test.evidence` fields overlay individual fields and fall through to the global default for anything unset (`intent.disabled_readers` adds to the globally disabled readers instead of replacing them). Local evidence location and retention are machine-wide and remain global-only; the [Global Config Reference](/gatehouse/reference/global-config/#testevidence) owns the exact boundary.
 - `agent_path_override`, `agent_config`, `agent_args_override`, `acpx_path`, `acp_registry_overrides`, `ci_timeout`, `daemon_connect_timeout`, `branch_sync_remote_timeout`, `step_quiet_warning`, `agent_timeout`, `review_agent_timeout`, `test_agent_timeout`, `log_level`, and `session_reuse` are global-only fields.
-- `commands`, `ignore_patterns`, `document.instructions`, `review.path_instructions`, `gates`, `allow_repo_commands`, and `disable_project_settings` are repo-only fields. By default, `commands` and `agent` are read from the trusted default branch; a trusted `allow_repo_commands: true` opt-in instead honors their pushed-branch values. The other gate-control fields, including `review.path_instructions` and the repo `ci` overlay, always come from the trusted default branch. See the [Repo Config Reference](/no-mistakes/reference/repo-config/) security note.
-- no-mistakes reloads global config while setting up each run, so edits made before starting a run apply to it. For repeatable profiles (for example fast versus deep Codex settings), use separately initialized `NM_HOME` roots; `NM_HOME` moves all no-mistakes state, not just config.
+- `commands`, `ignore_patterns`, `document.instructions`, `review.path_instructions`, `gates`, `allow_repo_commands`, and `disable_project_settings` are repo-only fields. By default, `commands` and `agent` are read from the trusted default branch; a trusted `allow_repo_commands: true` opt-in instead honors their pushed-branch values. The other gate-control fields, including `review.path_instructions` and the repo `ci` overlay, always come from the trusted default branch. See the [Repo Config Reference](/gatehouse/reference/repo-config/) security note.
+- gatehouse reloads global config while setting up each run, so edits made before starting a run apply to it. For repeatable profiles (for example fast versus deep Codex settings), use separately initialized `GATEHOUSE_HOME` roots; `GATEHOUSE_HOME` moves all gatehouse state, not just config.
 
 ## House rules for part of the tree
 
 Most review guidance belongs in the repository's own agent instructions, which every gate agent already reads. Use `review.path_instructions` for the rules that apply to only part of the tree: each entry pairs a path glob with guidance, and the review step appends only the entries whose glob matches a file the change actually touched, each labelled with the path and files it was selected for. A branch that matches nothing, or a repo with nothing configured, gets the review prompt it would get without the setting.
 
-These blocks steer a gate agent, so they are read from your default branch rather than from the branch being reviewed, and `allow_repo_commands` does not change that. Commit them to the default branch before expecting a run to honor them. The [Repo Config Reference](/no-mistakes/reference/repo-config/#reviewpath_instructions) owns the syntax, the glob rules, the size limits, and the exact trust semantics.
+These blocks steer a gate agent, so they are read from your default branch rather than from the branch being reviewed, and `allow_repo_commands` does not change that. Commit them to the default branch before expecting a run to honor them. The [Repo Config Reference](/gatehouse/reference/repo-config/#reviewpath_instructions) owns the syntax, the glob rules, the size limits, and the exact trust semantics.
 
 ## Explicit commands versus agent detection
 
 Explicit `commands.test` and `commands.lint` give you deterministic local baseline behavior, while leaving either empty asks the configured agent to fill the gap: empty `commands.test` has the agent select the smallest relevant tests under the targeted-validation contract (broad regression stays in remote CI), and empty `commands.lint` folds lint into the document step's combined housekeeping pass.
 An empty `commands.format` runs no separate formatter, so configure it explicitly when the push step must format agent changes.
-Either way, available user intent can trigger an evidence-oriented agent follow-up after a successful test baseline. Evidence stays in no-mistakes-managed local storage unless a supported provider publishes it to an orphan evidence branch through `test.evidence.store_in_repo`; the [Global Config Reference](/no-mistakes/reference/global-config/#testevidence) owns its location, cleanup, provider support, and fail-closed behavior.
-The [Repo Config Reference](/no-mistakes/reference/repo-config/) owns the exact per-command semantics (including that `commands.test` is targeted, not CI-parity), command process lifetime, and the `ignore_patterns` match rules.
+Either way, available user intent can trigger an evidence-oriented agent follow-up after a successful test baseline. Evidence stays in gatehouse-managed local storage unless a supported provider publishes it to an orphan evidence branch through `test.evidence.store_in_repo`; the [Global Config Reference](/gatehouse/reference/global-config/#testevidence) owns its location, cleanup, provider support, and fail-closed behavior.
+The [Repo Config Reference](/gatehouse/reference/repo-config/) owns the exact per-command semantics (including that `commands.test` is targeted, not CI-parity), command process lifetime, and the `ignore_patterns` match rules.
 
 Before a new validation gate starts, its effective agent configuration must resolve to a runnable native agent or ACP runner; otherwise the gate fails before its first pipeline step, even when explicit commands are configured.
-Run `no-mistakes doctor` to check the global runner, and see [Choosing an Agent](/no-mistakes/guides/agents/) for how agent selection and fallback lists behave.
+Run `gatehouse doctor` to check the global runner, and see [Choosing an Agent](/gatehouse/guides/agents/) for how agent selection and fallback lists behave.

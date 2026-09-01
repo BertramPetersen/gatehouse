@@ -15,14 +15,14 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline/steps"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline/steps"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // This repository's own gate is a thin caller of the shared composite action in
-// .github/actions/require-no-mistakes. The verdict surface itself is owned by
-// require_no_mistakes_action_test.go, which executes verify.py directly; the
+// .github/actions/require-gatehouse. The verdict surface itself is owned by
+// require_gatehouse_action_test.go, which executes verify.py directly; the
 // tests here own the CALLER: its pin, its exemptions, its triggers, its
 // concurrency identity, its fork boundary, and the fact that its wiring
 // actually reaches a verdict.
@@ -41,7 +41,7 @@ const requiredWorkflowTestHeadSHA = "0123456789abcdef0123456789abcdef01234567"
 // requireActionUsesPrefix is the `uses:` prefix every enforcing repository in
 // the fleet points at. The path after it must resolve to the action directory
 // in this repository, so a rename breaks the caller test rather than the fleet.
-const requireActionUsesPrefix = "kunchenguid/no-mistakes/"
+const requireActionUsesPrefix = "BertramPetersen/gatehouse/"
 
 // requiredActionPin is the exact commit the gate delegates to. It is
 // deliberately asserted by value, not just by shape: the pin must always name
@@ -51,12 +51,12 @@ const requiredActionPin = "32d396ac0f29135daf7fcb9964aba9d5f4e796d6"
 
 var immutableActionPin = regexp.MustCompile(`^[0-9a-f]{40}$`)
 
-// TestNoMistakesRequiredWorkflowCallsTheSharedActionAtAnImmutablePin pins the
+// TestGatehouseRequiredWorkflowCallsTheSharedActionAtAnImmutablePin pins the
 // migration this repository dogfoods for the whole fleet: the gate delegates to
 // the shared action rather than carrying its own copy of the enforcement, and
 // it names a 40-character commit SHA. A mutable ref - `@main` above all - would
 // let the pull request under judgement rewrite its own judge.
-func TestNoMistakesRequiredWorkflowCallsTheSharedActionAtAnImmutablePin(t *testing.T) {
+func TestGatehouseRequiredWorkflowCallsTheSharedActionAtAnImmutablePin(t *testing.T) {
 	step := requiredWorkflowCheckStep(t, loadRequiredWorkflow(t))
 
 	if step.Run != "" {
@@ -89,14 +89,14 @@ func TestNoMistakesRequiredWorkflowCallsTheSharedActionAtAnImmutablePin(t *testi
 	}
 }
 
-// TestNoMistakesRequiredWorkflowExemptsReleaseAutomation pins the exemption
+// TestGatehouseRequiredWorkflowExemptsReleaseAutomation pins the exemption
 // logic so the release pipeline (release-please via GITHUB_TOKEN) and
 // dependabot are never silently blocked by the gate.
 //
 // These stay job-level rather than moving to the action's exempt-authors input:
 // an in-job exemption still needs the run to start, and a GITHUB_TOKEN pull
 // request's run is created in action_required and never starts.
-func TestNoMistakesRequiredWorkflowExemptsReleaseAutomation(t *testing.T) {
+func TestGatehouseRequiredWorkflowExemptsReleaseAutomation(t *testing.T) {
 	condition := loadRequiredWorkflow(t).Jobs["check"].If
 	for _, tc := range []struct {
 		login   string
@@ -138,7 +138,7 @@ func evaluateRequiredWorkflowAuthorCondition(condition, author string) (bool, er
 	return true, nil
 }
 
-// TestNoMistakesRequiredWorkflowTriggersOnRelevantPREvents ensures the check
+// TestGatehouseRequiredWorkflowTriggersOnRelevantPREvents ensures the check
 // re-runs when the PR body is edited so a contributor cannot bypass by opening
 // clean then editing the body.
 //
@@ -154,7 +154,7 @@ func evaluateRequiredWorkflowAuthorCondition(condition, author string) (bool, er
 // carried check runs 96017425510 FAILURE and 96017420271 SUCCESS on one head).
 // Body-bearing events still bind attestation.head_sha to the PR head at that
 // event. No ruleset requires this status, so no head SHA needs a run of its own.
-func TestNoMistakesRequiredWorkflowTriggersOnRelevantPREvents(t *testing.T) {
+func TestGatehouseRequiredWorkflowTriggersOnRelevantPREvents(t *testing.T) {
 	types := requiredWorkflowPullRequestTypes(t, loadRequiredWorkflow(t))
 
 	for _, typ := range []string{"opened", "edited", "reopened"} {
@@ -187,7 +187,7 @@ func requiredWorkflowPullRequestTypes(t *testing.T, workflow requiredWorkflow) [
 	return types
 }
 
-// TestNoMistakesRequiredWorkflowExecutesEveryBodyEvent reproduces the
+// TestGatehouseRequiredWorkflowExecutesEveryBodyEvent reproduces the
 // first-time-fork incident in which an opened event and two same-head body
 // edits became actionable together. The scheduler fixture implements GitHub's
 // documented one-running/one-pending concurrency limit, including pending-run
@@ -199,7 +199,7 @@ func requiredWorkflowPullRequestTypes(t *testing.T, workflow requiredWorkflow) [
 // This is also the caller's end-to-end wiring test: the workflow forwards no
 // pr-* inputs, so a verdict only appears if the action really does read the
 // body and head SHA out of the workflow event payload.
-func TestNoMistakesRequiredWorkflowExecutesEveryBodyEvent(t *testing.T) {
+func TestGatehouseRequiredWorkflowExecutesEveryBodyEvent(t *testing.T) {
 	workflow := loadRequiredWorkflow(t)
 	compliant := pipelineSummaryWithStatuses(t, types.StepStatusCompleted, types.StepStatusCompleted, types.StepStatusCompleted)
 	events := []requiredWorkflowEvent{
@@ -219,13 +219,13 @@ func TestNoMistakesRequiredWorkflowExecutesEveryBodyEvent(t *testing.T) {
 	}
 }
 
-// TestNoMistakesRequiredWorkflowBindsAttestationToTheEventHead keeps the one
+// TestGatehouseRequiredWorkflowBindsAttestationToTheEventHead keeps the one
 // verdict that is genuinely a property of the caller's wiring rather than of
 // verify.py: the head SHA the gate judges against comes from the event payload
 // this workflow subscribes to, so a body carrying an older attestation fails
 // even though it is otherwise well-formed. Every other verdict is owned by
 // TestRequireActionEnforcesTheGate against the same interpreter.
-func TestNoMistakesRequiredWorkflowBindsAttestationToTheEventHead(t *testing.T) {
+func TestGatehouseRequiredWorkflowBindsAttestationToTheEventHead(t *testing.T) {
 	workflow := loadRequiredWorkflow(t)
 	compliant := pipelineSummaryWithStatuses(t, types.StepStatusCompleted, types.StepStatusCompleted, types.StepStatusCompleted)
 	staleHead := "ffffffffffffffffffffffffffffffffffffffff"
@@ -243,7 +243,7 @@ func TestNoMistakesRequiredWorkflowBindsAttestationToTheEventHead(t *testing.T) 
 	}
 }
 
-func TestNoMistakesRequiredWorkflowPreservesHeadEventCoalescing(t *testing.T) {
+func TestGatehouseRequiredWorkflowPreservesHeadEventCoalescing(t *testing.T) {
 	workflow := loadRequiredWorkflow(t)
 	events := []requiredWorkflowEvent{
 		{Action: "opened", PRNumber: 549, RunID: 1001},
@@ -269,9 +269,9 @@ func TestNoMistakesRequiredWorkflowPreservesHeadEventCoalescing(t *testing.T) {
 	}
 }
 
-func TestNoMistakesRequiredWorkflowPublishesStableEventIdentity(t *testing.T) {
+func TestGatehouseRequiredWorkflowPublishesStableEventIdentity(t *testing.T) {
 	workflow := loadRequiredWorkflow(t)
-	if workflow.Jobs["check"].Name != "PR must be raised via no-mistakes" {
+	if workflow.Jobs["check"].Name != "PR must be raised via gatehouse" {
 		t.Fatalf("required check name changed to %q", workflow.Jobs["check"].Name)
 	}
 
@@ -297,7 +297,7 @@ func TestNoMistakesRequiredWorkflowPublishesStableEventIdentity(t *testing.T) {
 	}
 }
 
-func TestNoMistakesRequiredWorkflowKeepsForkBoundaryReadOnly(t *testing.T) {
+func TestGatehouseRequiredWorkflowKeepsForkBoundaryReadOnly(t *testing.T) {
 	workflow := loadRequiredWorkflow(t)
 	if _, ok := workflow.On["pull_request"]; !ok {
 		t.Fatal("required workflow must retain the safe pull_request boundary")
@@ -327,7 +327,7 @@ func TestNoMistakesRequiredWorkflowKeepsForkBoundaryReadOnly(t *testing.T) {
 	}
 }
 
-const requiredWorkflowPath = ".github/workflows/no-mistakes-required.yml"
+const requiredWorkflowPath = ".github/workflows/gatehouse-required.yml"
 
 type requiredWorkflow struct {
 	RunName     string                         `yaml:"run-name"`

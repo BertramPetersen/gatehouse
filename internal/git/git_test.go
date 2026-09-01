@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/runenv"
+	"github.com/BertramPetersen/gatehouse/internal/runenv"
 )
 
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "no-mistakes-git-tests-")
+	dir, err := os.MkdirTemp("", "gatehouse-git-tests-")
 	if err != nil {
 		panic(err)
 	}

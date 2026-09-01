@@ -14,12 +14,12 @@ import (
 	"github.com/spf13/cobra"
 	toon "github.com/toon-format/toon-go"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/skill"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/skill"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func findingsJSON(t *testing.T, items []types.Finding, summary string) string {
@@ -291,7 +291,7 @@ func TestWriteGateShape(t *testing.T) {
 		"  summary: 1 blocking issue\n",
 		"  findings[1]{id,severity,file,action,description}:\n",
 		`    review-1,warning,main.go,ask-user,"calls os.Exit, leaks fd"`,
-		"no-mistakes axi respond --action approve",
+		"gatehouse axi respond --action approve",
 		"to have the pipeline fix the selected findings (do not edit files yourself)",
 		// Review gate carries the auto-fix-disabled note and the keep-driving
 		// reminder so an agent reads them at the point of use.
@@ -321,7 +321,7 @@ func TestGateSummaryUsesBoundedDisclosure(t *testing.T) {
 		!strings.Contains(out, fmt.Sprintf("truncated, %d chars total", len(summary))) {
 		t.Fatalf("gate status should disclose summary truncation:\n%s", out)
 	}
-	if !strings.Contains(out, "no-mistakes axi logs --step test --full") {
+	if !strings.Contains(out, "gatehouse axi logs --step test --full") {
 		t.Fatalf("truncated gate should point to the complete step log:\n%s", out)
 	}
 }
@@ -543,7 +543,7 @@ func TestLogsNoRunHelpIncludesRequiredIntent(t *testing.T) {
 func TestAxiHomeStartsCurrentBranchWhenOtherBranchIsActive(t *testing.T) {
 	repoDir := t.TempDir()
 	nmHome := t.TempDir()
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	run(t, repoDir, "git", "init")
 	run(t, repoDir, "git", "config", "user.email", "test@test.com")
 	run(t, repoDir, "git", "config", "user.name", "Test")
@@ -598,7 +598,7 @@ func TestAxiHomeStartsCurrentBranchWhenOtherBranchIsActive(t *testing.T) {
 		"current_branch: feature/current",
 		"other_branch_active_run:",
 		"branch: feature/other",
-		"no-mistakes axi run --intent",
+		"gatehouse axi run --intent",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("axi home missing %q in:\n%s", want, got)
@@ -607,8 +607,8 @@ func TestAxiHomeStartsCurrentBranchWhenOtherBranchIsActive(t *testing.T) {
 	for _, forbidden := range []string{
 		"\nactive_run:",
 		"gate:",
-		"no-mistakes axi respond --action approve",
-		"no-mistakes axi abort",
+		"gatehouse axi respond --action approve",
+		"gatehouse axi abort",
 	} {
 		if strings.Contains(got, forbidden) {
 			t.Fatalf("axi home should not tell the agent to act on another branch via %q, got:\n%s", forbidden, got)
@@ -732,7 +732,7 @@ func TestAxiLogsFullEscapesControlByteOutsideTailWithoutRewritingLog(t *testing.
 func TestAxiStatusIgnoresInvalidGlobalConfig(t *testing.T) {
 	repoDir := t.TempDir()
 	nmHome := t.TempDir()
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	run(t, repoDir, "git", "init")
 	run(t, repoDir, "git", "config", "user.email", "test@test.com")
 	run(t, repoDir, "git", "config", "user.name", "Test")
@@ -792,9 +792,9 @@ func TestAxiStatusIgnoresInvalidGlobalConfig(t *testing.T) {
 func TestAxiRunReportsInvalidGlobalConfig(t *testing.T) {
 	repoDir := t.TempDir()
 	nmHome := makeSocketSafeTempDir(t)
-	t.Setenv("NM_HOME", nmHome)
-	t.Setenv("NM_TEST_DAEMON_START_TIMEOUT", "100ms")
-	t.Setenv("NM_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
+	t.Setenv("GATEHOUSE_HOME", nmHome)
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_TIMEOUT", "100ms")
+	t.Setenv("GATEHOUSE_TEST_DAEMON_START_POLL_INTERVAL", "10ms")
 	run(t, repoDir, "git", "init")
 	run(t, repoDir, "git", "config", "user.email", "test@test.com")
 	run(t, repoDir, "git", "config", "user.name", "Test")
@@ -844,7 +844,7 @@ func TestAxiRunReportsInvalidGlobalConfig(t *testing.T) {
 // or worktree.
 func TestAxiAbortByRunIDNoOpWhenDaemonStopped(t *testing.T) {
 	nmHome := t.TempDir()
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 
 	var out bytes.Buffer
 	cmd := &cobra.Command{}
@@ -895,7 +895,7 @@ func setupAxiQueryRepo(t *testing.T) (string, *paths.Paths, *db.DB, *db.Repo) {
 	t.Helper()
 	repoDir := t.TempDir()
 	nmHome := t.TempDir()
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	run(t, repoDir, "git", "init")
 	run(t, repoDir, "git", "config", "user.email", "test@test.com")
 	run(t, repoDir, "git", "config", "user.name", "Test")
@@ -923,7 +923,7 @@ func setupAxiQueryRepo(t *testing.T) (string, *paths.Paths, *db.DB, *db.Repo) {
 
 func openTestDB(t *testing.T) *db.DB {
 	t.Helper()
-	database, err := db.Open(filepath.Join(t.TempDir(), "no-mistakes.db"))
+	database, err := db.Open(filepath.Join(t.TempDir(), "gatehouse.db"))
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}

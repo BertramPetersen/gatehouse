@@ -8,17 +8,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 const refreshTestZeroSHA = "0000000000000000000000000000000000000000"
 
 func TestRunStartRefreshesCloneURLWithoutMutatingRemotes(t *testing.T) {
-	t.Setenv("NM_DEMO", "1")
+	t.Setenv("GATEHOUSE_DEMO", "1")
 	p, database := newRefreshRunFixture(t)
 	repo, head := setupTestGitRepo(t, p, database, "refresh-success")
 	const oldURL = "git@example.com:owner/project.git"
@@ -117,7 +117,7 @@ func TestRunStartURLRefreshFailuresWarnSafelyAndContinueWithOldRegistration(t *t
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("NM_DEMO", "1")
+			t.Setenv("GATEHOUSE_DEMO", "1")
 			p, database := newRefreshRunFixture(t)
 			repo, head := setupTestGitRepo(t, p, database, "refresh-failure")
 			before, err := database.GetRepo(repo.ID)

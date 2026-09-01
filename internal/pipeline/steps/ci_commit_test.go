@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/branchsync"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/branchsync"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
 )
 
 func TestCIStep_CommitAndPush_CommitsLocallyWithoutPushing(t *testing.T) {
@@ -66,7 +66,7 @@ func TestCIStep_CommitAndPush_CommitsLocallyWithoutPushing(t *testing.T) {
 	if localSHA == headSHA {
 		t.Fatal("local head should include the CI repair commit")
 	}
-	if message := gitCmd(t, dir, "log", "-1", "--format=%s"); message != "no-mistakes(ci): stabilize Windows path test" {
+	if message := gitCmd(t, dir, "log", "-1", "--format=%s"); message != "gatehouse(ci): stabilize Windows path test" {
 		t.Fatalf("repair commit message = %q", message)
 	}
 	dbRun, err := sctx.DB.GetRun(sctx.Run.ID)

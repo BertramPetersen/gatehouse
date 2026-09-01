@@ -3,7 +3,7 @@ package pipeline
 import (
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestMergeFindingsJSON_KeepsDistinctFindingsWithSameAutoID(t *testing.T) {

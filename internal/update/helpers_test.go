@@ -11,20 +11,20 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	root, err := os.MkdirTemp("", "nm-update-test-")
+	root, err := os.MkdirTemp("", "gatehouse-update-test-")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "create test NM_HOME: %v\n", err)
+		fmt.Fprintf(os.Stderr, "create test GATEHOUSE_HOME: %v\n", err)
 		os.Exit(1)
 	}
-	home, err := os.MkdirTemp("", "nm-update-home-")
+	home, err := os.MkdirTemp("", "gatehouse-update-home-")
 	if err != nil {
 		_ = os.RemoveAll(root)
 		fmt.Fprintf(os.Stderr, "create test HOME: %v\n", err)
 		os.Exit(1)
 	}
-	_ = os.Setenv("NM_HOME", root)
+	_ = os.Setenv("GATEHOUSE_HOME", root)
 	_ = os.Setenv("HOME", home)
-	_ = os.Setenv("NO_MISTAKES_TELEMETRY", "off")
+	_ = os.Setenv("GATEHOUSE_TELEMETRY", "off")
 
 	code := m.Run()
 

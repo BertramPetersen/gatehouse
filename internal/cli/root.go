@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/BertramPetersen/gatehouse/internal/buildinfo"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kunchenguid/no-mistakes/internal/buildinfo"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
 	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 )
@@ -55,7 +55,7 @@ func newRootCmd() *cobra.Command {
 	var skipValue string
 
 	cmd := &cobra.Command{
-		Use:     "no-mistakes",
+		Use:     "gatehouse",
 		Short:   "Local Git proxy that validates code before pushing to the configured target",
 		Version: buildinfo.String(),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -123,14 +123,14 @@ func findRepo(d *db.DB) (*db.Repo, error) {
 	// Try the main worktree root (handles git worktrees).
 	mainRoot, err := git.FindMainRepoRoot(".")
 	if err != nil || mainRoot == gitRoot {
-		return nil, fmt.Errorf("repo not initialized (run 'no-mistakes init' first)")
+		return nil, fmt.Errorf("repo not initialized (run 'gatehouse init' first)")
 	}
 	repo, err = d.GetRepoByPath(mainRoot)
 	if err != nil {
 		return nil, fmt.Errorf("get repo: %w", err)
 	}
 	if repo == nil {
-		return nil, fmt.Errorf("repo not initialized (run 'no-mistakes init' first)")
+		return nil, fmt.Errorf("repo not initialized (run 'gatehouse init' first)")
 	}
 	return repo, nil
 }

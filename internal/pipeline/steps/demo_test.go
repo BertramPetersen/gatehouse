@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func withoutDemoSleep(t *testing.T) {
@@ -24,9 +24,9 @@ func TestIsDemoMode(t *testing.T) {
 	if IsDemoMode() {
 		t.Fatal("expected demo mode to be off by default")
 	}
-	t.Setenv("NM_DEMO", "1")
+	t.Setenv("GATEHOUSE_DEMO", "1")
 	if !IsDemoMode() {
-		t.Fatal("expected demo mode to be on when NM_DEMO=1")
+		t.Fatal("expected demo mode to be on when GATEHOUSE_DEMO=1")
 	}
 }
 
@@ -57,7 +57,7 @@ func TestDemoSteps(t *testing.T) {
 func TestAllStepsDemoMode(t *testing.T) {
 	withoutDemoSleep(t)
 
-	t.Setenv("NM_DEMO", "1")
+	t.Setenv("GATEHOUSE_DEMO", "1")
 	steps := AllSteps()
 	// Verify we get demo steps, not real ones, by checking the type.
 	for _, s := range steps {

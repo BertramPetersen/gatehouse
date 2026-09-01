@@ -12,14 +12,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/forgecontext"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/runenv"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/forgecontext"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/runenv"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestCopyDirContents_PreservesGitRepo(t *testing.T) {
@@ -683,7 +683,7 @@ func TestCommitPipelineCorrection_ReportsCleanupFailureWithoutMaskingCommit(t *t
 	err := commitPipelineCorrectionWithCleanup(
 		context.Background(),
 		dir,
-		"no-mistakes(test): apply correction",
+		"gatehouse(test): apply correction",
 		func(line string) { warning = line },
 		func(path string) error {
 			cleanedPath = path
@@ -1099,7 +1099,7 @@ func TestCommitAgentFixes_UsesFallbackSummary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := lastCommitMessage(t, dir); got != "no-mistakes(lint): fallback lint fix" {
+	if got := lastCommitMessage(t, dir); got != "gatehouse(lint): fallback lint fix" {
 		t.Errorf("commit message = %q, want fallback-based message", got)
 	}
 }

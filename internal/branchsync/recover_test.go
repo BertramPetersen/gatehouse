@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/custody"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	gitpkg "github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	pipelinepkg "github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/custody"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	gitpkg "github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	pipelinepkg "github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 type cancellationRaceStep struct {
@@ -48,7 +48,7 @@ func (s *cancellationRaceStep) Execute(sctx *pipelinepkg.StepContext) (*pipeline
 	if _, err := gitpkg.Run(sctx.Ctx, sctx.WorkDir, "add", "fix.txt"); err != nil {
 		return nil, err
 	}
-	if _, err := gitpkg.Run(sctx.Ctx, sctx.WorkDir, "commit", "-m", "no-mistakes(review): fix"); err != nil {
+	if _, err := gitpkg.Run(sctx.Ctx, sctx.WorkDir, "commit", "-m", "gatehouse(review): fix"); err != nil {
 		return nil, err
 	}
 	head, err := gitpkg.HeadSHA(sctx.Ctx, sctx.WorkDir)
@@ -113,9 +113,9 @@ func newRecoverFixture(t *testing.T, status types.RunStatus) *recoverFixture {
 	mustRun(t, pipeline, "checkout", "feature/recover")
 	mustWrite(t, filepath.Join(pipeline, "fix.txt"), "pipeline fix\n")
 	mustRun(t, pipeline, "add", "fix.txt")
-	mustRun(t, pipeline, "commit", "-m", "no-mistakes(review): fix")
+	mustRun(t, pipeline, "commit", "-m", "gatehouse(review): fix")
 	mustWrite(t, filepath.Join(pipeline, "fix.txt"), "pipeline fix 2\n")
-	mustRun(t, pipeline, "commit", "-am", "no-mistakes(lint): fix")
+	mustRun(t, pipeline, "commit", "-am", "gatehouse(lint): fix")
 	preserved := mustRun(t, pipeline, "rev-parse", "HEAD")
 	mustRun(t, pipeline, "push", "origin", "HEAD:refs/heads/feature/recover")
 
@@ -153,7 +153,7 @@ func newRecoverFixture(t *testing.T, status types.RunStatus) *recoverFixture {
 	}
 }
 
-func (f *recoverFixture) anchorRef() string { return "refs/no-mistakes/recover/" + f.run.ID }
+func (f *recoverFixture) anchorRef() string { return "refs/gatehouse/recover/" + f.run.ID }
 
 func (f *recoverFixture) custodyReturned() bool {
 	f.t.Helper()
@@ -203,7 +203,7 @@ func TestActivePrePushRunStaysBlockedWithoutRecovery(t *testing.T) {
 	if state.State != StatePipelineOwned || state.Safety != "blocked_pipeline_owned" {
 		t.Fatalf("active run state = %#v", state)
 	}
-	if state.NextAction == nil || state.NextAction.Code != "continue_active_run" || state.NextAction.Command != "no-mistakes axi status" {
+	if state.NextAction == nil || state.NextAction.Code != "continue_active_run" || state.NextAction.Command != "gatehouse axi status" {
 		t.Fatalf("active run next action = %#v", state.NextAction)
 	}
 	if state.Pipeline.Status != "running" {
@@ -641,7 +641,7 @@ func TestRecoverKeepLocalAnchorsIndependentlyMovedGateHead(t *testing.T) {
 	if got := mustRun(t, f.gate, "rev-parse", "refs/heads/feature/recover"); got != f.submitted {
 		t.Fatalf("keep-local gate branch = %s, want %s", got, f.submitted)
 	}
-	if got := mustRun(t, f.gate, "rev-parse", "refs/no-mistakes/recover-gate/"+f.run.ID); got != movedGate {
+	if got := mustRun(t, f.gate, "rev-parse", "refs/gatehouse/recover-gate/"+f.run.ID); got != movedGate {
 		t.Fatalf("independent gate anchor = %s, want %s", got, movedGate)
 	}
 }
@@ -1105,7 +1105,7 @@ func TestActiveUnmovedRunBlocksAsPipelineOwnedWithoutRecovery(t *testing.T) {
 	if state.State != StatePipelineOwned || state.Safety != "blocked_pipeline_owned" {
 		t.Fatalf("active unmoved state = %s/%s error=%q", state.State, state.Safety, state.Error)
 	}
-	if state.NextAction == nil || state.NextAction.Code != "continue_active_run" || state.NextAction.Command != "no-mistakes axi status" {
+	if state.NextAction == nil || state.NextAction.Code != "continue_active_run" || state.NextAction.Command != "gatehouse axi status" {
 		t.Fatalf("active unmoved next action = %#v", state.NextAction)
 	}
 	recovered := f.service.Recover(f.ctx, false)
@@ -1491,7 +1491,7 @@ func newRebasedRecoverFixtureWithPipelineWork(t *testing.T, status types.RunStat
 }
 
 func (f *recoverFixture) localAnchorRef() string {
-	return "refs/no-mistakes/recover-local/" + f.run.ID
+	return "refs/gatehouse/recover-local/" + f.run.ID
 }
 
 // TestRecoverRebasedPreservedHeadAdoptsWithoutEscalating is the regression for
@@ -1508,7 +1508,7 @@ func TestRecoverRebasedPreservedHeadAdoptsWithoutEscalating(t *testing.T) {
 		t.Fatal("fixture did not leave the operator worktree at the submitted head")
 	}
 	// The bug's masking condition: neither head is an ancestor of the other.
-	mustRun(t, f.local, "fetch", "--no-tags", f.gate, "+refs/heads/feature/recover:refs/no-mistakes/test/preserved")
+	mustRun(t, f.local, "fetch", "--no-tags", f.gate, "+refs/heads/feature/recover:refs/gatehouse/test/preserved")
 	if isAncestor(f.ctx, f.local, f.submitted, f.preserved) || isAncestor(f.ctx, f.local, f.preserved, f.submitted) {
 		t.Fatal("fixture is not a rebase divergence: one head is an ancestor of the other")
 	}
@@ -1588,7 +1588,7 @@ func TestRecoverRebasedPreservedHeadEscalatesWhenFixRoundsRewroteOperatorLines(t
 
 	f := newRebasedRecoverFixtureWithPipelineWork(t, types.RunCancelled, func(t *testing.T, pipelineDir string) {
 		mustWrite(t, filepath.Join(pipelineDir, "feature.txt"), "feature one\nfeature two guarded\n")
-		mustRun(t, pipelineDir, "commit", "-am", "no-mistakes(review): guard the second line")
+		mustRun(t, pipelineDir, "commit", "-am", "gatehouse(review): guard the second line")
 	})
 
 	state := f.service.Recover(f.ctx, false)
@@ -1819,7 +1819,7 @@ func TestRecoverSquashedEquivalentPreservedHeadAdopts(t *testing.T) {
 	configureIdentity(t, pipeline)
 	mustRun(t, pipeline, "checkout", "feature/recover")
 	mustRun(t, pipeline, "reset", "--soft", "origin/main")
-	mustRun(t, pipeline, "commit", "-m", "no-mistakes(rebase): squashed feature")
+	mustRun(t, pipeline, "commit", "-m", "gatehouse(rebase): squashed feature")
 	squashed := mustRun(t, pipeline, "rev-parse", "HEAD")
 	mustRun(t, pipeline, "push", "--force", "origin", "HEAD:refs/heads/feature/recover")
 	if err := f.db.UpdateRunHeadSHA(f.run.ID, squashed); err != nil {
@@ -1860,7 +1860,7 @@ func TestRecoverSquashedPreservedHeadStillEscalatesForDroppedLocalWork(t *testin
 	// The second of the operator's two lines never makes it into the squash.
 	mustWrite(t, filepath.Join(pipeline, "feature.txt"), "feature one\n")
 	mustRun(t, pipeline, "add", "feature.txt")
-	mustRun(t, pipeline, "commit", "-m", "no-mistakes(review): squashed without the second line")
+	mustRun(t, pipeline, "commit", "-m", "gatehouse(review): squashed without the second line")
 	dropped := mustRun(t, pipeline, "rev-parse", "HEAD")
 	mustRun(t, pipeline, "push", "--force", "origin", "HEAD:refs/heads/feature/recover")
 	if err := f.db.UpdateRunHeadSHA(f.run.ID, dropped); err != nil {

@@ -26,7 +26,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // Effort is the harness-neutral reasoning-depth knob. The vocabulary is the
@@ -118,12 +118,12 @@ const (
 type Mechanism string
 
 const (
-	// MechanismUnsupported means no-mistakes has no verified way to set the
+	// MechanismUnsupported means gatehouse has no verified way to set the
 	// knob for that harness. The raw agent_args_override escape hatch is
 	// still available for operators whose build of the CLI accepts a flag we
 	// could not verify.
 	MechanismUnsupported Mechanism = "unsupported"
-	// MechanismArgs means no-mistakes injects native CLI flags into the argv
+	// MechanismArgs means gatehouse injects native CLI flags into the argv
 	// it already builds for that harness.
 	MechanismArgs Mechanism = "args"
 	// MechanismRequest means the adapter carries the value in its own
@@ -262,14 +262,14 @@ var harnesses = map[types.AgentName]harness{
 	},
 	// rovodev is driven through `acli rovodev serve` plus a REST session API
 	// that takes no model parameter, and antigravity's agy CLI parses flags
-	// strictly. Neither has a mechanism no-mistakes can set, so both knobs are
+	// strictly. Neither has a mechanism gatehouse can set, so both knobs are
 	// refused here rather than emitted and silently ignored.
 	types.AgentRovoDev:     {model: unsupported(), effort: unsupported()},
 	types.AgentAntigravity: {model: unsupported(), effort: unsupported()},
 }
 
 // acpHarness covers every ACP-driven name: the first-class aliases (cursor) and
-// explicit acp:<target> spellings. no-mistakes never speaks ACP itself; it
+// explicit acp:<target> spellings. gatehouse never speaks ACP itself; it
 // shells out to acpx, whose own `--model <id>` is therefore the model
 // mechanism. acpx exposes no reasoning-effort surface, so effort stays
 // unmappable for ACP targets - deliberately refused rather than dropped.
@@ -349,7 +349,7 @@ func Validate(name types.AgentName, p Profile) error {
 			continue
 		}
 		if entry.knob.mechanism == MechanismUnsupported {
-			return fmt.Errorf("agent %q cannot express %s; no-mistakes has no verified %s mechanism for it (%s)", name, entry.name, entry.name, escapeHatch(name))
+			return fmt.Errorf("agent %q cannot express %s; gatehouse has no verified %s mechanism for it (%s)", name, entry.name, entry.name, escapeHatch(name))
 		}
 		if entry.knob.validate != nil {
 			if err := entry.knob.validate(entry.value); err != nil {

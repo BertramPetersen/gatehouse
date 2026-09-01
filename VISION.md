@@ -1,6 +1,6 @@
 # Vision
 
-`no-mistakes` exists so that one deliberate push means a change was independently validated before anyone else sees it.
+`gatehouse` exists so that one deliberate push means a change was independently validated before anyone else sees it.
 It serves the individual developer - increasingly an operator of many coding agents - who produces changes faster than they can hand-validate, and it turns a rough local branch into a clean, evidence-backed PR while their attention goes elsewhere.
 It owns exactly one thing: the gate between a local branch and the configured push target.
 
@@ -46,7 +46,7 @@ The pushed branch is untrusted input: nothing on it may choose what executes wit
 Every verdict must be traceable to something inspectable: findings, executed tests, gathered evidence, and the history of what was fixed and how many attempts it took.
 A verdict is attributable: every run records the exact tool build and configuration that produced it, so a surprising outcome can always be traced to the software that made it.
 Evidence stays attached to the change without contaminating it: artifacts are durable and PR-visible, but the shipped branch's history is the author's change and nothing else.
-The gate does not define compliance: external systems do, and the gate's duty is to publish facts sufficient for any of them to derive its own verdict. An external repository policy may explicitly exempt a class of pull requests it does not route through no-mistakes, but that policy bypass must stay distinguishable from evidence that the gate passed and must never skip a step inside a no-mistakes run.
+The gate does not define compliance: external systems do, and the gate's duty is to publish facts sufficient for any of them to derive its own verdict. An external repository policy may explicitly exempt a class of pull requests it does not route through gatehouse, but that policy bypass must stay distinguishable from evidence that the gate passed and must never skip a step inside a gatehouse run.
 The PR a run raises is written for a reviewer who was not there: what changed, what was checked, what the risks are, and what the pipeline had to fix.
 Run state must honestly distinguish working, parked waiting on a human, and dead; a stall that looks alive is a lie.
 Failure is a first-class outcome: loud, attributed, explained, and followed by a next action.
@@ -61,7 +61,7 @@ No forge, host, or provider is privileged in the product's identity; breadth sti
 
 ## Scope and evaluation
 
-no-mistakes is a local tool for the person whose credentials and accountability are on the line; runs happen on their machine, under their identity, at their initiative.
+gatehouse is a local tool for the person whose credentials and accountability are on the line; runs happen on their machine, under their identity, at their initiative.
 It is not a CI system, not an agent orchestrator, not a code host, and not a team-governance platform; CI stays the shared outer gate, and merge policy belongs to the provider.
 Where a repository genuinely has no outer gate, the inner gate may take on more of that duty by the user's explicit choice.
 The gate assumes as little as possible about what a repository contains: code or not, a change is a change, and the gate's question is always whether it is safe to share.

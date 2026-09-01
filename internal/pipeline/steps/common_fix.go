@@ -10,11 +10,11 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 type fixExecutionOptions struct {
@@ -76,7 +76,7 @@ func hasBlockingFindings(items []Finding) bool {
 // Anchor integrity: sctx.Run.HeadSHA is the correct, un-clobberable anchor. It
 // is the *recorded* head the pipeline itself produced at its last commit - held
 // in the single daemon process's in-memory Run struct (one shared pointer per
-// run, never re-read from the DB mid-pipeline) and written only by no-mistakes
+// run, never re-read from the DB mid-pipeline) and written only by gatehouse
 // commit code (commit_fix / rebase / ci_fix / push). An out-of-band `git reset`
 // mutates the worktree HEAD on disk but cannot touch this field, so at the check
 // point the anchor still holds the reviewed head even after a clobber. The guard
@@ -160,7 +160,7 @@ func commitPipelineCorrectionWithCleanup(
 	logf func(string),
 	cleanup func(string) error,
 ) error {
-	emptyHooksDir, err := os.MkdirTemp("", "no-mistakes-correction-hooks-")
+	emptyHooksDir, err := os.MkdirTemp("", "gatehouse-correction-hooks-")
 	if err != nil {
 		return fmt.Errorf("prepare hook-free commit environment: %w", err)
 	}

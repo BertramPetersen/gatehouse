@@ -10,24 +10,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // TestWorktreeRootJourney walks the whole worktree_roots feature the way an
 // operator reaches it, with nothing about the placement stubbed:
 //
-//   - `no-mistakes init --worktree-root <dir>` refuses the directories the
+//   - `gatehouse init --worktree-root <dir>` refuses the directories the
 //     daemon refuses to start on, so the entry it prints is one that can be
 //     pasted.
 //   - the entry it prints is pasted into the real global config verbatim, and
 //     the daemon restarts on it.
-//   - a real `git push no-mistakes` run is then created in that directory:
+//   - a real `git push gatehouse` run is then created in that directory:
 //     every pipeline agent runs with <dir>/<run id> as its cwd, which is the
 //     whole point of the setting (mise/direnv resolve by path ancestry), and
 //     the run records that directory.
-//   - the default placement under NM_HOME is never used for that run, and when
+//   - the default placement under GATEHOUSE_HOME is never used for that run, and when
 //     the run ends only its own directory is gone - the operator's own files in
 //     that directory are untouched.
 //
@@ -37,7 +37,7 @@ import (
 func TestWorktreeRootJourney(t *testing.T) {
 	h := NewHarness(t, SetupOpts{Agent: "claude"})
 
-	// The operator's own directory: outside NM_HOME and outside every
+	// The operator's own directory: outside GATEHOUSE_HOME and outside every
 	// checkout, holding the kind of directory-scoped toolchain config that
 	// motivates the setting.
 	runsRoot := filepath.Join(t.TempDir(), "my-repo-runs")
@@ -62,10 +62,10 @@ func TestWorktreeRootJourney(t *testing.T) {
 	insideNMHome := filepath.Join(h.NMHome, "worktrees", "runs")
 	out, err = h.RunInDir(h.WorkDir, "init", "--worktree-root", insideNMHome)
 	if err == nil {
-		t.Fatalf("init accepted a worktree root inside NM_HOME:\n%s", out)
+		t.Fatalf("init accepted a worktree root inside GATEHOUSE_HOME:\n%s", out)
 	}
 	if !strings.Contains(out, "state directory") {
-		t.Errorf("refusal for a root inside NM_HOME does not say why:\n%s", out)
+		t.Errorf("refusal for a root inside GATEHOUSE_HOME does not say why:\n%s", out)
 	}
 
 	// 2. init prints the entry that places this checkout's runs.
@@ -73,7 +73,7 @@ func TestWorktreeRootJourney(t *testing.T) {
 	if err != nil {
 		t.Fatalf("nm init --worktree-root: %v\n%s", err, initOut)
 	}
-	t.Logf("--- no-mistakes init --worktree-root %s ---\n%s", runsRoot, initOut)
+	t.Logf("--- gatehouse init --worktree-root %s ---\n%s", runsRoot, initOut)
 	entryLine := worktreeRootEntryFromGuidance(t, initOut, runsRoot)
 
 	// 3. The operator pastes it. The config is hand-maintained, so this is
@@ -107,7 +107,7 @@ func TestWorktreeRootJourney(t *testing.T) {
 
 	// 5. Every pipeline agent ran inside the configured directory. This is
 	// the end-user consequence: a run worktree under it inherits whatever the
-	// directory configures, which a worktree under NM_HOME never can.
+	// directory configures, which a worktree under GATEHOUSE_HOME never can.
 	invocations := h.AgentInvocations()
 	if len(invocations) == 0 {
 		t.Fatal("no agent invocations recorded; the run cannot have exercised placement")

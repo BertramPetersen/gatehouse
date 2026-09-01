@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // writeStubAcpx writes a stub acpx binary that records its argv (one arg per
@@ -20,10 +20,10 @@ func writeStubAcpx(t *testing.T, dir string) string {
 	t.Helper()
 	path := filepath.Join(dir, "acpx")
 	script := `#!/bin/sh
-printf '%s\n' "$@" > "$NM_TEST_ACPX_ARGS_FILE"
-cat > "$NM_TEST_ACPX_STDIN_FILE"
-if [ -n "$NM_TEST_ACPX_EVENT" ]; then
-  printf '%s\n' "$NM_TEST_ACPX_EVENT"
+printf '%s\n' "$@" > "$GATEHOUSE_TEST_ACPX_ARGS_FILE"
+cat > "$GATEHOUSE_TEST_ACPX_STDIN_FILE"
+if [ -n "$GATEHOUSE_TEST_ACPX_EVENT" ]; then
+  printf '%s\n' "$GATEHOUSE_TEST_ACPX_EVENT"
 else
   printf '{"method":"session/update","params":{"update":{"sessionUpdate":"agent_message_chunk","text":"cursor stub reply"}}}\n'
 fi
@@ -48,8 +48,8 @@ func TestAcpxAgent_Run_CursorSpawnsDefaultCommandWithoutOverrides(t *testing.T) 
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
 			argsFile := filepath.Join(dir, "argv.txt")
-			t.Setenv("NM_TEST_ACPX_ARGS_FILE", argsFile)
-			t.Setenv("NM_TEST_ACPX_STDIN_FILE", filepath.Join(dir, "stdin.txt"))
+			t.Setenv("GATEHOUSE_TEST_ACPX_ARGS_FILE", argsFile)
+			t.Setenv("GATEHOUSE_TEST_ACPX_STDIN_FILE", filepath.Join(dir, "stdin.txt"))
 			stub := writeStubAcpx(t, dir)
 
 			a, err := New(tc.agent, stub, nil)
@@ -97,14 +97,14 @@ func TestAcpxAgent_Run_SendsLargePromptOnlyOnStdin(t *testing.T) {
 			dir := t.TempDir()
 			argsFile := filepath.Join(dir, "argv.txt")
 			stdinFile := filepath.Join(dir, "stdin.txt")
-			t.Setenv("NM_TEST_ACPX_ARGS_FILE", argsFile)
-			t.Setenv("NM_TEST_ACPX_STDIN_FILE", stdinFile)
+			t.Setenv("GATEHOUSE_TEST_ACPX_ARGS_FILE", argsFile)
+			t.Setenv("GATEHOUSE_TEST_ACPX_STDIN_FILE", stdinFile)
 
 			prompt := strings.Repeat("x", 4096)
 			wantPrompt := prompt
 			if len(tc.schema) > 0 {
 				wantPrompt = buildACPStructuredPrompt(prompt, tc.schema)
-				t.Setenv("NM_TEST_ACPX_EVENT", `{"method":"session/update","params":{"update":{"sessionUpdate":"agent_message_chunk","text":"{\"ok\":true}"}}}`)
+				t.Setenv("GATEHOUSE_TEST_ACPX_EVENT", `{"method":"session/update","params":{"update":{"sessionUpdate":"agent_message_chunk","text":"{\"ok\":true}"}}}`)
 			}
 			a := &acpxAgent{bin: writeStubAcpx(t, dir), target: "gemini"}
 			if _, err := a.Run(context.Background(), RunOpts{Prompt: prompt, CWD: dir, JSONSchema: tc.schema}); err != nil {

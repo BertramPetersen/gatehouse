@@ -14,7 +14,7 @@ import (
 // claude SessionStart hook outputs (which expose locally-installed
 // axi tools by name).
 //
-// The substitutions don't affect anything the no-mistakes parser
+// The substitutions don't affect anything the gatehouse parser
 // actually reads, but they keep personal paths and tool names out of
 // fixtures committed to a public repo.
 func scrubFile(path string) error {
@@ -40,7 +40,7 @@ func scrubBytes(data []byte) []byte {
 
 // scrubAgyConversationIDs replaces agy's per-run conversation UUIDs with a
 // stable placeholder. Nothing downstream reads the value - the fakeagent
-// patcher rewrites content and the no-mistakes parser only needs the field
+// patcher rewrites content and the gatehouse parser only needs the field
 // present - but a recorded UUID identifies the recording session.
 var agyConversationPattern = regexp.MustCompile(`("conversation_id"\s*:\s*")[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(")`)
 
@@ -96,7 +96,7 @@ func replacePathForms(data []byte, path, placeholder string) []byte {
 
 // scrubClaudeHookEvents drops claude's SessionStart system events, which
 // dump the user's locally-installed axi tools (terminal-axi, etc.) into
-// `output`/`stdout` fields. The no-mistakes parser ignores type=system
+// `output`/`stdout` fields. The gatehouse parser ignores type=system
 // entirely, so removing these lines doesn't affect e2e wire-format
 // coverage. The init event (subtype=init) carries information about
 // available tools/skills that's also user-specific, so we drop it too.

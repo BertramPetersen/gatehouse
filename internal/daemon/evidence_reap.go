@@ -8,12 +8,12 @@ import (
 	"sort"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
-// legacyEvidenceDirName is the fixed directory no-mistakes used to create
+// legacyEvidenceDirName is the fixed directory gatehouse used to create
 // directly inside the system temp directory. It was never reaped by anything in
 // this program: on Linux the daemon's TMPDIR is unset, so it resolved to the
 // shared /tmp - a RAM-backed tmpfs on current Ubuntu - and it accumulated one
@@ -23,7 +23,7 @@ import (
 // only so an upgraded daemon drains what earlier versions left behind, under
 // the same retention policy and the same active-run guard. Delete this constant
 // and reapLegacyEvidence once installs from before the relocation are gone.
-const legacyEvidenceDirName = "no-mistakes-evidence"
+const legacyEvidenceDirName = "gatehouse-evidence"
 
 // evidenceReapPolicy bounds how much on-disk evidence survives. A zero
 // Retention disables age-based reaping and a zero MaxRuns disables the count
@@ -62,7 +62,7 @@ func evidenceRootFor(p *paths.Paths, global *config.GlobalConfig) string {
 }
 
 // reapEvidence bounds the on-disk evidence directory. It is what makes
-// no-mistakes responsible for its own scratch: before the relocation, evidence
+// gatehouse responsible for its own scratch: before the relocation, evidence
 // sat in the shared system temp directory and the only thing that ever removed
 // it was an OS timer this program does not control, does not configure, and
 // cannot rely on across macOS, Linux, and Windows.

@@ -1,8 +1,8 @@
 package cli
 
 import (
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kunchenguid/no-mistakes/internal/types"
 )
 
 var (

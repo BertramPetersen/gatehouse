@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agentcfg"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agentcfg"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestCaptureCreatesPortableReviewCaseWithoutRecordingRemoteURL(t *testing.T) {
@@ -152,10 +152,10 @@ func TestCapturePinsConfigurationFromSourceReview(t *testing.T) {
 	mustGit(t, ctx, workDir, "config", "user.email", "eval@example.test")
 	mustGit(t, ctx, workDir, "config", "user.name", "Eval Test")
 	mustGit(t, ctx, workDir, "checkout", "main")
-	if err := os.WriteFile(filepath.Join(workDir, ".no-mistakes.yaml"), []byte("ignore_patterns: ['advanced-only']\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(workDir, ".gatehouse.yaml"), []byte("ignore_patterns: ['advanced-only']\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	mustGit(t, ctx, workDir, "add", ".no-mistakes.yaml")
+	mustGit(t, ctx, workDir, "add", ".gatehouse.yaml")
 	t.Setenv("GIT_AUTHOR_DATE", time.Unix(reviewRound.CreatedAt+60, 0).Format(time.RFC3339))
 	t.Setenv("GIT_COMMITTER_DATE", time.Unix(reviewRound.CreatedAt+60, 0).Format(time.RFC3339))
 	mustGit(t, ctx, workDir, "commit", "-m", "advance trusted config")
@@ -224,7 +224,7 @@ func TestReplayRestoresCaseIntoAnIsolatedWorktree(t *testing.T) {
 		fake += ".cmd"
 		script = "@echo off\r\nmore >nul\r\necho " + strings.ReplaceAll(strings.TrimSpace(reply), "\n", "\r\necho ") + "\r\n"
 	} else {
-		script = "#!/bin/sh\n[ \"$NM_HOME\" = \"" + p.Root() + "\" ] && touch \"" + p.Root() + "/shared-home-used\"\ncat >/dev/null\ncat <<'EOF'\n" + reply + "EOF\n"
+		script = "#!/bin/sh\n[ \"$GATEHOUSE_HOME\" = \"" + p.Root() + "\" ] && touch \"" + p.Root() + "/shared-home-used\"\ncat >/dev/null\ncat <<'EOF'\n" + reply + "EOF\n"
 	}
 	if err := os.WriteFile(fake, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
@@ -257,7 +257,7 @@ func TestReplayRestoresCaseIntoAnIsolatedWorktree(t *testing.T) {
 		t.Fatalf("replay error leaked production root: %q", got.Error)
 	}
 	if _, err := os.Stat(filepath.Join(p.Root(), "shared-home-used")); !os.IsNotExist(err) {
-		t.Fatalf("candidate used production NM_HOME: %v", err)
+		t.Fatalf("candidate used production GATEHOUSE_HOME: %v", err)
 	}
 	var reservations int
 	if err := store.db.QueryRow(`SELECT count(*) FROM replay_case_reservations WHERE session_id = ?`, session.ID).Scan(&reservations); err != nil {
@@ -896,7 +896,7 @@ func TestParseCandidateCarriesTheEffortAxis(t *testing.T) {
 }
 
 // TestParseCandidatePinsACPModelThroughAcpx records the closed gap: an ACP
-// target used to be refused outright because no-mistakes had no way to enforce
+// target used to be refused outright because gatehouse had no way to enforce
 // its model.
 func TestParseCandidatePinsACPModelThroughAcpx(t *testing.T) {
 	for _, input := range []string{"cursor,model=gpt-5", "acp:custom,model=gpt-5"} {
@@ -949,7 +949,7 @@ func setupCapturedRunWithHistoryAndFindings(t *testing.T, ctx context.Context, p
 	mustGit(t, ctx, root, "clone", gateDir, workDir)
 	mustGit(t, ctx, workDir, "config", "user.email", "eval@example.test")
 	mustGit(t, ctx, workDir, "config", "user.name", "Eval Test")
-	if err := os.WriteFile(filepath.Join(workDir, ".no-mistakes.yaml"), []byte("review:\n  path_instructions:\n    - path: '*.go'\n      instructions: review error paths\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(workDir, ".gatehouse.yaml"), []byte("review:\n  path_instructions:\n    - path: '*.go'\n      instructions: review error paths\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(workDir, "main.go"), []byte("package sample\n"), 0o644); err != nil {
@@ -982,7 +982,7 @@ func setupCapturedRunWithHistoryAndFindings(t *testing.T, ctx context.Context, p
 	if err != nil {
 		t.Fatal(err)
 	}
-	repoConfigYAML, err := os.ReadFile(filepath.Join(workDir, ".no-mistakes.yaml"))
+	repoConfigYAML, err := os.ReadFile(filepath.Join(workDir, ".gatehouse.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1027,7 +1027,7 @@ func installFakeReviewAgent(t *testing.T, p *paths.Paths, findingsJSON string) {
 		fake += ".cmd"
 		script = "@echo off\r\nmore >nul\r\necho " + strings.ReplaceAll(strings.TrimSpace(reply), "\n", "\r\necho ") + "\r\n"
 	} else {
-		script = "#!/bin/sh\n[ \"$NM_HOME\" = \"" + p.Root() + "\" ] && touch \"" + p.Root() + "/shared-home-used\"\ncat >/dev/null\ncat <<'EOF'\n" + reply + "EOF\n"
+		script = "#!/bin/sh\n[ \"$GATEHOUSE_HOME\" = \"" + p.Root() + "\" ] && touch \"" + p.Root() + "/shared-home-used\"\ncat >/dev/null\ncat <<'EOF'\n" + reply + "EOF\n"
 	}
 	if err := os.WriteFile(fake, []byte(script), 0o755); err != nil {
 		t.Fatal(err)

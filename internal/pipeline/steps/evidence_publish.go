@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/evidence"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/evidence"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
 )
 
 // evidenceLinks describes a published evidence commit well enough to turn a
@@ -67,7 +67,7 @@ func publishRunEvidence(sctx *pipeline.StepContext) *evidenceLinks {
 		Dir:               sctx.Config.Test.Evidence.Dir,
 		Segments:          segments,
 		SourceDir:         sourceDir,
-		Message:           fmt.Sprintf("no-mistakes: evidence for %s (run %s)", branch, sctx.Run.ID),
+		Message:           fmt.Sprintf("gatehouse: evidence for %s (run %s)", branch, sctx.Run.ID),
 		ForbiddenBranches: []string{branch, sctx.Repo.DefaultBranch},
 	})
 	if err != nil {

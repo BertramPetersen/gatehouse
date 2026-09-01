@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 const testPipelineHeadSHA = "0123456789abcdef0123456789abcdef01234567"
@@ -33,7 +33,7 @@ func TestBuildPipelineSummary_AllClean(t *testing.T) {
 	if !strings.Contains(md, "## Pipeline") {
 		t.Error("missing Pipeline heading")
 	}
-	if !strings.Contains(md, "[git push no-mistakes](https://github.com/kunchenguid/no-mistakes)") {
+	if !strings.Contains(md, "[git push gatehouse](https://github.com/BertramPetersen/gatehouse)") {
 		t.Errorf("expected linked tagline, got:\n%s", md)
 	}
 	if strings.Count(md, "<details>") != len(steps) {
@@ -72,7 +72,7 @@ func TestBuildPipelineSummary_BitbucketCloudOmitsHTMLAndAttestation(t *testing.T
 	if !strings.Contains(md, "## Pipeline") {
 		t.Fatal("missing Pipeline heading")
 	}
-	if !strings.Contains(md, noMistakesPRSignature) {
+	if !strings.Contains(md, gatehousePRSignature) {
 		t.Fatalf("expected human signature, got:\n%s", md)
 	}
 	for _, want := range []string{
@@ -181,7 +181,7 @@ func TestBuildPipelineSummary_EmitsStructuredStepAttestation(t *testing.T) {
 		t.Fatalf("attestation must be deterministic:\nfirst:\n%s\nsecond:\n%s", got, repeated)
 	}
 
-	const prefix = "<!-- no-mistakes-pipeline-attestation:v1 "
+	const prefix = "<!-- gatehouse-pipeline-attestation:v1 "
 	start := strings.Index(got, prefix)
 	if start < 0 {
 		t.Fatalf("pipeline summary missing attestation comment:\n%s", got)
@@ -228,7 +228,7 @@ func TestBuildPipelineSummary_EmitsStructuredStepAttestation(t *testing.T) {
 		}
 	}
 
-	if signatureAt, attestationAt := strings.Index(got, noMistakesPRSignature), strings.Index(got, prefix); signatureAt < 0 || attestationAt < signatureAt {
+	if signatureAt, attestationAt := strings.Index(got, gatehousePRSignature), strings.Index(got, prefix); signatureAt < 0 || attestationAt < signatureAt {
 		t.Fatalf("attestation must follow the existing signature:\n%s", got)
 	}
 }

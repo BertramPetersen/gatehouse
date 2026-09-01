@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	gitpkg "github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	gitpkg "github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 type syncFixture struct {
@@ -182,7 +182,7 @@ func TestInspectCachedPrePushAndPushInProgressAreNonSyncable(t *testing.T) {
 	if state.State != StatePipelineOwned || !strings.Contains(state.Error, "do not make local follow-up commits") {
 		t.Fatalf("pre-push state = %#v", state)
 	}
-	if state.NextAction == nil || state.NextAction.Code != "continue_active_run" || state.NextAction.Command != "no-mistakes axi status" {
+	if state.NextAction == nil || state.NextAction.Code != "continue_active_run" || state.NextAction.Command != "gatehouse axi status" {
 		t.Fatalf("pre-push next action = %#v", state.NextAction)
 	}
 	if err := f.db.SetRunPushActive(active.ID, true); err != nil {
@@ -192,7 +192,7 @@ func TestInspectCachedPrePushAndPushInProgressAreNonSyncable(t *testing.T) {
 	if state.State != StatePushInProgress {
 		t.Fatalf("push-in-progress state = %#v", state)
 	}
-	if state.NextAction == nil || state.NextAction.Code != "continue_active_run" || state.NextAction.Command != "no-mistakes axi status" {
+	if state.NextAction == nil || state.NextAction.Code != "continue_active_run" || state.NextAction.Command != "gatehouse axi status" {
 		t.Fatalf("push-in-progress next action = %#v", state.NextAction)
 	}
 	if err := f.db.SetRunPushActive(active.ID, false); err != nil {
@@ -227,7 +227,7 @@ func TestInspectCachedBehindPerformsNoFetchOrMutation(t *testing.T) {
 	if got := readOptional(t, filepath.Join(f.local, ".git", "FETCH_HEAD")); got != beforeFetchHead {
 		t.Fatal("cached inspection mutated FETCH_HEAD")
 	}
-	if _, err := gitpkg.Run(f.ctx, f.local, "show-ref", "--verify", "refs/no-mistakes/sync/"+f.run.ID); err == nil {
+	if _, err := gitpkg.Run(f.ctx, f.local, "show-ref", "--verify", "refs/gatehouse/sync/"+f.run.ID); err == nil {
 		t.Fatal("cached inspection created a private fetch ref")
 	}
 }
@@ -926,7 +926,7 @@ func TestServiceRemoteTimeoutDefaultsToConfigDefault(t *testing.T) {
 
 // TestRefreshSlowButSuccessfulLsRemoteAloneExceedsItsOwnBudgetReportsOffline
 // reproduces the ACTUAL JVPT production failure mode (see
-// data/no-mistakes-jvpt-refresh-root-cause/report.md): ls-remote itself -
+// data/gatehouse-jvpt-refresh-root-cause/report.md): ls-remote itself -
 // never a starved fetch - takes longer than its own fresh per-operation
 // budget, because a real private-repo credential helper (git spawning `gh
 // auth git-credential` as a child process) legitimately takes ~19-22s in
@@ -1013,7 +1013,7 @@ func TestRefreshParentCancellationStopsFetchAfterLsRemoteSucceeds(t *testing.T) 
 	if got := mustRun(t, f.local, "rev-parse", "HEAD"); got != f.old {
 		t.Fatal("HEAD changed despite a cancelled parent context")
 	}
-	if _, err := gitpkg.Run(context.Background(), f.local, "show-ref", "--verify", "refs/no-mistakes/sync/"+f.run.ID); err == nil {
+	if _, err := gitpkg.Run(context.Background(), f.local, "show-ref", "--verify", "refs/gatehouse/sync/"+f.run.ID); err == nil {
 		t.Fatal("cancelled refresh created a private fetch ref")
 	}
 }

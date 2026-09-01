@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 var daemonHealthCheck = daemonIsRunningViaIPC
@@ -27,7 +27,7 @@ func daemonStartTimeout() time.Duration {
 	// Login-shell environment resolution alone has a 30s safety budget. A
 	// production readiness deadline must cover that cold work plus exclusive
 	// recovery, while remaining bounded for genuine startup failures.
-	return durationFromEnv("NM_TEST_DAEMON_START_TIMEOUT", 45*time.Second)
+	return durationFromEnv("GATEHOUSE_TEST_DAEMON_START_TIMEOUT", 45*time.Second)
 }
 
 // daemonStopTimeout bounds how long waitForDaemonStop polls for a graceful
@@ -42,11 +42,11 @@ func daemonStopTimeout() time.Duration {
 	if runtimeGOOS == "windows" {
 		fallback = 15 * time.Second
 	}
-	return durationFromEnv("NM_TEST_DAEMON_STOP_TIMEOUT", fallback)
+	return durationFromEnv("GATEHOUSE_TEST_DAEMON_STOP_TIMEOUT", fallback)
 }
 
 func daemonStartPollInterval() time.Duration {
-	return durationFromEnv("NM_TEST_DAEMON_START_POLL_INTERVAL", 100*time.Millisecond)
+	return durationFromEnv("GATEHOUSE_TEST_DAEMON_START_POLL_INTERVAL", 100*time.Millisecond)
 }
 
 func durationFromEnv(name string, fallback time.Duration) time.Duration {
@@ -87,7 +87,7 @@ func Start(p *paths.Paths) error {
 		return fmt.Errorf("daemon already running")
 	}
 	// Canonical socket is dead. A daemon for the same logical root may still be
-	// alive under a different path spelling (symlinked or relative NM_HOME),
+	// alive under a different path spelling (symlinked or relative GATEHOUSE_HOME),
 	// which the socket-keyed health check above cannot see. Detect via the OS
 	// process list: refuse if a healthy stray is serving this root, or reap a
 	// stale stray (including a crash-looping managed unit) before starting.
@@ -331,7 +331,7 @@ func startDetachedDaemon(p *paths.Paths) error {
 	defer logFile.Close()
 
 	cmd := exec.Command(exe, "daemon", "run", "--root", p.Root())
-	cmd.Env = upsertEnv(os.Environ(), "NM_HOME", p.Root())
+	cmd.Env = upsertEnv(os.Environ(), "GATEHOUSE_HOME", p.Root())
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	// Detach from parent process group so daemon survives CLI exit.
@@ -797,7 +797,7 @@ func daemonSocketAcceptingConnections(path string) (bool, error) {
 // closes its IPC listener at the START of shutdown, and closing a Unix
 // listener unlinks the socket, so the health check reports "not running"
 // while the process is still draining runs, closing the database, flushing
-// logs, and reaping its bootstrap log-sink child. The NM_HOME singleton lock
+// logs, and reaping its bootstrap log-sink child. The GATEHOUSE_HOME singleton lock
 // is an OS file lock the kernel releases only when the owning process
 // actually dies, so a stop that returned at "socket gone" handed the caller a
 // root whose lock was still held - and the very next `daemon start` (that is,
@@ -890,7 +890,7 @@ func upsertEnv(env []string, key, value string) []string {
 func EnsureDaemon(p *paths.Paths) error {
 	alive, err := daemonHealthCheck(p)
 	if err != nil {
-		return fmt.Errorf("%w (run 'no-mistakes daemon start' to recover)", err)
+		return fmt.Errorf("%w (run 'gatehouse daemon start' to recover)", err)
 	}
 	if alive {
 		return nil

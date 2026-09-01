@@ -12,7 +12,7 @@ import (
 func TestReplaceExecutableWindowsMovesRunningImageAside(t *testing.T) {
 	setReplaceTestGOOS(t, "windows")
 
-	execPath := filepath.Join(t.TempDir(), "no-mistakes.exe")
+	execPath := filepath.Join(t.TempDir(), "gatehouse.exe")
 	if err := os.WriteFile(execPath, []byte("old-binary"), 0o751); err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +38,7 @@ func TestReplaceExecutableWindowsMovesRunningImageAside(t *testing.T) {
 func TestReplaceExecutableWindowsRemovesStaleBackup(t *testing.T) {
 	setReplaceTestGOOS(t, "windows")
 
-	execPath := filepath.Join(t.TempDir(), "no-mistakes.exe")
+	execPath := filepath.Join(t.TempDir(), "gatehouse.exe")
 	if err := os.WriteFile(execPath, []byte("current-binary"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestReplaceExecutableWindowsRemovesStaleBackup(t *testing.T) {
 func TestReplaceExecutableWindowsRestoresTargetWhenInstallFails(t *testing.T) {
 	setReplaceTestGOOS(t, "windows")
 
-	execPath := filepath.Join(t.TempDir(), "no-mistakes.exe")
+	execPath := filepath.Join(t.TempDir(), "gatehouse.exe")
 	if err := os.WriteFile(execPath, []byte("old-binary"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestReplaceExecutableWindowsRestoresTargetWhenInstallFails(t *testing.T) {
 func TestCleanupOldExecutable(t *testing.T) {
 	setReplaceTestGOOS(t, "windows")
 
-	execPath := filepath.Join(t.TempDir(), "no-mistakes.exe")
+	execPath := filepath.Join(t.TempDir(), "gatehouse.exe")
 	if err := os.WriteFile(execPath+".old", []byte("old-binary"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestCleanupOldExecutableReturnsDeletionFailure(t *testing.T) {
 	removeFile = func(string) error { return errors.New("executable still locked") }
 	t.Cleanup(func() { removeFile = originalRemove })
 
-	err := cleanupOldExecutable(`C:\bin\no-mistakes.exe`)
+	err := cleanupOldExecutable(`C:\bin\gatehouse.exe`)
 	if err == nil || !strings.Contains(err.Error(), "executable still locked") {
 		t.Fatalf("cleanupOldExecutable error = %v", err)
 	}
@@ -114,7 +114,7 @@ func TestCleanupOldExecutableReturnsDeletionFailure(t *testing.T) {
 func TestReplaceExecutableNonWindowsUsesAtomicReplacement(t *testing.T) {
 	setReplaceTestGOOS(t, "linux")
 
-	execPath := filepath.Join(t.TempDir(), "no-mistakes")
+	execPath := filepath.Join(t.TempDir(), "gatehouse")
 	if err := os.WriteFile(execPath, []byte("old-binary"), 0o751); err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestReplaceExecutableNonWindowsUsesAtomicReplacement(t *testing.T) {
 func TestReplaceExecutableNonWindowsFallsBackToOverwrite(t *testing.T) {
 	setReplaceTestGOOS(t, "linux")
 
-	execPath := filepath.Join(t.TempDir(), "no-mistakes")
+	execPath := filepath.Join(t.TempDir(), "gatehouse")
 	if err := os.WriteFile(execPath, []byte("old-binary"), 0o751); err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestReplaceExecutableDarwinRequiresAtomicReplace(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	execPath := filepath.Join(dir, "no-mistakes")
+	execPath := filepath.Join(dir, "gatehouse")
 	if err := os.WriteFile(execPath, []byte("old-binary"), 0o755); err != nil {
 		t.Fatal(err)
 	}

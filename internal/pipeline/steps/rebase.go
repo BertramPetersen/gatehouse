@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/testguidance"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/testguidance"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // RebaseStep syncs the pushed branch with the configured push target and the
@@ -23,7 +23,7 @@ type RebaseStep struct{}
 
 func (s *RebaseStep) Name() types.StepName { return types.StepRebase }
 
-const forkBranchRefPrefix = "refs/remotes/no-mistakes-push/"
+const forkBranchRefPrefix = "refs/remotes/gatehouse-push/"
 
 func (s *RebaseStep) Execute(sctx *pipeline.StepContext) (*pipeline.StepOutcome, error) {
 	ctx := sctx.Ctx

@@ -22,10 +22,13 @@ import (
 // The permanent signing identity. These MUST NEVER change once the first signed
 // release ships: the executable identifier and Team ID are the invariant part of
 // the Developer ID designated requirement that lets macOS permissions survive
-// `no-mistakes update`.
+// `gatehouse update`.
 const (
-	signingIdentifier = "com.kunchenguid.no-mistakes"
-	signingTeamID     = "9T2J7MNUP9"
+	signingIdentifier = "com.bertrampetersen.gatehouse"
+	// The Team ID is repository configuration (MACOS_TEAM_ID), never a literal:
+	// this project must not carry another project's Developer ID identity. The
+	// identifier above IS permanent once the first signed release ships.
+	signingTeamIDRef = "vars.MACOS_TEAM_ID"
 
 	cscLinkSecret    = "CSC_LINK"
 	cscKeyPassSecret = "CSC_KEY_PASSWORD"
@@ -441,7 +444,7 @@ func TestReleaseWorkflowFailsClosedOnBadSignature(t *testing.T) {
 
 		verifyAsserts := []string{
 			"codesign --verify --strict",
-			signingTeamID,
+			signingTeamIDRef,
 			signingIdentifier,
 			"anchor apple generic",
 			"subject.OU",
@@ -504,8 +507,8 @@ func TestReleaseWorkflowPreservesArtifactContract(t *testing.T) {
 			t.Fatalf("no darwin build job for %s", arch)
 		}
 		run := job.allRun()
-		if !strings.Contains(run, "no-mistakes-") || !strings.Contains(run, "${GOOS}-${GOARCH}.tar.gz") {
-			t.Errorf("darwin job %q must preserve the no-mistakes-<tag>-<goos>-<goarch>.tar.gz name", job.name)
+		if !strings.Contains(run, "gatehouse-") || !strings.Contains(run, "${GOOS}-${GOARCH}.tar.gz") {
+			t.Errorf("darwin job %q must preserve the gatehouse-<tag>-<goos>-<goarch>.tar.gz name", job.name)
 		}
 	}
 
@@ -540,8 +543,8 @@ func TestReleaseWorkflowPreservesArtifactContract(t *testing.T) {
 	}
 
 	checksums := wf.jobByRunContains("sha256sum", "checksums.txt")
-	if checksums == nil || !strings.Contains(checksums.allRun(), "sha256sum no-mistakes-*") {
-		t.Error("checksums job must still compute `sha256sum no-mistakes-*`")
+	if checksums == nil || !strings.Contains(checksums.allRun(), "sha256sum gatehouse-*") {
+		t.Error("checksums job must still compute `sha256sum gatehouse-*`")
 	}
 
 	finalize := wf.jobByRunContains("--prerelease=true")

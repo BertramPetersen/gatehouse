@@ -8,15 +8,15 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/daemon"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/gate"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/safeurl"
-	"github.com/kunchenguid/no-mistakes/internal/skill"
-	"github.com/kunchenguid/no-mistakes/internal/worktrees"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/daemon"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/gate"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/safeurl"
+	"github.com/BertramPetersen/gatehouse/internal/skill"
+	"github.com/BertramPetersen/gatehouse/internal/worktrees"
 	"github.com/spf13/cobra"
 )
 
@@ -29,10 +29,10 @@ func newInitCmd() *cobra.Command {
 	var worktreeRoot string
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Initialize no-mistakes gate for the current repository",
+		Short: "Initialize gatehouse gate for the current repository",
 		Long: "Sets up or refreshes a local bare repo as a gate, installs a post-receive hook,\n" +
 			"best-effort isolates the gate hook path from shared local git config writes when Git supports `config --worktree`,\n" +
-			"adds or repairs the \"no-mistakes\" git remote, and records the repo in the database.\n\n" +
+			"adds or repairs the \"gatehouse\" git remote, and records the repo in the database.\n\n" +
 			"Run this from inside a git repository that has an \"origin\" remote.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -72,7 +72,7 @@ func newInitCmd() *cobra.Command {
 				}
 
 				// Install the agent skill at user level so agents can drive
-				// no-mistakes via `/no-mistakes` in any repo. Best-effort: a
+				// gatehouse via `/gatehouse` in any repo. Best-effort: a
 				// skill write failure must not undo a successful gate setup.
 				_, skillErr := skill.InstallUser()
 
@@ -86,7 +86,7 @@ func newInitCmd() *cobra.Command {
 				fmt.Fprintf(w, "  %s %s\n", sGreen.Render("✓"), headline)
 				fmt.Fprintln(w)
 				fmt.Fprintf(w, "  %s  %s\n", sDim.Render("  repo"), repo.WorkingPath)
-				fmt.Fprintf(w, "  %s  no-mistakes → %s\n", sDim.Render("  gate"), p.RepoDir(repo.ID))
+				fmt.Fprintf(w, "  %s  gatehouse → %s\n", sDim.Render("  gate"), p.RepoDir(repo.ID))
 				remoteURL := repo.UpstreamURL
 				if repo.ForkURL != "" {
 					remoteURL = safeurl.Redact(remoteURL)
@@ -98,7 +98,7 @@ func newInitCmd() *cobra.Command {
 				if skillErr != nil {
 					fmt.Fprintf(w, "  %s  %s\n", sDim.Render(" skill"), sYellow.Render("skipped: "+skillErr.Error()))
 				} else {
-					fmt.Fprintf(w, "  %s  %s %s\n", sDim.Render(" skill"), sGreen.Render("/no-mistakes"), sDim.Render("installed for agents at user level"))
+					fmt.Fprintf(w, "  %s  %s %s\n", sDim.Render(" skill"), sGreen.Render("/gatehouse"), sDim.Render("installed for agents at user level"))
 				}
 				if resolvedWorktreeRoot != "" {
 					printWorktreeRootGuidance(w, p, repo.WorkingPath, resolvedWorktreeRoot)
@@ -108,7 +108,7 @@ func newInitCmd() *cobra.Command {
 				}
 				fmt.Fprintln(w)
 				fmt.Fprintf(w, "  %s\n", sDim.Render("Push through the gate with:"))
-				fmt.Fprintf(w, "  %s\n", sBold.Render("git push no-mistakes <branch>"))
+				fmt.Fprintf(w, "  %s\n", sBold.Render("git push gatehouse <branch>"))
 				return nil
 			})
 		},
@@ -124,7 +124,7 @@ func newInitCmd() *cobra.Command {
 // where it would be read by a daemon with an unrelated working directory.
 //
 // It also refuses every placement the daemon refuses to start on, through the
-// same owner (worktrees.CheckPlacement) and against the same checkouts: NM_HOME,
+// same owner (worktrees.CheckPlacement) and against the same checkouts: GATEHOUSE_HOME,
 // the checkout being initialized, every checkout the config names, and every
 // registered repository (db.RepoWorkingPaths, which is where the daemon's startup
 // gate reads them too).
@@ -251,7 +251,7 @@ func checkoutClaimingWorktreeRoot(p *paths.Paths, checkout, root string) (string
 }
 
 // printWorktreeRootGuidance reports the worktree_roots entry that places this
-// repository's run worktrees in the requested directory. no-mistakes never
+// repository's run worktrees in the requested directory. gatehouse never
 // rewrites the global config - it is a hand-maintained file with the
 // operator's own comments - so init prints the exact entry to add instead of
 // editing it, and says nothing further when the entry is already in effect.

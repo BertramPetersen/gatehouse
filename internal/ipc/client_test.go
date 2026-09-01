@@ -19,7 +19,7 @@ func (timeoutDialError) Temporary() bool { return true }
 
 func TestDialConnectTimeoutFailsFastAndNamesSocket(t *testing.T) {
 	const timeout = 25 * time.Millisecond
-	t.Setenv("NM_DAEMON_CONNECT_TIMEOUT", timeout.String())
+	t.Setenv("GATEHOUSE_DAEMON_CONNECT_TIMEOUT", timeout.String())
 
 	originalDial := dialNetworkWithTimeout
 	dialNetworkWithTimeout = func(network, address string, gotTimeout time.Duration) (net.Conn, error) {
@@ -33,7 +33,7 @@ func TestDialConnectTimeoutFailsFastAndNamesSocket(t *testing.T) {
 		dialNetworkWithTimeout = originalDial
 	})
 
-	socketPath := filepath.Join(t.TempDir(), "no-mistakes-dead.sock")
+	socketPath := filepath.Join(t.TempDir(), "gatehouse-dead.sock")
 	if runtime.GOOS == "windows" {
 		endpoint := fmt.Sprintf("127.0.0.1:1\ntoken\n%d", os.Getpid())
 		if err := os.WriteFile(socketPath, []byte(endpoint), 0o600); err != nil {

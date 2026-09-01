@@ -508,7 +508,7 @@ func TestAntigravityAgent_RunReportsSchemaMiss(t *testing.T) {
 
 // writeFakeAgyRecordingArgs writes a fake agy binary that appends its
 // space-joined argv to $AGY_TEST_ARGS_FILE and then emits the given JSONL
-// lines, so tests can assert on the exact flags no-mistakes passed.
+// lines, so tests can assert on the exact flags gatehouse passed.
 func writeFakeAgyRecordingArgs(t *testing.T, dir string, jsonlLines []string) string {
 	t.Helper()
 

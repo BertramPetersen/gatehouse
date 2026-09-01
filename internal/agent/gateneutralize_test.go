@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // optOutAgent builds an adapter with the trusted opt-out ON, mirroring how the

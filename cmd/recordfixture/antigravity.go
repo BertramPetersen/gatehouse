@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/kunchenguid/no-mistakes/internal/shellenv"
+	"github.com/BertramPetersen/gatehouse/internal/shellenv"
 )
 
 // recordAntigravity captures agy CLI's NDJSON stream-json events. The

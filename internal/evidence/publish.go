@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/safeurl"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/safeurl"
 )
 
 const (
@@ -24,9 +24,9 @@ const (
 	// fetchRef is a scratch ref used to bring the remote evidence tip into the
 	// local object store. Only the resolved sha is used afterwards, so a
 	// concurrent run overwriting the ref cannot redirect this publish.
-	fetchRef = "refs/no-mistakes/evidence-fetch"
+	fetchRef = "refs/gatehouse/evidence-fetch"
 
-	scratchIndexName = "no-mistakes-evidence-index"
+	scratchIndexName = "gatehouse-evidence-index"
 )
 
 // Request describes one publication of a run's evidence directory.
@@ -210,13 +210,13 @@ func remoteTip(ctx context.Context, repoDir, pushURL, branch string) (string, er
 	return sha, nil
 }
 
-// assertEvidenceBranch refuses a branch that exists but is not a no-mistakes
+// assertEvidenceBranch refuses a branch that exists but is not a gatehouse
 // evidence branch. This is the guard that makes a wrong configured name
 // harmless: "main" has no marker file, so evidence is never appended to it.
 func assertEvidenceBranch(ctx context.Context, repoDir, tip, branch string) error {
 	content, err := git.RunRaw(ctx, repoDir, "cat-file", "blob", tip+":"+MarkerPath)
 	if err != nil || string(content) != MarkerContent {
-		return fmt.Errorf("refusing to publish evidence: branch %q already exists and is not a no-mistakes evidence branch (invalid %s marker at its tip)", branch, MarkerPath)
+		return fmt.Errorf("refusing to publish evidence: branch %q already exists and is not a gatehouse evidence branch (invalid %s marker at its tip)", branch, MarkerPath)
 	}
 	return nil
 }
@@ -241,11 +241,11 @@ func addToIndex(ctx context.Context, repoDir string, env []string, mode, blob, i
 }
 
 // commitTree builds the evidence commit. The identity falls back to a
-// no-mistakes author when the repository configures none, so publishing never
+// gatehouse author when the repository configures none, so publishing never
 // fails on "unable to auto-detect email address".
 func commitTree(ctx context.Context, repoDir, tree, parent, message string) (string, error) {
-	name := configuredIdentity(ctx, repoDir, "user.name", "no-mistakes")
-	email := configuredIdentity(ctx, repoDir, "user.email", "no-mistakes@localhost")
+	name := configuredIdentity(ctx, repoDir, "user.name", "gatehouse")
+	email := configuredIdentity(ctx, repoDir, "user.email", "gatehouse@localhost")
 	env := []string{
 		"GIT_AUTHOR_NAME=" + name,
 		"GIT_AUTHOR_EMAIL=" + email,
@@ -257,7 +257,7 @@ func commitTree(ctx context.Context, repoDir, tree, parent, message string) (str
 		args = append(args, "-p", parent)
 	}
 	if strings.TrimSpace(message) == "" {
-		message = "no-mistakes: test evidence"
+		message = "gatehouse: test evidence"
 	}
 	args = append(args, "-m", message)
 	commit, err := git.RunWithEnv(ctx, repoDir, env, args...)

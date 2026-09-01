@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/buildinfo"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/buildinfo"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestRunInsertAndGet(t *testing.T) {
@@ -53,11 +53,11 @@ func TestRunInsertAndUpdatePreserveBuildIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get run: %v", err)
 	}
-	if got.NoMistakesVersion == nil || *got.NoMistakesVersion != buildinfo.CurrentVersion() {
-		t.Fatalf("no-mistakes version = %v, want %q", got.NoMistakesVersion, buildinfo.CurrentVersion())
+	if got.GatehouseVersion == nil || *got.GatehouseVersion != buildinfo.CurrentVersion() {
+		t.Fatalf("gatehouse version = %v, want %q", got.GatehouseVersion, buildinfo.CurrentVersion())
 	}
-	if got.NoMistakesBuildSHA == nil || *got.NoMistakesBuildSHA != buildinfo.Commit {
-		t.Fatalf("no-mistakes build SHA = %v, want %q", got.NoMistakesBuildSHA, buildinfo.Commit)
+	if got.GatehouseBuildSHA == nil || *got.GatehouseBuildSHA != buildinfo.Commit {
+		t.Fatalf("gatehouse build SHA = %v, want %q", got.GatehouseBuildSHA, buildinfo.Commit)
 	}
 }
 

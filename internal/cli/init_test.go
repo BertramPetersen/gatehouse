@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/worktrees"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/worktrees"
 )
 
 func TestResolveWorktreeRoot(t *testing.T) {
@@ -42,10 +42,10 @@ func TestResolveWorktreeRoot(t *testing.T) {
 }
 
 // The placements the config would accept but that defeat the flag: inside the
-// directory no-mistakes already owns, inside the repository being initialized,
+// directory gatehouse already owns, inside the repository being initialized,
 // or a path that is not a directory at all.
 //
-// Every NM_HOME placement has to be refused here, not just the worktrees
+// Every GATEHOUSE_HOME placement has to be refused here, not just the worktrees
 // subdirectory: the daemon refuses to start on any of them, and every command
 // starts the daemon, so printing such an entry would hand the operator a paste
 // that takes their whole CLI down.
@@ -57,7 +57,7 @@ func TestResolveWorktreeRootRejectsUnusablePlacements(t *testing.T) {
 		"the default worktrees directory": filepath.Join(p.WorktreesDir(), "runs"),
 		"the run log directory":           p.LogsDir(),
 		"the gates directory":             p.ReposDir(),
-		"NM_HOME itself":                  p.Root(),
+		"GATEHOUSE_HOME itself":           p.Root(),
 	} {
 		if _, err := resolveWorktreeRoot(p, nil, repoDir, root); err == nil {
 			t.Errorf("expected error for a root inside %s (%q)", name, root)
@@ -182,7 +182,7 @@ func TestResolveWorktreeRootRefusesRootClaimedByAnotherCheckout(t *testing.T) {
 // A checkout can be registered AROUND an existing worktree root, which reaches
 // the placement `init --worktree-root` refuses from the other direction: the root
 // is unchanged, but it is now inside a registered checkout. The daemon refuses to
-// start on that, and every command starts the daemon, so a plain `no-mistakes
+// start on that, and every command starts the daemon, so a plain `gatehouse
 // init` would otherwise take the operator's whole CLI down at its next start,
 // naming a config entry they never touched.
 func TestInitRefusesToRegisterACheckoutHoldingAConfiguredWorktreeRoot(t *testing.T) {

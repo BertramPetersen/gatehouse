@@ -13,16 +13,16 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/eval"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/eval"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestEvalSetsIsLocalOnlyAndEmitsNoTelemetry(t *testing.T) {
-	t.Setenv("NM_HOME", t.TempDir())
+	t.Setenv("GATEHOUSE_HOME", t.TempDir())
 	chdir(t, t.TempDir())
 
 	recorder := &telemetryRecorder{}
@@ -47,7 +47,7 @@ func TestEvalSetsIsLocalOnlyAndEmitsNoTelemetry(t *testing.T) {
 func TestEvalCaptureAndSetsSpeakInFindingGoldTerms(t *testing.T) {
 	ctx := context.Background()
 	root := t.TempDir()
-	t.Setenv("NM_HOME", root)
+	t.Setenv("GATEHOUSE_HOME", root)
 	chdir(t, t.TempDir())
 
 	findings := `{"findings":[{"id":"real-bug","severity":"error","file":"main.go","line":3,"description":"bug","action":"ask-user","review_scope":"source"}],"risk_level":"high","risk_rationale":"bug","risk_scope":"source-or-external"}`
@@ -91,7 +91,7 @@ func TestEvalCaptureAndSetsSpeakInFindingGoldTerms(t *testing.T) {
 func TestEvalMissIngestLabelsFalseNegativeGold(t *testing.T) {
 	ctx := context.Background()
 	root := t.TempDir()
-	t.Setenv("NM_HOME", root)
+	t.Setenv("GATEHOUSE_HOME", root)
 	chdir(t, t.TempDir())
 
 	findings := `{"findings":[],"risk_level":"low","risk_rationale":"clean","risk_scope":"source-or-external"}`
@@ -146,7 +146,7 @@ func TestEvalMissIngestLabelsFalseNegativeGold(t *testing.T) {
 func TestEvalCaptureSetsReportAndRelabelAreIdempotentAtTheCLI(t *testing.T) {
 	ctx := context.Background()
 	root := t.TempDir()
-	t.Setenv("NM_HOME", root)
+	t.Setenv("GATEHOUSE_HOME", root)
 	chdir(t, t.TempDir())
 
 	findings := `{"findings":[{"id":"real-bug","severity":"error","file":"main.go","line":3,"description":"bug","action":"ask-user","review_scope":"source"}],"risk_level":"high","risk_rationale":"bug","risk_scope":"source-or-external"}`
@@ -188,7 +188,7 @@ func TestEvalCaptureSetsReportAndRelabelAreIdempotentAtTheCLI(t *testing.T) {
 func TestEvalRunRendersProgressAndScoreDashboard(t *testing.T) {
 	ctx := context.Background()
 	root := t.TempDir()
-	t.Setenv("NM_HOME", root)
+	t.Setenv("GATEHOUSE_HOME", root)
 	chdir(t, t.TempDir())
 
 	findings := `{"findings":[{"id":"real-bug","severity":"error","file":"main.go","line":3,"description":"bug","action":"ask-user","review_scope":"source"}],"risk_level":"high","risk_rationale":"bug","risk_scope":"source-or-external"}`
@@ -330,7 +330,7 @@ func installFakeCLIReviewAgent(t *testing.T, root, findingsJSON string) {
 		fake += ".cmd"
 		script = "@echo off\r\nmore >nul\r\necho " + strings.ReplaceAll(strings.TrimSpace(reply), "\n", "\r\necho ") + "\r\n"
 	} else {
-		script = "#!/bin/sh\n[ \"$NM_HOME\" = \"" + root + "\" ] && touch \"" + root + "/shared-home-used\"\ncat >/dev/null\ncat <<'EOF'\n" + reply + "EOF\n"
+		script = "#!/bin/sh\n[ \"$GATEHOUSE_HOME\" = \"" + root + "\" ] && touch \"" + root + "/shared-home-used\"\ncat >/dev/null\ncat <<'EOF'\n" + reply + "EOF\n"
 	}
 	if err := os.WriteFile(fake, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
@@ -354,7 +354,7 @@ func mustCLIGit(t *testing.T, ctx context.Context, dir string, args ...string) s
 func TestEvalSetsNamesTheRepositoryAndTablesTheConfusionMatrix(t *testing.T) {
 	ctx := context.Background()
 	root := t.TempDir()
-	t.Setenv("NM_HOME", root)
+	t.Setenv("GATEHOUSE_HOME", root)
 	chdir(t, t.TempDir())
 
 	findings := `{"findings":[{"id":"real-bug","severity":"error","file":"main.go","line":3,"description":"bug","action":"ask-user","review_scope":"source"}],"risk_level":"high","risk_rationale":"bug","risk_scope":"source-or-external"}`
@@ -391,7 +391,7 @@ func TestEvalSetsNamesTheRepositoryAndTablesTheConfusionMatrix(t *testing.T) {
 // and never runs past the dashboard box, however long the names are.
 func TestEvalCompositionRepoColumnIsUniformAndFitsTheBox(t *testing.T) {
 	rows := []eval.CompositionRow{
-		{Repo: "a-very-long-organization-name/no-mistakes", Language: "go", Size: "large", Severity: "warning", FindingType: "warning/auto-fix", Cases: 2},
+		{Repo: "a-very-long-organization-name/gatehouse", Language: "go", Size: "large", Severity: "warning", FindingType: "warning/auto-fix", Cases: 2},
 		{Repo: "group/very-long-subgroup/actual-repo", Language: "go", Size: "large", Severity: "error", FindingType: "error/ask-user", Cases: 1},
 	}
 	lines := compositionLines(rows)
@@ -403,10 +403,10 @@ func TestEvalCompositionRepoColumnIsUniformAndFitsTheBox(t *testing.T) {
 			t.Fatalf("composition line %q is %d wide, want at most %d", line, width, evalBoxWidth-4)
 		}
 	}
-	if strings.Contains(lines[0], "a-very-long-organization-name/no-mistakes") {
+	if strings.Contains(lines[0], "a-very-long-organization-name/gatehouse") {
 		t.Fatalf("line = %q, want the long identity shortened when it does not fit its column", lines[0])
 	}
-	if !strings.Contains(lines[0], "no-mistakes") || !strings.Contains(lines[1], "actual-repo") {
+	if !strings.Contains(lines[0], "gatehouse") || !strings.Contains(lines[1], "actual-repo") {
 		t.Fatalf("lines = %q, want every repository's final path segment", lines)
 	}
 	if strings.Contains(lines[1], "very-long-subgroup") {
@@ -433,7 +433,7 @@ func TestEvalCompositionRepoColumnIsUniformAndFitsTheBox(t *testing.T) {
 // cuts the finding type off the end of the row.
 func TestEvalCompositionFitsTheBoxWhenTheStrataAreOversized(t *testing.T) {
 	rows := []eval.CompositionRow{
-		{Repo: "kunchenguid/no-mistakes", Language: "javascript", Size: "medium", Severity: "warning", FindingType: "blocking-correctness-defect/requires-human-review", Cases: 3},
+		{Repo: "BertramPetersen/gatehouse", Language: "javascript", Size: "medium", Severity: "warning", FindingType: "blocking-correctness-defect/requires-human-review", Cases: 3},
 		{Repo: "another-organization/service", Language: "typescript", Size: "large", Severity: "error", FindingType: "error/ask-user", Cases: 1},
 	}
 	lines := compositionLines(rows)
@@ -455,7 +455,7 @@ func TestEvalCompositionFitsTheBoxWhenTheStrataAreOversized(t *testing.T) {
 			t.Fatalf("rendered box line %q is %d wide, want exactly %d", line, width, evalBoxWidth)
 		}
 	}
-	if !strings.Contains(lines[0], "no-mista") || !strings.Contains(lines[1], "service") {
+	if !strings.Contains(lines[0], "gatehous") || !strings.Contains(lines[1], "service") {
 		t.Fatalf("lines = %q, want every row to keep a repository identity", lines)
 	}
 	if !strings.Contains(lines[0], "javascript") || !strings.Contains(lines[1], "typescript") {
@@ -524,7 +524,7 @@ func TestEvalDisplayCommandsDoNotCreateThePipelineDatabase(t *testing.T) {
 		command := tt.command
 		t.Run(strings.Join(command, "-"), func(t *testing.T) {
 			root := t.TempDir()
-			t.Setenv("NM_HOME", root)
+			t.Setenv("GATEHOUSE_HOME", root)
 			chdir(t, t.TempDir())
 
 			out, err := executeCmd(command...)
@@ -551,7 +551,7 @@ func TestEvalDisplayCommandsDoNotCreateThePipelineDatabase(t *testing.T) {
 func TestEvalSetsStillNamesRepositoriesFromAnExistingDatabase(t *testing.T) {
 	ctx := context.Background()
 	root := t.TempDir()
-	t.Setenv("NM_HOME", root)
+	t.Setenv("GATEHOUSE_HOME", root)
 	chdir(t, t.TempDir())
 
 	findings := `{"findings":[{"id":"real-bug","severity":"error","file":"main.go","line":3,"description":"bug","action":"ask-user","review_scope":"source"}],"risk_level":"high","risk_rationale":"bug","risk_scope":"source-or-external"}`

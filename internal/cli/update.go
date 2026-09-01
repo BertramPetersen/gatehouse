@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"github.com/kunchenguid/no-mistakes/internal/update"
+	"github.com/BertramPetersen/gatehouse/internal/update"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +11,7 @@ func newUpdateCmd() *cobra.Command {
 	var force bool
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update no-mistakes and reset the daemon",
+		Short: "Update gatehouse and reset the daemon",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logLifecycleInvocation("update", force)

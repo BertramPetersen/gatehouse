@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
 )
 
 // outputJSON runs cmd and returns its stdout alone, leaving stderr out of the

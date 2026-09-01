@@ -9,11 +9,11 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // DefaultFixMessageTemplate preserves the built-in auto-fix commit subject.
-const DefaultFixMessageTemplate = "no-mistakes({{.Step}}): {{.Summary}}"
+const DefaultFixMessageTemplate = "gatehouse({{.Step}}): {{.Summary}}"
 
 // Limits are byte-based because they bound allocations and the git commit argument.
 // The source and placeholder caps keep repository-controlled parsing cheap, while

@@ -11,14 +11,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/custody"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/gatecontext"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/safeurl"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/custody"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/gatecontext"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/safeurl"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 const (
@@ -141,7 +141,7 @@ type Service struct {
 	// fetch) performed by Refresh/Apply. Production callers set it from the
 	// operator's global config (config.GlobalConfig.BranchSyncRemoteTimeout,
 	// key branch_sync_remote_timeout); it is never sourced from a repo's
-	// .no-mistakes.yaml - RepoConfig has no matching field, so a pushed
+	// .gatehouse.yaml - RepoConfig has no matching field, so a pushed
 	// branch cannot widen or narrow how long this service waits before
 	// failing closed. Zero (the common case for a Service built without
 	// explicitly setting it, including every test) falls back to
@@ -264,7 +264,7 @@ func (s *Service) InspectCached(ctx context.Context) State {
 }
 
 // Refresh explicitly verifies the exact configured push ref into a private
-// no-mistakes ref. It never updates an ordinary remote-tracking ref.
+// gatehouse ref. It never updates an ordinary remote-tracking ref.
 func (s *Service) Refresh(ctx context.Context) State {
 	state, run, ok := s.inspect(ctx)
 	if !ok || !refreshable(state) {
@@ -295,7 +295,7 @@ func (s *Service) Refresh(ctx context.Context) State {
 		state.State = StateOffline
 		state.Safety = "blocked_offline"
 		state.Error = "could not refresh the configured push target; no files or refs were changed"
-		state.NextAction = &NextAction{Code: "retry", Command: "no-mistakes sync --check"}
+		state.NextAction = &NextAction{Code: "retry", Command: "gatehouse sync --check"}
 		return state
 	}
 	state.Remote.Freshness = "live"
@@ -322,7 +322,7 @@ func (s *Service) Refresh(ctx context.Context) State {
 		return state
 	}
 
-	privateRef := "refs/no-mistakes/sync/" + run.ID
+	privateRef := "refs/gatehouse/sync/" + run.ID
 	branch := strings.TrimPrefix(state.Target.Ref, "refs/heads/")
 	fetchCtx, fetchCancel := context.WithTimeout(ctx, s.remoteTimeout())
 	defer fetchCancel()
@@ -539,7 +539,7 @@ func (s *Service) Apply(ctx context.Context) State {
 //   - An active run always refuses: only terminal runs are recoverable.
 //   - The preserved commits must be provably safe before custody moves: when
 //     already reachable from the local branch (equal/ahead), recovery pins the
-//     private anchor ref refs/no-mistakes/recover/<runID> locally without
+//     private anchor ref refs/gatehouse/recover/<runID> locally without
 //     requiring gate access, but rejects a conflicting recovery ref when the
 //     gate is available; otherwise the preserved head is verified through the
 //     gate's run-specific recovery ref and fetched into that anchor. Legacy terminal
@@ -559,7 +559,7 @@ func (s *Service) Apply(ctx context.Context) State {
 // Recovery ends with a persisted custody-return stamp on the run; inspection
 // then reports custody_returned (never-pushed runs) or the ordinary
 // classification against the last push binding (pushed runs), both pointing at
-// run_pipeline as the next step. `no-mistakes rerun` remains the alternative
+// run_pipeline as the next step. `gatehouse rerun` remains the alternative
 // exit that resumes validating the preserved head instead of taking it back.
 func (s *Service) Recover(ctx context.Context, keepLocal bool) State {
 	if refusal, blocked := s.gateContextRefusal(ctx); blocked {
@@ -718,7 +718,7 @@ func (s *Service) Recover(ctx context.Context, keepLocal bool) State {
 			return s.recoverAdoptPreserved(ctx, run, state, preserved)
 		}
 		state.Relation = RelationDiverged
-		blocked := blockedPlan(state, StatePipelineOwned, "blocked_recover_diverged", fmt.Sprintf("the local branch and the preserved pipeline head have diverged; the preserved commits are anchored at %s - reconcile manually and re-run the recovery, run `no-mistakes rerun` to resume validating the preserved head, or use --keep-local to keep the current head; no files or refs were changed", anchorRef))
+		blocked := blockedPlan(state, StatePipelineOwned, "blocked_recover_diverged", fmt.Sprintf("the local branch and the preserved pipeline head have diverged; the preserved commits are anchored at %s - reconcile manually and re-run the recovery, run `gatehouse rerun` to resume validating the preserved head, or use --keep-local to keep the current head; no files or refs were changed", anchorRef))
 		blocked.NextAction = &NextAction{Code: "inspect_and_reconcile_manually", Command: "git log --oneline --left-right HEAD..." + anchorRef}
 		return blocked
 	}
@@ -759,7 +759,7 @@ func (s *Service) recoverKeepLocal(ctx context.Context, run *db.Run, state State
 		if err != nil {
 			return blockedPlan(state, StatePipelineOwned, "blocked_recover_assumptions_changed", "the invoking worktree path could not be resolved; no files or refs were changed")
 		}
-		stagingRef := "refs/no-mistakes/custody-return/" + run.ID
+		stagingRef := "refs/gatehouse/custody-return/" + run.ID
 		if _, err := git.Run(ctx, s.GateDir, "fetch", "--no-tags", "--no-write-fetch-head", source, "+refs/heads/"+state.Local.Branch+":"+stagingRef); err != nil {
 			return blockedPlan(state, StatePipelineOwned, "blocked_recover_assumptions_changed", "the kept local head could not be staged into the gate; no files or refs were changed")
 		}
@@ -926,7 +926,7 @@ func (s *Service) recoverAdoptPreserved(ctx context.Context, run *db.Run, state 
 	// working-tree update can apply the preserved tree to another branch's
 	// worktree. This is not data loss: containment is proven before the move,
 	// the pre-recovery head stays anchored at
-	// refs/no-mistakes/recover-local/<run>, custody is never stamped, and the
+	// refs/gatehouse/recover-local/<run>, custody is never stamped, and the
 	// operation fails closed to a reported failure rather than a false success.
 	// The window is sub-millisecond and inside a worktree the pipeline already
 	// owns. It is irreducible because no single Git operation carries both
@@ -1105,7 +1105,7 @@ func (s *Service) inspect(ctx context.Context) (State, *db.Run, bool) {
 		state.State = StatePushInProgress
 		state.Safety = "blocked_push_in_progress"
 		state.Pipeline.Phase = "push"
-		state.NextAction = &NextAction{Code: "continue_active_run", Command: "no-mistakes axi status"}
+		state.NextAction = &NextAction{Code: "continue_active_run", Command: "gatehouse axi status"}
 		return state, run, false
 	}
 	if run.LastPushedSHA == nil || run.PushTargetFingerprint == nil || run.PushRef == nil || run.PushGeneration == nil || run.SubmittedHeadSHA == nil {
@@ -1203,7 +1203,7 @@ func (s *Service) classifyRelation(ctx context.Context, state *State, pushed, ba
 			state.State = StateLocalAhead
 			state.Relation = RelationAhead
 			state.Safety = "blocked_local_ahead"
-			state.NextAction = &NextAction{Code: "run_pipeline", Command: `no-mistakes axi run --intent "<what the user set out to accomplish>"`}
+			state.NextAction = &NextAction{Code: "run_pipeline", Command: `gatehouse axi run --intent "<what the user set out to accomplish>"`}
 			return
 		default:
 			if equivalentDivergence(ctx, s.workDir(), state.Local.Head, pushed, base) {
@@ -1214,7 +1214,7 @@ func (s *Service) classifyRelation(ctx context.Context, state *State, pushed, ba
 				} else {
 					state.Safety = "refresh_required"
 				}
-				state.NextAction = &NextAction{Code: "sync", Command: "no-mistakes axi sync"}
+				state.NextAction = &NextAction{Code: "sync", Command: "gatehouse axi sync"}
 				state.Error = ""
 				return
 			}
@@ -1233,7 +1233,7 @@ func (s *Service) classifyRelation(ctx context.Context, state *State, pushed, ba
 		state.Relation = RelationUnknown
 		state.Safety = "blocked_relation_unknown"
 		state.Error = "the pipeline-pushed commit is not available locally; run an explicit synchronization check"
-		state.NextAction = &NextAction{Code: "check_sync", Command: "no-mistakes sync --check"}
+		state.NextAction = &NextAction{Code: "check_sync", Command: "gatehouse sync --check"}
 		return
 	}
 	if live {
@@ -1241,11 +1241,11 @@ func (s *Service) classifyRelation(ctx context.Context, state *State, pushed, ba
 	} else {
 		state.Safety = "refresh_required"
 	}
-	state.NextAction = &NextAction{Code: "sync", Command: "no-mistakes axi sync"}
+	state.NextAction = &NextAction{Code: "sync", Command: "gatehouse axi sync"}
 }
 
 func syncAnchorRef(runID string) string {
-	return "refs/no-mistakes/sync-anchor/" + runID
+	return "refs/gatehouse/sync-anchor/" + runID
 }
 
 func equivalentDivergence(ctx context.Context, dir, local, pushed, base string) bool {
@@ -1437,17 +1437,17 @@ func (s *Service) classifyPipelineOwned(ctx context.Context, state *State, run *
 		if !s.recoverySourceAvailable(ctx, state, run) {
 			state.Safety = "blocked_recover_preserved_head_missing"
 			state.Error = "the run finished " + string(run.Status) + " but its recorded pipeline head is not available in the invoking worktree or local gate; inspect and reconcile the recorded and live heads manually"
-			state.NextAction = &NextAction{Code: "inspect_and_reconcile_manually", Command: "no-mistakes axi status"}
+			state.NextAction = &NextAction{Code: "inspect_and_reconcile_manually", Command: "gatehouse axi status"}
 			return
 		}
 		state.Safety = "blocked_pipeline_owned_recoverable"
 		state.Error = "the run finished " + string(run.Status) + " with unpublished pipeline commits preserved in the local gate; recover custody before any local follow-up commit"
-		state.NextAction = &NextAction{Code: "recover_custody", Command: "no-mistakes axi sync --recover"}
+		state.NextAction = &NextAction{Code: "recover_custody", Command: "gatehouse axi sync --recover"}
 		return
 	}
 	state.Safety = "blocked_pipeline_owned"
 	state.Error = activeMessage
-	state.NextAction = &NextAction{Code: "continue_active_run", Command: "no-mistakes axi status"}
+	state.NextAction = &NextAction{Code: "continue_active_run", Command: "gatehouse axi status"}
 }
 
 func (s *Service) recoverySourceAvailable(ctx context.Context, state *State, run *db.Run) bool {
@@ -1570,7 +1570,7 @@ func (s *Service) classifyCustodyReturned(ctx context.Context, state *State) {
 	state.State = StateCustodyReturned
 	state.Safety = "custody_returned"
 	state.Error = ""
-	state.NextAction = &NextAction{Code: "run_pipeline", Command: `no-mistakes axi run --intent "<what the user set out to accomplish>"`}
+	state.NextAction = &NextAction{Code: "run_pipeline", Command: `gatehouse axi run --intent "<what the user set out to accomplish>"`}
 	state.Relation = relationBetween(ctx, s.workDir(), state.Local.Head, state.Pipeline.CurrentHead)
 }
 

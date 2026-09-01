@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/config"
 )
 
 // TestPushStep_RefusesPostReviewClobberWithoutLaterPipelineCommit reproduces
@@ -319,7 +319,7 @@ func TestPushStep_DoesNotPublishTestEvidenceIntoThePushedBranch(t *testing.T) {
 	sctx := newTestContextWithDBRecords(t, ag, dir, baseSHA, headSHA, config.Commands{})
 	sctx.Repo.UpstreamURL = upstream
 	sctx.Run.Branch = "feature"
-	sctx.Config.Test.Evidence = config.Evidence{StoreInRepo: true, Dir: "evidence", Branch: "no-mistakes/evidence"}
+	sctx.Config.Test.Evidence = config.Evidence{StoreInRepo: true, Dir: "evidence", Branch: "gatehouse/evidence"}
 	recordReviewApproval(t, sctx, headSHA)
 
 	// Evidence for this run exists, collected outside the worktree.

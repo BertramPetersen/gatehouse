@@ -7,8 +7,8 @@ import (
 )
 
 func TestPiReader_RealLocalSessions(t *testing.T) {
-	if os.Getenv("NM_TEST_REAL_PI") != "1" {
-		t.Skip("set NM_TEST_REAL_PI=1 to validate against local ~/.pi/agent/sessions")
+	if os.Getenv("GATEHOUSE_TEST_REAL_PI") != "1" {
+		t.Skip("set GATEHOUSE_TEST_REAL_PI=1 to validate against local ~/.pi/agent/sessions")
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {

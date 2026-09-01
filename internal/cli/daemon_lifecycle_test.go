@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestDaemonStopRefusesWithActiveRunsAndListsThem(t *testing.T) {
 	nmHome := t.TempDir()
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	createLifecycleGuardRuns(t, paths.WithRoot(nmHome))
 
 	stopCalled := false
@@ -48,7 +48,7 @@ func TestDaemonStopRefusesWithActiveRunsAndListsThem(t *testing.T) {
 
 func TestDaemonStopForceOverridesActiveRunGuard(t *testing.T) {
 	nmHome := t.TempDir()
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	createLifecycleGuardRuns(t, paths.WithRoot(nmHome))
 
 	stopCalled := false
@@ -73,7 +73,7 @@ func TestDaemonStopForceOverridesActiveRunGuard(t *testing.T) {
 
 func TestDaemonRestartRefusesWithActiveRuns(t *testing.T) {
 	nmHome := t.TempDir()
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	createLifecycleGuardRuns(t, paths.WithRoot(nmHome))
 
 	stopCalled := false
@@ -107,7 +107,7 @@ func TestDaemonRestartRefusesWithActiveRuns(t *testing.T) {
 
 func TestLifecycleCommandsWriteCallerAttributionToCLILog(t *testing.T) {
 	nmHome := t.TempDir()
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 
 	prevStop := daemonStopFn
 	prevStart := daemonStartFn

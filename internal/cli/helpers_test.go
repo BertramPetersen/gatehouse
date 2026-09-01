@@ -13,14 +13,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/daemon"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/git"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/daemon"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/git"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 func init() {
-	if os.Getenv("NM_FAKE_BIN") == "1" {
+	if os.Getenv("GATEHOUSE_FAKE_BIN") == "1" {
 		name := filepath.Base(os.Args[0])
 		if ext := filepath.Ext(name); ext != "" {
 			name = strings.TrimSuffix(name, ext)
@@ -38,31 +38,31 @@ func init() {
 			os.Exit(1)
 		}
 	}
-	if os.Getenv("NM_HOOK_HELPER") == "1" {
+	if os.Getenv("GATEHOUSE_HOOK_HELPER") == "1" {
 		if err := newRootCmd().Execute(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 		os.Exit(0)
 	}
-	if os.Getenv("NM_DAEMON_HELPER_PROCESS") == "bootstrap-sink" {
+	if os.Getenv("GATEHOUSE_DAEMON_HELPER_PROCESS") == "bootstrap-sink" {
 		root, ok := explicitDaemonLogSinkRootFromArgs(os.Args[1:])
 		if !ok {
 			os.Exit(1)
 		}
-		_ = os.Setenv("NM_HOME", root)
+		_ = os.Setenv("GATEHOUSE_HOME", root)
 		if err := daemon.RunBootstrapLogSink(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 		os.Exit(0)
 	}
-	if os.Getenv("NM_TEST_START_DAEMON") != "1" {
+	if os.Getenv("GATEHOUSE_TEST_START_DAEMON") != "1" {
 		return
 	}
 	if root, ok := explicitDaemonRunRootFromArgs(os.Args[1:]); ok && root != "" {
-		_ = os.Setenv("NM_HOME", root)
-	} else if os.Getenv("NM_DAEMON") != "1" {
+		_ = os.Setenv("GATEHOUSE_HOME", root)
+	} else if os.Getenv("GATEHOUSE_DAEMON") != "1" {
 		return
 	}
 	if err := daemon.Run(); err != nil {
@@ -79,7 +79,7 @@ func TestMain(m *testing.M) {
 	}
 	root, err := os.MkdirTemp(base, "nm-cli-test-")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "create test NM_HOME: %v\n", err)
+		fmt.Fprintf(os.Stderr, "create test GATEHOUSE_HOME: %v\n", err)
 		os.Exit(1)
 	}
 	home, err := os.MkdirTemp(base, "nm-cli-home-")
@@ -88,10 +88,10 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "create test HOME: %v\n", err)
 		os.Exit(1)
 	}
-	_ = os.Setenv("NM_HOME", root)
+	_ = os.Setenv("GATEHOUSE_HOME", root)
 	_ = os.Setenv("HOME", home)
-	_ = os.Setenv("NO_MISTAKES_TELEMETRY", "off")
-	_ = os.Setenv("NO_MISTAKES_NO_UPDATE_CHECK", "1")
+	_ = os.Setenv("GATEHOUSE_TELEMETRY", "off")
+	_ = os.Setenv("GATEHOUSE_NO_UPDATE_CHECK", "1")
 
 	code := m.Run()
 
@@ -128,16 +128,16 @@ func explicitDaemonLogSinkRootFromArgs(args []string) (string, bool) {
 }
 
 // setupTestRepo creates a git repo with an origin remote in a temp dir and
-// sets NM_HOME to an isolated temp dir. Returns the repo path and a cleanup
-// function that restores the original working directory and NM_HOME.
+// sets GATEHOUSE_HOME to an isolated temp dir. Returns the repo path and a cleanup
+// function that restores the original working directory and GATEHOUSE_HOME.
 func setupTestRepo(t *testing.T) string {
 	t.Helper()
 
-	// Keep NM_HOME under a short temp root so the daemon socket path fits.
+	// Keep GATEHOUSE_HOME under a short temp root so the daemon socket path fits.
 	repoDir := t.TempDir()
 	nmHome := makeSocketSafeTempDir(t)
-	t.Setenv("NM_HOME", nmHome)
-	t.Setenv("NM_TEST_START_DAEMON", "1")
+	t.Setenv("GATEHOUSE_HOME", nmHome)
+	t.Setenv("GATEHOUSE_TEST_START_DAEMON", "1")
 
 	// Create a bare "origin" to use as the upstream.
 	originDir := filepath.Join(t.TempDir(), "origin.git")
@@ -298,7 +298,7 @@ func cleanupWorktree(t *testing.T, repoDir, wtDir string) {
 
 	t.Cleanup(func() {
 		_ = os.Chdir(repoDir)
-		p := paths.WithRoot(os.Getenv("NM_HOME"))
+		p := paths.WithRoot(os.Getenv("GATEHOUSE_HOME"))
 		_ = daemon.Stop(p)
 		if runtime.GOOS == "windows" {
 			time.Sleep(500 * time.Millisecond)

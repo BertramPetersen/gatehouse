@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
-// Stats summarizes historical no-mistakes usage across all repositories.
+// Stats summarizes historical gatehouse usage across all repositories.
 type Stats struct {
 	TotalRepos       int
 	TotalRuns        int

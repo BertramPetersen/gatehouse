@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // A repository gate keeps its own step log, and the truncation marker a failing
@@ -106,7 +106,7 @@ func TestSkipPushOptionRefusesARepositoryGateStepName(t *testing.T) {
 	if _, err := parseSkipSteps(gate); err == nil {
 		t.Fatalf("parseSkipSteps(%q) was accepted, want refusal", gate)
 	}
-	if _, err := parseSkipPushOptions([]string{"no-mistakes.skip=" + gate}); err == nil {
-		t.Fatalf("no-mistakes.skip=%s was accepted, want refusal", gate)
+	if _, err := parseSkipPushOptions([]string{"gatehouse.skip=" + gate}); err == nil {
+		t.Fatalf("gatehouse.skip=%s was accepted, want refusal", gate)
 	}
 }

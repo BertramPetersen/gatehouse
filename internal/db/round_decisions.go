@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // MaxBranchDecisionRounds bounds how many prior-run decision rounds are loaded

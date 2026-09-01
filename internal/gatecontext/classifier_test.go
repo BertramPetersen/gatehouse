@@ -11,11 +11,11 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/gate"
-	"github.com/kunchenguid/no-mistakes/internal/gatecontext"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/gate"
+	"github.com/BertramPetersen/gatehouse/internal/gatecontext"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 type topologyFixture struct {
@@ -163,7 +163,7 @@ func TestInspectorUsesAuthenticatedProcessAncestryAfterCWDChange(t *testing.T) {
 
 // TestInspectorAttributesRunInConfiguredWorktreeRoot covers a repository whose
 // run worktrees the operator placed in a directory of their own
-// (worktree_roots): the path no longer spells out <NM_HOME>/worktrees, so
+// (worktree_roots): the path no longer spells out <GATEHOUSE_HOME>/worktrees, so
 // run/phase attribution comes from the placement the run recorded. Without it
 // the caller is still refused as managed Git, but the refusal cannot name what
 // it is standing in - and reading the record rather than the configuration is

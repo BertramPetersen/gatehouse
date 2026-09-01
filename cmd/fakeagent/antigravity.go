@@ -23,7 +23,7 @@ func runAgy(args []string, scenario *Scenario) int {
 
 	// Fixture mode: replay the real agy wire envelope captured from a
 	// live headless run, splicing scenario-driven content into the fields
-	// no-mistakes parses (step_update text deltas, result response and
+	// gatehouse parses (step_update text deltas, result response and
 	// structured_output). The event ordering and field shapes stay exactly
 	// what agy emits, so wire-format drift surfaces in e2e.
 	flavour := "plain"

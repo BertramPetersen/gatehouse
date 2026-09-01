@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agent"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 func writePIDRecord(t *testing.T, dir, name string, info agent.ServerPIDInfo) string {

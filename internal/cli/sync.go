@@ -8,9 +8,9 @@ import (
 
 	toON "github.com/toon-format/toon-go"
 
-	"github.com/kunchenguid/no-mistakes/internal/branchsync"
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/branchsync"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -147,7 +147,7 @@ func runHumanSync(cmd *cobra.Command, check, yes bool) error {
 	}
 	if !yes {
 		if !syncInteractive() {
-			fmt.Fprintln(cmd.OutOrStdout(), "  Non-interactive input cannot confirm this plan. Re-run with `no-mistakes sync --yes`.")
+			fmt.Fprintln(cmd.OutOrStdout(), "  Non-interactive input cannot confirm this plan. Re-run with `gatehouse sync --yes`.")
 			result = "refused"
 			return &exitError{code: 1}
 		}
@@ -206,7 +206,7 @@ func runHumanRecover(cmd *cobra.Command, keepLocal, yes bool) error {
 	if !yes && state.State != branchsync.StateUserOwned {
 		printHumanSyncState(cmd, state)
 		if !syncInteractive() {
-			fmt.Fprintln(cmd.OutOrStdout(), "  Non-interactive input cannot confirm this recovery. Re-run with `no-mistakes sync --recover --yes`.")
+			fmt.Fprintln(cmd.OutOrStdout(), "  Non-interactive input cannot confirm this recovery. Re-run with `gatehouse sync --recover --yes`.")
 			result = "refused"
 			return &exitError{code: 1}
 		}
@@ -275,7 +275,7 @@ func humanSyncSummary(state branchsync.State) string {
 	switch state.State {
 	case branchsync.StatePipelineOwned:
 		if state.Safety == "blocked_pipeline_owned_recoverable" {
-			return "run ended without publishing its pipeline commits; recover custody with `no-mistakes sync --recover` (or `no-mistakes rerun` to resume validation)"
+			return "run ended without publishing its pipeline commits; recover custody with `gatehouse sync --recover` (or `gatehouse rerun` to resume validation)"
 		}
 		return "pipeline fix is not pushed yet; do not make local follow-up commits"
 	case branchsync.StateCustodyReturned:
@@ -348,7 +348,7 @@ func runAxiSync(cmd *cobra.Command, check, recover, keepLocal bool) error {
 		help = append(help, "Run `"+state.NextAction.Command+"`")
 	}
 	if state.Safety == "blocked_pipeline_owned_recoverable" {
-		help = append(help, "Run `no-mistakes rerun` instead to resume validating the preserved pipeline head")
+		help = append(help, "Run `gatehouse rerun` instead to resume validating the preserved pipeline head")
 	}
 	if len(help) > 0 {
 		fields = append(fields, toON.Field{Key: "help", Value: help})

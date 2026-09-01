@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 func TestRequestMarshal(t *testing.T) {
@@ -35,7 +35,7 @@ func TestRequestMarshal(t *testing.T) {
 
 func TestRequestWithParams(t *testing.T) {
 	params := PushReceivedParams{
-		Gate: "/home/user/.no-mistakes/repos/abc123.git",
+		Gate: "/home/user/.gatehouse/repos/abc123.git",
 		Ref:  "refs/heads/feature",
 		Old:  "0000000000000000000000000000000000000000",
 		New:  "abc123def456",

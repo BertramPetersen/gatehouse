@@ -13,13 +13,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/shellenv"
+	"github.com/BertramPetersen/gatehouse/internal/shellenv"
 )
 
 // TestSweepReapsSetsidEscapeeThatProcessGroupTeardownCannotReach is the
 // end-to-end reproduction of the leak this package exists for, with real
 // processes. A pipeline child calls setsid(2), leaving the process group
-// no-mistakes isolated it in; the group teardown that runs on every exit path
+// gatehouse isolated it in; the group teardown that runs on every exit path
 // then cannot reach it, and once its parent exits it can reparent to init or a
 // process subreaper and run forever. The test asserts both halves: the escapee
 // genuinely survives the group teardown, and the worktree-scoped sweep - the
@@ -74,21 +74,21 @@ func TestSweepReapsStaleOrphanFromDaemonStartupShape(t *testing.T) {
 }
 
 // TestProcReapHelper is not a test: it is the re-executed helper the process
-// tests above drive through NM_PROCREAP_HELPER. It exits before the testing
+// tests above drive through GATEHOUSE_PROCREAP_HELPER. It exits before the testing
 // framework can report anything.
 func TestProcReapHelper(t *testing.T) {
-	switch os.Getenv("NM_PROCREAP_HELPER") {
+	switch os.Getenv("GATEHOUSE_PROCREAP_HELPER") {
 	case "leader":
 		child := exec.Command(os.Args[0], "-test.run=^TestProcReapHelper$")
 		child.Env = append(os.Environ(),
-			"NM_PROCREAP_HELPER=escaped",
-			"NM_PROCREAP_READY="+os.Getenv("NM_PROCREAP_READY"),
+			"GATEHOUSE_PROCREAP_HELPER=escaped",
+			"GATEHOUSE_PROCREAP_READY="+os.Getenv("GATEHOUSE_PROCREAP_READY"),
 		)
-		child.Dir = os.Getenv("NM_PROCREAP_WORKDIR")
+		child.Dir = os.Getenv("GATEHOUSE_PROCREAP_WORKDIR")
 		if err := child.Start(); err != nil {
 			os.Exit(2)
 		}
-		if !waitForFile(os.Getenv("NM_PROCREAP_READY"), 10*time.Second) {
+		if !waitForFile(os.Getenv("GATEHOUSE_PROCREAP_READY"), 10*time.Second) {
 			os.Exit(3)
 		}
 		_, _ = os.Stdout.WriteString("escaped pid " + strconv.Itoa(child.Process.Pid) + "\n")
@@ -100,7 +100,7 @@ func TestProcReapHelper(t *testing.T) {
 		if _, err := syscall.Setsid(); err != nil {
 			os.Exit(4)
 		}
-		_ = os.WriteFile(os.Getenv("NM_PROCREAP_READY"), []byte("ready"), 0o644)
+		_ = os.WriteFile(os.Getenv("GATEHOUSE_PROCREAP_READY"), []byte("ready"), 0o644)
 		time.Sleep(5 * time.Minute)
 		os.Exit(0)
 	}
@@ -154,9 +154,9 @@ func TestParseProcessTableKeepsFullCommandLine(t *testing.T) {
 }
 
 func TestParseLsofCWDKeepsDeletedDirectories(t *testing.T) {
-	out := "p123\nn/Users/x/.no-mistakes/worktrees/repo/run (deleted)\np124\nn/tmp\np125\n"
+	out := "p123\nn/Users/x/.gatehouse/worktrees/repo/run (deleted)\np124\nn/tmp\np125\n"
 	cwds := parseLsofCWD(out)
-	if got, want := cwds[123], "/Users/x/.no-mistakes/worktrees/repo/run"; got != want {
+	if got, want := cwds[123], "/Users/x/.gatehouse/worktrees/repo/run"; got != want {
 		t.Fatalf("cwds[123] = %q, want %q", got, want)
 	}
 	if got, want := cwds[124], "/tmp"; got != want {
@@ -186,9 +186,9 @@ func startEscapeeUnderLeader(t *testing.T, worktree string) int {
 	leader := exec.CommandContext(context.Background(), os.Args[0], "-test.run=^TestProcReapHelper$")
 	leader.Dir = worktree
 	leader.Env = append(os.Environ(),
-		"NM_PROCREAP_HELPER=leader",
-		"NM_PROCREAP_READY="+ready,
-		"NM_PROCREAP_WORKDIR="+worktree,
+		"GATEHOUSE_PROCREAP_HELPER=leader",
+		"GATEHOUSE_PROCREAP_READY="+ready,
+		"GATEHOUSE_PROCREAP_WORKDIR="+worktree,
 	)
 	shellenv.ConfigureShellCommand(leader)
 	out, err := shellenv.CombinedOutputShellCommand(leader)

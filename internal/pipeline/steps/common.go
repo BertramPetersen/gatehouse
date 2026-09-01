@@ -3,9 +3,9 @@ package steps
 import (
 	"encoding/json"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // Finding represents a single code review or lint finding.
@@ -145,7 +145,7 @@ func WithCustomGates(core []pipeline.Step, gates []config.Gate) []pipeline.Step 
 }
 
 // AllSteps returns the fixed pipeline step sequence.
-// When NM_DEMO=1, it returns mock steps for demo recordings.
+// When GATEHOUSE_DEMO=1, it returns mock steps for demo recordings.
 func AllSteps() []pipeline.Step {
 	if IsDemoMode() {
 		return DemoSteps()

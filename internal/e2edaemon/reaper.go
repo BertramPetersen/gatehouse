@@ -25,7 +25,7 @@ type ReapResult struct {
 // ReapAll stops every inventoried temporary daemon with bounded ownership
 // checks, then removes their inventory entries. It never touches processes
 // that are not listed in the inventory or whose argv no longer matches the
-// recorded NM_HOME (so the shared service is never a target).
+// recorded GATEHOUSE_HOME (so the shared service is never a target).
 func (inv *Inventory) ReapAll() ReapResult {
 	var result ReapResult
 	if inv == nil {
@@ -105,7 +105,7 @@ func (inv *Inventory) reapEntry(e Entry, result *ReapResult) error {
 }
 
 // isAllowedTempRoot is a hard safety gate: never operate on the shared
-// user NM_HOME or other non-temp paths even if inventory is corrupted.
+// user GATEHOUSE_HOME or other non-temp paths even if inventory is corrupted.
 func isAllowedTempRoot(nmHome string) bool {
 	nmHome = filepath.Clean(nmHome)
 	if nmHome == "" || nmHome == "." || nmHome == string(filepath.Separator) {
@@ -113,7 +113,7 @@ func isAllowedTempRoot(nmHome string) bool {
 	}
 	// Reject the default shared root spellings.
 	if home, err := os.UserHomeDir(); err == nil {
-		shared := filepath.Join(home, ".no-mistakes")
+		shared := filepath.Join(home, ".gatehouse")
 		if samePath(nmHome, shared) {
 			return false
 		}
@@ -151,10 +151,10 @@ func tryDaemonStop(e Entry) bool {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, "daemon", "stop")
 	cmd.Env = append(os.Environ(),
-		"NM_HOME="+e.NMHome,
-		"NM_TEST_START_DAEMON=1",
-		"NO_MISTAKES_TELEMETRY=off",
-		"NO_MISTAKES_NO_UPDATE_CHECK=1",
+		"GATEHOUSE_HOME="+e.NMHome,
+		"GATEHOUSE_TEST_START_DAEMON=1",
+		"GATEHOUSE_TELEMETRY=off",
+		"GATEHOUSE_NO_UPDATE_CHECK=1",
 	)
 	cmd.Dir = os.TempDir()
 	_ = cmd.Run()
@@ -200,7 +200,7 @@ type Ownership struct {
 	Slot   *Slot
 }
 
-// Acquire creates inventory ownership for a temp NM_HOME under the suite
+// Acquire creates inventory ownership for a temp GATEHOUSE_HOME under the suite
 // concurrency cap. Call SyncPID after the daemon becomes live; call Release
 // after stop (or from the reaper path).
 func Acquire(nmHome, nmBin string, slotTimeout time.Duration) (*Ownership, error) {

@@ -19,23 +19,23 @@ func TestRedactText_ConventionalHomeRoots(t *testing.T) {
 	}{
 		{
 			name: "linux home prefix",
-			in:   "/home/testuser/.no-mistakes/evidence/run-1/pytest.log",
-			want: "~/.no-mistakes/evidence/run-1/pytest.log",
+			in:   "/home/testuser/.gatehouse/evidence/run-1/pytest.log",
+			want: "~/.gatehouse/evidence/run-1/pytest.log",
 		},
 		{
 			name: "macos home prefix",
-			in:   "/Users/testuser/.no-mistakes/evidence/run-1/pytest.log",
-			want: "~/.no-mistakes/evidence/run-1/pytest.log",
+			in:   "/Users/testuser/.gatehouse/evidence/run-1/pytest.log",
+			want: "~/.gatehouse/evidence/run-1/pytest.log",
 		},
 		{
 			name: "windows home prefix",
-			in:   `C:\Users\testuser\.no-mistakes\evidence\run-1\pytest.log`,
-			want: `~\.no-mistakes\evidence\run-1\pytest.log`,
+			in:   `C:\Users\testuser\.gatehouse\evidence\run-1\pytest.log`,
+			want: `~\.gatehouse\evidence\run-1\pytest.log`,
 		},
 		{
 			name: "windows home prefix with forward slashes",
-			in:   "C:/Users/testuser/.no-mistakes/evidence/run-1/pytest.log",
-			want: "~/.no-mistakes/evidence/run-1/pytest.log",
+			in:   "C:/Users/testuser/.gatehouse/evidence/run-1/pytest.log",
+			want: "~/.gatehouse/evidence/run-1/pytest.log",
 		},
 		{
 			name: "json-escaped windows home prefix",
@@ -79,13 +79,13 @@ func TestRedactText_ConventionalHomeRoots(t *testing.T) {
 		},
 		{
 			name: "pytest rootdir header",
-			in:   "rootdir: /home/testuser/.no-mistakes/worktrees/ab12cd/1/svc",
-			want: "rootdir: ~/.no-mistakes/worktrees/ab12cd/1/svc",
+			in:   "rootdir: /home/testuser/.gatehouse/worktrees/ab12cd/1/svc",
+			want: "rootdir: ~/.gatehouse/worktrees/ab12cd/1/svc",
 		},
 		{
 			name: "quoted worktree assignment",
-			in:   `WORKTREE = "/home/testuser/.no-mistakes/worktrees/ab12cd/1/svc"`,
-			want: `WORKTREE = "~/.no-mistakes/worktrees/ab12cd/1/svc"`,
+			in:   `WORKTREE = "/home/testuser/.gatehouse/worktrees/ab12cd/1/svc"`,
+			want: `WORKTREE = "~/.gatehouse/worktrees/ab12cd/1/svc"`,
 		},
 		{
 			name: "inside an html code span",
@@ -182,7 +182,7 @@ func TestRedactText_LeavesUnrelatedTextIntact(t *testing.T) {
 		},
 		{
 			name: "project signature url",
-			in:   "Updates from [git push no-mistakes](https://github.com/kunchenguid/no-mistakes)",
+			in:   "Updates from [git push gatehouse](https://github.com/BertramPetersen/gatehouse)",
 		},
 		{
 			name: "repo-relative path",
@@ -232,7 +232,7 @@ func TestRedactText_UnconventionalHomeFromEnvironment(t *testing.T) {
 		in   string
 		want string
 	}{
-		{name: "posix prefix", home: "/srv/nm-operator", in: "/srv/nm-operator/.no-mistakes/evidence/x.log", want: "~/.no-mistakes/evidence/x.log"},
+		{name: "posix prefix", home: "/srv/nm-operator", in: "/srv/nm-operator/.gatehouse/evidence/x.log", want: "~/.gatehouse/evidence/x.log"},
 		{name: "posix bare", home: "/srv/nm-operator", in: "HOME=/srv/nm-operator", want: "HOME=~"},
 		{name: "posix sibling directory is not the home", home: "/srv/nm-operator", in: "/srv/nm-operator-backup/x", want: "/srv/nm-operator-backup/x"},
 		{name: "posix suffix match is not a prefix match", home: "/srv/nm-operator", in: "/opt/srv/nm-operator/x", want: "/opt/srv/nm-operator/x"},
@@ -241,7 +241,7 @@ func TestRedactText_UnconventionalHomeFromEnvironment(t *testing.T) {
 		{name: "posix flag-attached path", home: "/srv/nm-operator", in: "-I/srv/nm-operator/include", want: "-I~/include"},
 		// A redirected Windows profile: absolute, but not under C:\Users, so
 		// only the process's own home can catch it.
-		{name: "windows redirected profile", home: `D:\profiles\operator`, in: `D:\profiles\operator\.no-mistakes\evidence\x.log`, want: `~\.no-mistakes\evidence\x.log`},
+		{name: "windows redirected profile", home: `D:\profiles\operator`, in: `D:\profiles\operator\.gatehouse\evidence\x.log`, want: `~\.gatehouse\evidence\x.log`},
 		{name: "windows redirected profile forward slashes", home: `D:\profiles\operator`, in: "D:/profiles/operator/evidence/x.log", want: "~/evidence/x.log"},
 		{name: "windows redirected profile flag-attached path", home: `D:\profiles\operator`, in: "-LD:/profiles/operator/lib", want: "-L~/lib"},
 		{name: "windows redirected profile json-escaped", home: `D:\profiles\operator`, in: `{"path":"D:\\profiles\\operator\\x.log"}`, want: `{"path":"~\\x.log"}`},
@@ -250,7 +250,7 @@ func TestRedactText_UnconventionalHomeFromEnvironment(t *testing.T) {
 		// conventional-root rules cannot see it: the "/Users" in
 		// "/c/Users/operator" is preceded by a drive letter, which the URL
 		// guard treats as an ordinary path segment.
-		{name: "msys drive-mapped home", home: "/c/Users/operator", in: "rootdir: /c/Users/operator/.no-mistakes/worktrees/ab12cd/1/svc", want: "rootdir: ~/.no-mistakes/worktrees/ab12cd/1/svc"},
+		{name: "msys drive-mapped home", home: "/c/Users/operator", in: "rootdir: /c/Users/operator/.gatehouse/worktrees/ab12cd/1/svc", want: "rootdir: ~/.gatehouse/worktrees/ab12cd/1/svc"},
 		{name: "msys drive-mapped home flag-attached path", home: "/c/Users/operator", in: "-I/c/Users/operator/include", want: "-I~/include"},
 		{name: "cygwin drive-mapped home", home: "/cygdrive/c/Users/operator", in: "rootdir: /cygdrive/c/Users/operator/svc", want: "rootdir: ~/svc"},
 		{name: "url-embedded own home", home: "/home/testuser", in: "http://localhost:8543/evidence/home/testuser/run-1/x.log", want: "http://localhost:8543/evidence~/run-1/x.log"},
@@ -311,7 +311,7 @@ func TestRedactText_DegenerateHomeIsIgnored(t *testing.T) {
 	t.Setenv("HOME", "/")
 	t.Setenv("USERPROFILE", "")
 
-	const in = "/usr/local/bin/no-mistakes and /etc/hosts"
+	const in = "/usr/local/bin/gatehouse and /etc/hosts"
 	if got := RedactText(in); got != in {
 		t.Fatalf("RedactText(%q) = %q, want it unchanged", in, got)
 	}

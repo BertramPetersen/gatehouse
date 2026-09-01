@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 func installSystemdUserService(p *paths.Paths, exe string) error {
@@ -116,7 +116,7 @@ func renderSystemdUnitWithProxyEnv(exe string, p *paths.Paths, home string, prox
 		envLines = append(envLines, systemdEnvironmentLine(kv[0], kv[1]))
 	}
 	return fmt.Sprintf(`[Unit]
-Description=no-mistakes background daemon
+Description=gatehouse background daemon
 
 [Service]
 Type=simple

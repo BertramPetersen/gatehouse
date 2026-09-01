@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/telemetry"
+	"github.com/BertramPetersen/gatehouse/internal/telemetry"
 )
 
 func TestDoctorValidatesForgeProfileWithItsAuthoritativeEnvironment(t *testing.T) {
@@ -29,7 +29,7 @@ func TestDoctorValidatesForgeProfileWithItsAuthoritativeEnvironment(t *testing.T
 	writeDoctorGitBinary(t, binDir)
 	writeDoctorStubBinary(t, binDir, "codex")
 	writeDoctorProfileGHBinary(t, binDir, profileDir)
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	t.Setenv("PATH", binDir)
 	t.Setenv("GH_TOKEN", "must-not-leak")
 
@@ -59,7 +59,7 @@ func TestDoctorReportsForgeProfileAuthenticationFailureWithoutChangingExitContra
 	writeDoctorGitBinary(t, binDir)
 	writeDoctorStubBinary(t, binDir, "codex")
 	writeDoctorFailingBinary(t, binDir, "gh")
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	t.Setenv("PATH", binDir)
 
 	out, err := executeCmd("doctor")
@@ -90,7 +90,7 @@ func TestDoctorValidatesGitLabForgeProfile(t *testing.T) {
 	writeDoctorGitBinary(t, binDir)
 	writeDoctorStubBinary(t, binDir, "codex")
 	writeDoctorStubBinary(t, binDir, "glab")
-	t.Setenv("NM_HOME", nmHome)
+	t.Setenv("GATEHOUSE_HOME", nmHome)
 	t.Setenv("PATH", binDir)
 
 	out, err := executeCmd("doctor")

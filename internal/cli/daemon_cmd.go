@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/daemon"
-	"github.com/kunchenguid/no-mistakes/internal/gatecontext"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/lifecycle"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/daemon"
+	"github.com/BertramPetersen/gatehouse/internal/gatecontext"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/lifecycle"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,7 @@ var (
 func newDaemonCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "daemon",
-		Short: "Manage the no-mistakes daemon",
+		Short: "Manage the gatehouse daemon",
 	}
 
 	cmd.AddCommand(newDaemonStartCmd())
@@ -161,7 +161,7 @@ func normalizeNotifyGatePath(gate string) (string, error) {
 func parseSkipPushOptions(options []string) ([]types.StepName, error) {
 	var steps []types.StepName
 	for _, option := range options {
-		value, ok := strings.CutPrefix(option, "no-mistakes.skip=")
+		value, ok := strings.CutPrefix(option, "gatehouse.skip=")
 		if !ok {
 			continue
 		}
@@ -192,7 +192,7 @@ func parseSkipSteps(value string) ([]types.StepName, error) {
 // intentPushOptionPrefix carries an agent-supplied intent through a git push.
 // The value is base64-encoded so multi-line or special-character intents
 // survive the push-option transport (which is line-oriented).
-const intentPushOptionPrefix = "no-mistakes.intent="
+const intentPushOptionPrefix = "gatehouse.intent="
 
 // formatIntentPushOption encodes intent as a single push option, or returns ""
 // when there is no intent to carry.
@@ -229,7 +229,7 @@ func formatSkipPushOptions(steps []types.StepName) []string {
 	for _, step := range dedupeSteps(steps) {
 		parts = append(parts, string(step))
 	}
-	return []string{"no-mistakes.skip=" + strings.Join(parts, ",")}
+	return []string{"gatehouse.skip=" + strings.Join(parts, ",")}
 }
 
 func validStep(step types.StepName) bool {
@@ -244,7 +244,7 @@ func validStep(step types.StepName) bool {
 // validReadableStep accepts everything a run can have recorded a step log for,
 // which includes the repository's own gates. Read-only surfaces use this;
 // validStep stays the stricter answer for anything that CHANGES what a run
-// does. In particular `no-mistakes.skip=` must never accept a gate name, or a
+// does. In particular `gatehouse.skip=` must never accept a gate name, or a
 // pushed branch could switch off the maintainer's extra check by push option.
 func validReadableStep(step types.StepName) bool {
 	return validStep(step) || step.IsCustomGate()
@@ -402,14 +402,14 @@ func newDaemonRunCmd() *cobra.Command {
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if root != "" {
-				if err := os.Setenv("NM_HOME", root); err != nil {
-					return fmt.Errorf("set NM_HOME: %w", err)
+				if err := os.Setenv("GATEHOUSE_HOME", root); err != nil {
+					return fmt.Errorf("set GATEHOUSE_HOME: %w", err)
 				}
 			}
 			return daemonRun()
 		},
 	}
 
-	cmd.Flags().StringVar(&root, "root", "", "override no-mistakes data directory")
+	cmd.Flags().StringVar(&root, "root", "", "override gatehouse data directory")
 	return cmd
 }

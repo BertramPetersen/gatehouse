@@ -106,17 +106,17 @@ func TestReapAbandonedInventories(t *testing.T) {
 
 func TestCommandMatchesDaemonRoot(t *testing.T) {
 	home := "/private/tmp/nm-e2e-x/nmhome"
-	cmd := "/tmp/nm-e2e-bin/no-mistakes daemon run --root " + home
+	cmd := "/tmp/nm-e2e-bin/gatehouse daemon run --root " + home
 	if !commandMatchesDaemonRoot(cmd, home) {
 		t.Fatal("expected match for exact root")
 	}
-	if commandMatchesDaemonRoot(cmd, "/Users/me/.no-mistakes") {
+	if commandMatchesDaemonRoot(cmd, "/Users/me/.gatehouse") {
 		t.Fatal("must not match shared root")
 	}
 	if commandMatchesDaemonRoot("sleep 3600", home) {
 		t.Fatal("must not match non-daemon")
 	}
-	if commandMatchesDaemonRoot("/bin/no-mistakes daemon run --root=/private/tmp/nm-e2e-x/nmhome", home) {
+	if commandMatchesDaemonRoot("/bin/gatehouse daemon run --root=/private/tmp/nm-e2e-x/nmhome", home) {
 		// equals form
 	} else {
 		t.Fatal("expected --root= form to match")
@@ -124,7 +124,7 @@ func TestCommandMatchesDaemonRoot(t *testing.T) {
 }
 
 func TestSplitWindowsTokensPreservesRootPath(t *testing.T) {
-	command := `"C:\Program Files\no-mistakes.exe" daemon run --root "C:\Users\tester\AppData\Local\Temp\nm-e2e-1\nmhome"`
+	command := `"C:\Program Files\gatehouse.exe" daemon run --root "C:\Users\tester\AppData\Local\Temp\nm-e2e-1\nmhome"`
 	tokens := splitWindowsTokens(command)
 	want := `C:\Users\tester\AppData\Local\Temp\nm-e2e-1\nmhome`
 	root, ok := extractRootTokens(tokens)
@@ -168,7 +168,7 @@ func TestIsAllowedTempRoot(t *testing.T) {
 		{"/private/tmp/nm-e2e-abc/nmhome", true},
 		{"/tmp/nmh-xyz/nm-home", true},
 		{"/var/folders/xx/nm-e2e-1/nmhome", true},
-		{"/Users/someone/.no-mistakes", false},
+		{"/Users/someone/.gatehouse", false},
 		{"/", false},
 		{"", false},
 		{".", false},
@@ -177,7 +177,7 @@ func TestIsAllowedTempRoot(t *testing.T) {
 		cases = append(cases, struct {
 			path string
 			want bool
-		}{filepath.Join(home, ".no-mistakes"), false})
+		}{filepath.Join(home, ".gatehouse"), false})
 	}
 	for _, tc := range cases {
 		if got := isAllowedTempRoot(tc.path); got != tc.want {
@@ -235,7 +235,7 @@ func TestReapAllRefusesSharedRoot(t *testing.T) {
 	if err != nil {
 		t.Skip(err)
 	}
-	shared := filepath.Join(home, ".no-mistakes")
+	shared := filepath.Join(home, ".gatehouse")
 	if err := inv.Register("bad", shared, "", 1, os.Getpid()); err != nil {
 		t.Fatal(err)
 	}

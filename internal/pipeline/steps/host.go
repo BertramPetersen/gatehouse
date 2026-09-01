@@ -8,14 +8,14 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/kunchenguid/no-mistakes/internal/bitbucket"
-	"github.com/kunchenguid/no-mistakes/internal/pipeline"
-	"github.com/kunchenguid/no-mistakes/internal/scm"
-	"github.com/kunchenguid/no-mistakes/internal/scm/azuredevops"
-	"github.com/kunchenguid/no-mistakes/internal/scm/forgejo"
-	"github.com/kunchenguid/no-mistakes/internal/scm/gitea"
-	"github.com/kunchenguid/no-mistakes/internal/scm/github"
-	"github.com/kunchenguid/no-mistakes/internal/scm/gitlab"
+	"github.com/BertramPetersen/gatehouse/internal/bitbucket"
+	"github.com/BertramPetersen/gatehouse/internal/pipeline"
+	"github.com/BertramPetersen/gatehouse/internal/scm"
+	"github.com/BertramPetersen/gatehouse/internal/scm/azuredevops"
+	"github.com/BertramPetersen/gatehouse/internal/scm/forgejo"
+	"github.com/BertramPetersen/gatehouse/internal/scm/gitea"
+	"github.com/BertramPetersen/gatehouse/internal/scm/github"
+	"github.com/BertramPetersen/gatehouse/internal/scm/gitlab"
 )
 
 // resolvedProvider returns the run-scoped provider selected by forge profile

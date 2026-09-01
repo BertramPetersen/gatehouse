@@ -12,8 +12,8 @@ import (
 
 	toon "github.com/toon-format/toon-go"
 
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // axiIntent is a distinctive intent string so we can prove it flowed all the
@@ -60,8 +60,8 @@ func axiScenario(t *testing.T) string {
 	return path
 }
 
-// TestAxiAgentJourney proves an autonomous agent can drive a full no-mistakes
-// pipeline headlessly through the `no-mistakes axi` surface in an isolated
+// TestAxiAgentJourney proves an autonomous agent can drive a full gatehouse
+// pipeline headlessly through the `gatehouse axi` surface in an isolated
 // dummy environment: init installs the skill, the home view reports state,
 // `axi run` blocks at an approval gate and emits TOON, `axi respond` clears it
 // and runs to completion, and `axi status`/`logs` inspect the result. It also
@@ -142,7 +142,7 @@ func TestAxiBranchSyncJourney(t *testing.T) {
 	if err != nil {
 		t.Fatalf("approve fix review: %v\n%s", err, doneOut)
 	}
-	for _, want := range []string{"outcome: passed", "branch_sync:", "state: behind", "command: no-mistakes axi sync"} {
+	for _, want := range []string{"outcome: passed", "branch_sync:", "state: behind", "command: gatehouse axi sync"} {
 		if !strings.Contains(doneOut, want) {
 			t.Errorf("post-push output missing %q:\n%s", want, doneOut)
 		}
@@ -295,7 +295,7 @@ func TestAxiRunReattachesAfterManagedFix(t *testing.T) {
 		"status: running",
 		"safety: blocked_pipeline_owned",
 		"code: continue_active_run",
-		"command: no-mistakes axi status",
+		"command: gatehouse axi status",
 	} {
 		if !strings.Contains(blockedOut, want) {
 			t.Errorf("pipeline-owned fresh run missing %q:\n%s", want, blockedOut)
@@ -358,7 +358,7 @@ func TestAxiCustodyRecoveryJourney(t *testing.T) {
 		"status: cancelled",
 		"safety: blocked_pipeline_owned_recoverable",
 		"code: recover_custody",
-		"command: no-mistakes axi sync --recover",
+		"command: gatehouse axi sync --recover",
 	} {
 		if !strings.Contains(abortOut, want) {
 			t.Errorf("abort output missing %q:\n%s", want, abortOut)
@@ -389,7 +389,7 @@ func TestAxiCustodyRecoveryJourney(t *testing.T) {
 		"status: cancelled",
 		"safety: blocked_pipeline_owned_recoverable",
 		"code: recover_custody",
-		"command: no-mistakes axi sync --recover",
+		"command: gatehouse axi sync --recover",
 	} {
 		if !strings.Contains(blockedOut, want) {
 			t.Errorf("blocked fresh run missing %q:\n%s", want, blockedOut)
@@ -420,8 +420,8 @@ func TestAxiCustodyRecoveryJourney(t *testing.T) {
 		"status: cancelled",
 		"safety: blocked_pipeline_owned_recoverable",
 		"code: recover_custody",
-		"command: no-mistakes axi sync --recover",
-		"no-mistakes rerun",
+		"command: gatehouse axi sync --recover",
+		"gatehouse rerun",
 	} {
 		if !strings.Contains(checkOut, want) {
 			t.Errorf("stranded check missing %q:\n%s", want, checkOut)
@@ -433,7 +433,7 @@ func TestAxiCustodyRecoveryJourney(t *testing.T) {
 	if err != nil {
 		t.Fatalf("guarded recovery: %v\n%s", err, recoverOut)
 	}
-	for _, want := range []string{"recovered: true", "state: custody_returned", "changed: true", "no-mistakes axi run --intent"} {
+	for _, want := range []string{"recovered: true", "state: custody_returned", "changed: true", "gatehouse axi run --intent"} {
 		if !strings.Contains(recoverOut, want) {
 			t.Errorf("recover output missing %q:\n%s", want, recoverOut)
 		}
@@ -442,7 +442,7 @@ func TestAxiCustodyRecoveryJourney(t *testing.T) {
 	if got, gitErr := h.runGit(context.Background(), operator, "rev-parse", "HEAD"); gitErr != nil || strings.TrimSpace(string(got)) != preserved {
 		t.Fatalf("operator HEAD after recovery = %s (err %v), want preserved %s", strings.TrimSpace(string(got)), gitErr, preserved)
 	}
-	anchorRef := "refs/no-mistakes/recover/" + run.ID
+	anchorRef := "refs/gatehouse/recover/" + run.ID
 	if got, gitErr := h.runGit(context.Background(), operator, "rev-parse", anchorRef); gitErr != nil || strings.TrimSpace(string(got)) != preserved {
 		t.Fatalf("recovery anchor %s = %s (err %v), want preserved %s", anchorRef, strings.TrimSpace(string(got)), gitErr, preserved)
 	}
@@ -588,7 +588,7 @@ func TestAxiCustodyRecoveryAfterRebaseJourney(t *testing.T) {
 	if err != nil {
 		t.Fatalf("rebase-superset recovery escalated instead of returning custody: %v\n%s", err, recoverOut)
 	}
-	for _, want := range []string{"recovered: true", "state: custody_returned", "changed: true", "no-mistakes axi run --intent"} {
+	for _, want := range []string{"recovered: true", "state: custody_returned", "changed: true", "gatehouse axi run --intent"} {
 		if !strings.Contains(recoverOut, want) {
 			t.Errorf("recover output missing %q:\n%s", want, recoverOut)
 		}
@@ -612,7 +612,7 @@ func TestAxiCustodyRecoveryAfterRebaseJourney(t *testing.T) {
 	if out, gitErr := h.runGit(context.Background(), operator, "status", "--porcelain"); gitErr != nil || strings.TrimSpace(string(out)) != "" {
 		t.Fatalf("worktree not clean after adoption: %q (err %v)", string(out), gitErr)
 	}
-	localAnchor := "refs/no-mistakes/recover-local/" + run.ID
+	localAnchor := "refs/gatehouse/recover-local/" + run.ID
 	if got, gitErr := h.runGit(context.Background(), operator, "rev-parse", localAnchor); gitErr != nil || strings.TrimSpace(string(got)) != submitted {
 		t.Fatalf("pre-recovery anchor %s = %s (err %v), want submitted %s", localAnchor, strings.TrimSpace(string(got)), gitErr, submitted)
 	}
@@ -793,7 +793,7 @@ func TestAxiPrePushAbortUnmovedHeadCustodyJourney(t *testing.T) {
 	if got, gitErr := h.runGit(context.Background(), operator, "rev-parse", "HEAD"); gitErr != nil || strings.TrimSpace(string(got)) != submitted {
 		t.Fatalf("operator HEAD after released recover = %s (err %v), want submitted %s", strings.TrimSpace(string(got)), gitErr, submitted)
 	}
-	anchorRef := "refs/no-mistakes/recover/" + run.ID
+	anchorRef := "refs/gatehouse/recover/" + run.ID
 	if _, gitErr := h.runGit(context.Background(), operator, "rev-parse", "--verify", anchorRef); gitErr == nil {
 		t.Fatalf("released recover wrote anchor ref %s", anchorRef)
 	}
@@ -879,7 +879,7 @@ func TestAxiAgentJourney(t *testing.T) {
 		"status: awaiting_approval",
 		"ask-user",
 		"potential nil deref",
-		"no-mistakes axi respond --action approve",
+		"gatehouse axi respond --action approve",
 	} {
 		if !strings.Contains(gateOut, want) {
 			t.Errorf("axi run gate output missing %q in:\n%s", want, gateOut)
@@ -1213,15 +1213,15 @@ func anyPromptContains(h *Harness, sub string) bool {
 	return false
 }
 
-// assertSkillInstalled verifies init wrote the no-mistakes skill into both
+// assertSkillInstalled verifies init wrote the gatehouse skill into both
 // user-level agent skill directories (the Claude Code and vendor-neutral
 // conventions under the user's home) with valid frontmatter, and left the
 // repo's working tree untouched by skill files.
 func assertSkillInstalled(t *testing.T, h *Harness) {
 	t.Helper()
 	for _, rel := range []string{
-		filepath.Join(".claude", "skills", "no-mistakes", "SKILL.md"),
-		filepath.Join(".agents", "skills", "no-mistakes", "SKILL.md"),
+		filepath.Join(".claude", "skills", "gatehouse", "SKILL.md"),
+		filepath.Join(".agents", "skills", "gatehouse", "SKILL.md"),
 	} {
 		path := filepath.Join(h.HomeDir, rel)
 		data, err := os.ReadFile(path)
@@ -1230,9 +1230,9 @@ func assertSkillInstalled(t *testing.T, h *Harness) {
 		}
 		content := string(data)
 		for _, want := range []string{
-			"name: no-mistakes",
+			"name: gatehouse",
 			"user-invocable: true",
-			"no-mistakes axi run",
+			"gatehouse axi run",
 		} {
 			if !strings.Contains(content, want) {
 				t.Errorf("%s missing %q", rel, want)

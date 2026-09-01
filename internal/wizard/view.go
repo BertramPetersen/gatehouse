@@ -209,7 +209,7 @@ func runningLabel(id stepID, value string) string {
 
 func confirmLabel(remote, branch string) string {
 	if remote == "" {
-		remote = "no-mistakes"
+		remote = "gatehouse"
 	}
 	return fmt.Sprintf("push %s to %s gate?", branch, remote)
 }

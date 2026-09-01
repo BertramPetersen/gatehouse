@@ -16,11 +16,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/agentcfg"
-	"github.com/kunchenguid/no-mistakes/internal/evidence"
-	"github.com/kunchenguid/no-mistakes/internal/types"
-	"github.com/kunchenguid/no-mistakes/internal/winproc"
-	"github.com/kunchenguid/no-mistakes/internal/worktrees"
+	"github.com/BertramPetersen/gatehouse/internal/agentcfg"
+	"github.com/BertramPetersen/gatehouse/internal/evidence"
+	"github.com/BertramPetersen/gatehouse/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/winproc"
+	"github.com/BertramPetersen/gatehouse/internal/worktrees"
 	"gopkg.in/yaml.v3"
 )
 
@@ -32,7 +32,7 @@ import (
 // ci.go), so an actively-rebased PR keeps its monitor. The value is
 // deliberately long because a green PR can legitimately wait days on a
 // dependency PR or on review; a torn-down or abandoned run is reaped
-// explicitly via `no-mistakes axi abort --run <id>` rather than by a short
+// explicitly via `gatehouse axi abort --run <id>` rather than by a short
 // timeout.
 const (
 	// DefaultCITimeout is the monitor's idle timeout when ci_timeout is unset.
@@ -89,7 +89,7 @@ const (
 	// before the daemon reaps it. It is comfortably longer than typical PR
 	// review latency because a PR body references these artifacts by local path
 	// whenever publishing is off or the provider has no derivable links. This
-	// is no-mistakes' own budget: the point of owning it is that no OS temp
+	// is gatehouse' own budget: the point of owning it is that no OS temp
 	// timer decides when a user's screenshots disappear.
 	DefaultEvidenceRetention = 14 * 24 * time.Hour
 	// DefaultEvidenceMaxRuns caps how many run directories survive regardless
@@ -98,7 +98,7 @@ const (
 	DefaultEvidenceMaxRuns = 200
 )
 
-// GlobalConfig represents ~/.no-mistakes/config.yaml.
+// GlobalConfig represents ~/.gatehouse/config.yaml.
 type GlobalConfig struct {
 	SourceYAML           []byte              `yaml:"-"`
 	Agent                types.AgentName     `yaml:"agent"`
@@ -120,10 +120,10 @@ type GlobalConfig struct {
 	AgentConfig map[string]agentcfg.Profile `yaml:"agent_config"`
 	// WorktreeRoots places a repository's pipeline run worktrees under a
 	// directory the operator chose instead of the default
-	// <NM_HOME>/worktrees/<repoID>. Keys are registered checkout paths
+	// <GATEHOUSE_HOME>/worktrees/<repoID>. Keys are registered checkout paths
 	// (Repo.WorkingPath), values are absolute directories. It exists for
 	// directory-scoped toolchain configuration (mise, direnv), which resolves
-	// by path ancestry and therefore never reaches a worktree under NM_HOME.
+	// by path ancestry and therefore never reaches a worktree under GATEHOUSE_HOME.
 	// Placement is resolved for every consumer in internal/worktrees.
 	WorktreeRoots           map[string]string `yaml:"worktree_roots"`
 	CITimeout               time.Duration     `yaml:"-"`
@@ -199,7 +199,7 @@ type ForgeProfile struct {
 // ForgeProfiles maps a remote host token to its machine-local provider profile.
 type ForgeProfiles map[string]ForgeProfile
 
-// RepoConfig represents .no-mistakes.yaml in a repo root.
+// RepoConfig represents .gatehouse.yaml in a repo root.
 type RepoConfig struct {
 	Agent          types.AgentName   `yaml:"agent"`
 	Agents         []types.AgentName `yaml:"-"`
@@ -208,7 +208,7 @@ type RepoConfig struct {
 	// AllowRepoCommands opts in to honoring the code-executing selection
 	// fields (commands.{test,lint,format} and agent) from a contributor's
 	// pushed branch instead of the trusted default-branch copy. It is read
-	// ONLY from the trusted default-branch copy of .no-mistakes.yaml (never
+	// ONLY from the trusted default-branch copy of .gatehouse.yaml (never
 	// the pushed SHA), so a contributor cannot self-enable. Default false:
 	// the pushed branch controls nothing that executes.
 	AllowRepoCommands bool `yaml:"allow_repo_commands"`
@@ -223,13 +223,13 @@ type RepoConfig struct {
 	PR      PRRaw      `yaml:"pr"`
 	// Document carries the repository's documentation placement policy. It
 	// steers the document step's gate prompt, so it is honored ONLY from the
-	// trusted default-branch copy of .no-mistakes.yaml (see
+	// trusted default-branch copy of .gatehouse.yaml (see
 	// EffectiveRepoConfig): a contributor's pushed branch must not be able to
 	// weaken documentation rules for its own review.
 	Document DocumentRaw `yaml:"document"`
 	// Review carries the repository's review-step settings. Its
 	// path_instructions steer the review gate prompt, so they are honored
-	// ONLY from the trusted default-branch copy of .no-mistakes.yaml (see
+	// ONLY from the trusted default-branch copy of .gatehouse.yaml (see
 	// EffectiveRepoConfig), regardless of allow_repo_commands: a contributor's
 	// pushed branch must not be able to inject or weaken the guidance that
 	// reviews it.
@@ -239,7 +239,7 @@ type RepoConfig struct {
 	// reorder, or replace a core step, and a failing gate fails the run.
 	// A gate either executes shell on the daemon host or injects instructions
 	// into a gate agent, so it is honored ONLY from the trusted default-branch
-	// copy of .no-mistakes.yaml (see EffectiveRepoConfig), regardless of
+	// copy of .gatehouse.yaml (see EffectiveRepoConfig), regardless of
 	// allow_repo_commands: unlike commands.{test,lint,format}, which a
 	// maintainer can opt into reading from a pushed branch because they only
 	// re-run that branch's own suite, a gate defines what validating the branch
@@ -251,7 +251,7 @@ type RepoConfig struct {
 	// agent-orchestration repos (e.g. firstmate) whose project instructions
 	// would otherwise install a fleet-captain identity on a gate agent. It is a
 	// SECURITY boundary honored ONLY from the trusted default-branch copy of
-	// .no-mistakes.yaml (see EffectiveRepoConfig and the daemon's
+	// .gatehouse.yaml (see EffectiveRepoConfig and the daemon's
 	// assertGateTrustedConfigReadable): a contributor's pushed branch must not be
 	// able to turn it off (or on). Default false; a plain bool so a missing key
 	// or a YAML/JSON null is falsy and preserves current loading.
@@ -259,7 +259,7 @@ type RepoConfig struct {
 	// NoCI declares that this repository intentionally has no CI. When true and
 	// the forge reports zero checks, the CI monitor treats that empty result as
 	// all-checks-passed. It is a readiness boundary honored ONLY from the trusted
-	// default-branch copy of .no-mistakes.yaml (see EffectiveRepoConfig): a
+	// default-branch copy of .gatehouse.yaml (see EffectiveRepoConfig): a
 	// contributor's pushed branch must not self-declare no-CI and bypass checks.
 	// Default false - absence means CI is expected, and an unproven empty check
 	// list remains not-ready regardless of elapsed time. If checks still appear,
@@ -334,7 +334,7 @@ const (
 // Bounds on review.path_instructions.
 //
 // The injected text lands in the review prompt, which is already the largest
-// gate prompt no-mistakes builds, and an oversized prompt fails the agent
+// gate prompt gatehouse builds, and an oversized prompt fails the agent
 // invocation outright instead of degrading. The budget is therefore validated
 // when the config is parsed - before a run starts - rather than truncated
 // silently at review time.
@@ -569,7 +569,7 @@ type EvidenceRaw struct {
 	Dir         *string `yaml:"dir"`
 	// Branch selects the orphan evidence branch. It names a git ref the
 	// daemon pushes to with the maintainer's credentials, so it is honored
-	// ONLY from the trusted default-branch copy of .no-mistakes.yaml (see
+	// ONLY from the trusted default-branch copy of .gatehouse.yaml (see
 	// EffectiveRepoConfig): a contributor's pushed branch must not be able to
 	// aim evidence commits at another branch of the repository.
 	Branch *string `yaml:"branch"`
@@ -605,7 +605,7 @@ type Evidence struct {
 	Branch      string
 	// LocalRoot overrides the app-root default for on-disk evidence; empty
 	// means paths.EvidenceDir(). Retention and MaxRuns bound how much of it
-	// survives: no-mistakes reaps its own evidence rather than leaving that to
+	// survives: gatehouse reaps its own evidence rather than leaving that to
 	// an OS temp-directory timer. Zero disables the corresponding bound.
 	LocalRoot string
 	Retention time.Duration
@@ -738,7 +738,7 @@ func resolvePathInstructions(entries []PathInstruction) []PathInstruction {
 }
 
 // defaultConfigYAML is the template written when no global config file exists.
-const defaultConfigYAML = `# no-mistakes global configuration
+const defaultConfigYAML = `# gatehouse global configuration
 
 # Agent to use for code generation. This may also be an ordered fallback list,
 # for example: agent: [codex, grok]
@@ -765,7 +765,7 @@ forgejo_axi_path: forgejo-axi
 # advances; each base advance re-arms this timer, so an actively-updated green PR
 # keeps its monitor. Set to "unlimited", "none", "off", "never", or any
 # non-positive duration to monitor until the PR is merged, closed, or the run is
-# aborted with: no-mistakes axi abort --run <id>
+# aborted with: gatehouse axi abort --run <id>
 ci_timeout: "168h"
 
 # AXI status marks a running/fixing step as quiet when no step log or native
@@ -813,13 +813,13 @@ log_level: info
 #   grok: /Users/you/.grok/bin/grok
 
 # Model and reasoning effort per agent, in one common spelling (optional, global
-# only). no-mistakes maps these down to whatever the harness actually uses:
+# only). gatehouse maps these down to whatever the harness actually uses:
 # --model/--effort for claude and copilot, -m plus -c model_reasoning_effort for
 # codex, --model/--reasoning-effort for grok, --model/--thinking for pi, the
 # session-message body for opencode (its model needs the provider/model form),
 # and acpx --model for cursor and acp:<target>. Effort is one of
 # minimal, low, medium, high, xhigh, max; a harness rejects any level it does not
-# implement. rovodev and antigravity expose no mechanism no-mistakes can set, so
+# implement. rovodev and antigravity expose no mechanism gatehouse can set, so
 # agent_config is refused for them; agent_args_override remains an escape hatch
 # only if your installed CLI build accepts a suitable flag.
 # agent_config:
@@ -846,15 +846,15 @@ log_level: info
 #     - model_reasoning_effort="low"
 #
 # Where a repository's pipeline run worktrees are created (optional). By
-# default they live under <NM_HOME>/worktrees/<repo id>, which inherits no
+# default they live under <GATEHOUSE_HOME>/worktrees/<repo id>, which inherits no
 # directory-scoped toolchain configuration. Point a checkout at a directory of
 # your own and its runs are created there instead, one directory per run, so
 # mise/direnv settings on that directory reach every run. Keys are the checkout
-# paths you ran "no-mistakes init" in, values must be absolute directories.
-# Only the directories no-mistakes' own run records name are ever created,
+# paths you ran "gatehouse init" in, values must be absolute directories.
+# Only the directories gatehouse' own run records name are ever created,
 # cleaned up, or removed there; everything else, including a directory that
 # merely looks like a run worktree, is left alone. Each checkout needs its own
-# root, and it must be outside NM_HOME and outside every checkout.
+# root, and it must be outside GATEHOUSE_HOME and outside every checkout.
 # worktree_roots:
 #   /Users/you/src/my-repo: /Users/you/work/my-repo-runs
 
@@ -882,9 +882,9 @@ ci:
 # Auto-fix commit subject template. Available variables: {{.Step}} and {{.Summary}}.
 # Repo config may override this value.
 # commit:
-#   fix_message: "no-mistakes({{.Step}}): {{.Summary}}"
+#   fix_message: "gatehouse({{.Step}}): {{.Summary}}"
 
-# User-intent extraction. When you push a branch, no-mistakes can read recent
+# User-intent extraction. When you push a branch, gatehouse can read recent
 # transcripts from your local agent (Claude Code, Codex, OpenCode, Rovo Dev, Pi,
 # Copilot CLI), pick the session that produced the change, summarize the user
 # intent, and feed it to review, test, document, lint, and PR agents so they
@@ -897,29 +897,29 @@ intent:
 
 # Test-step evidence artifacts (screenshots, recordings, logs the test step
 # gathers to demonstrate the change works). By default they are kept on local
-# disk under <NM_HOME>/evidence and referenced by local path. Opt in to
+# disk under <GATEHOUSE_HOME>/evidence and referenced by local path. Opt in to
 # store_in_repo to publish them to an orphan evidence branch in the same
 # repository and link them from the PR body. The evidence branch shares no
 # history with your code branches, so artifacts never enter the pushed branch or
 # the default branch.
 #
-# no-mistakes reaps its own evidence rather than leaving that to an OS temp
+# gatehouse reaps its own evidence rather than leaving that to an OS temp
 # directory timer: retention ages run directories out (default 14 days) and
 # max_runs caps how many survive regardless of age (default 200). Set retention
 # to "unlimited", or either to 0, to disable that bound. local_root moves the
 # directory to another disk and must be an absolute path. These three are
-# global-only - a repository's .no-mistakes.yaml cannot change where this
+# global-only - a repository's .gatehouse.yaml cannot change where this
 # machine writes evidence or how long it keeps it.
 # test:
 #   evidence:
 #     store_in_repo: true
-#     dir: .no-mistakes/evidence
-#     branch: no-mistakes/evidence
-#     local_root: /var/lib/no-mistakes/evidence
+#     dir: .gatehouse/evidence
+#     branch: gatehouse/evidence
+#     local_root: /var/lib/gatehouse/evidence
 #     retention: 720h
 #     max_runs: 50
 
-# Local review evaluation corpus, used by "no-mistakes eval" to compare
+# Local review evaluation corpus, used by "gatehouse eval" to compare
 # agent candidates, pinned to an explicit model and reasoning effort, against
 # review passes your own pipeline already made.
 # capture_provenance records, on every review round, the exact commits and
@@ -932,7 +932,7 @@ intent:
 # dropped first, and a case that already has recorded replays is never dropped.
 # Set max_cases to 0 to keep every case. diversified_size caps the official
 # gold-only eval set (default 32); 0 means one gold case per stratum. Unlabeled
-# cases never fill it. Everything stays under <NM_HOME>/eval and is never
+# cases never fill it. Everything stays under <GATEHOUSE_HOME>/eval and is never
 # uploaded anywhere.
 eval:
   capture_provenance: true
@@ -1132,7 +1132,7 @@ func noRunnableAgentError(configured []types.AgentName, probed []string) error {
 		names = append(names, string(name))
 	}
 	return fmt.Errorf(
-		"no runnable agent found for configured agent %s (looked for: %s); the gate cannot validate without an agent; install a supported native agent, choose an available agent in ~/.no-mistakes/config.yaml, or configure agent: acp:<target> with acpx installed",
+		"no runnable agent found for configured agent %s (looked for: %s); the gate cannot validate without an agent; install a supported native agent, choose an available agent in ~/.gatehouse/config.yaml, or configure agent: acp:<target> with acpx installed",
 		strings.Join(names, ", "),
 		strings.Join(probed, ", "),
 	)
@@ -1147,7 +1147,7 @@ func (c *Config) resolveConfiguredAgent(ctx context.Context, name types.AgentNam
 		return resolved, err == nil, "auto", err
 	}
 	if _, ok := defaultBinary[name]; !ok && !isACPAgent(name) {
-		return "", false, string(name), fmt.Errorf("unknown agent %q; valid options: auto, claude, codex, grok, rovodev, opencode, pi, copilot, cursor, antigravity, acp:<target> (set 'agent' in ~/.no-mistakes/config.yaml)", name)
+		return "", false, string(name), fmt.Errorf("unknown agent %q; valid options: auto, claude, codex, grok, rovodev, opencode, pi, copilot, cursor, antigravity, acp:<target> (set 'agent' in ~/.gatehouse/config.yaml)", name)
 	}
 	if isACPAgent(name) {
 		available, bins, err := c.acpAvailable(name, lookPath)
@@ -1372,7 +1372,7 @@ var agentArgsOverrideAgents = map[string]bool{
 	string(types.AgentAntigravity): true,
 }
 
-// reservedAgentArgs lists flags that no-mistakes manages internally and that
+// reservedAgentArgs lists flags that gatehouse manages internally and that
 // users cannot override through agent_args_override. A flag is matched by its
 // bare form (e.g. "--color") as well as the "--color=value" form.
 var reservedAgentArgs = map[string]map[string]bool{
@@ -1485,7 +1485,7 @@ func validateAgentArgsOverride(override map[string][]string) error {
 				base = arg[:idx]
 			}
 			if reserved[base] {
-				return fmt.Errorf("invalid agent_args_override.%s[%d]: %q is managed by no-mistakes and cannot be overridden", name, i, arg)
+				return fmt.Errorf("invalid agent_args_override.%s[%d]: %q is managed by gatehouse and cannot be overridden", name, i, arg)
 			}
 		}
 	}
@@ -1955,12 +1955,12 @@ func parsePositiveDuration(name, value string) (time.Duration, error) {
 	return d, nil
 }
 
-// LoadRepo reads per-repo config from dir/.no-mistakes.yaml.
+// LoadRepo reads per-repo config from dir/.gatehouse.yaml.
 // Returns zero-value config if file doesn't exist.
 func LoadRepo(dir string) (*RepoConfig, error) {
 	cfg := &RepoConfig{}
 
-	path := filepath.Join(dir, ".no-mistakes.yaml")
+	path := filepath.Join(dir, ".gatehouse.yaml")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -1973,7 +1973,7 @@ func LoadRepo(dir string) (*RepoConfig, error) {
 }
 
 // LoadRepoFromBytes parses per-repo config from raw YAML bytes. It is the
-// trusted-config entry point: callers that read .no-mistakes.yaml from a
+// trusted-config entry point: callers that read .gatehouse.yaml from a
 // specific git ref (e.g. the default branch) use this to avoid honoring a
 // contributor's checked-out copy.
 func LoadRepoFromBytes(data []byte) (*RepoConfig, error) {
@@ -2033,7 +2033,7 @@ func validatePRRaw(pr PRRaw) error {
 // This deliberately also runs on the PUSHED copy, even though EffectiveRepoConfig
 // discards a pushed review block: the trusted-copy read
 // (assertGateTrustedConfigReadable in internal/daemon) aborts EVERY run whose
-// default-branch .no-mistakes.yaml fails these checks, so a branch carrying an
+// default-branch .gatehouse.yaml fails these checks, so a branch carrying an
 // invalid block has to fail here, before it merges, rather than brick the
 // repository's pipeline afterwards. Do not scope this to the trusted copy.
 func validateReviewRaw(review ReviewRaw) error {
@@ -2112,7 +2112,7 @@ func validatePathInstructionGlob(pattern string) error {
 // fields are forced empty (Agent "" and nil Agents inherit the global agent;
 // Commands{} yields built-in defaults) rather than falling back to the pushed
 // branch - this blocks the supply-chain vector for repos that ship
-// .no-mistakes.yaml only on feature branches.
+// .gatehouse.yaml only on feature branches.
 //
 // Non-executing fields (ignore patterns, auto-fix, commit, intent, test) are
 // always taken from the pushed copy, matching prior behavior, since they cannot
@@ -2246,13 +2246,13 @@ func applyIntentOverrides(dst *Intent, src *IntentRaw) {
 }
 
 // testDefaults returns the default test-step settings. Evidence publication is
-// opt-in (off by default); when enabled it lands under .no-mistakes/evidence on
+// opt-in (off by default); when enabled it lands under .gatehouse/evidence on
 // the default orphan evidence branch.
 func testDefaults() Test {
 	return Test{
 		Evidence: Evidence{
 			StoreInRepo: false,
-			Dir:         ".no-mistakes/evidence",
+			Dir:         ".gatehouse/evidence",
 			Branch:      evidence.DefaultBranch,
 			LocalRoot:   "",
 			Retention:   DefaultEvidenceRetention,

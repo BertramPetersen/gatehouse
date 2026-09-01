@@ -9,14 +9,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // TestTestEvidenceLivesUnderAppRootNotSharedTemp is the end-to-end guard for
 // the whole relocation, and the test that would have caught the original
 // defect.
 //
-// The daemon used to build its evidence root as os.TempDir()/no-mistakes-evidence.
+// The daemon used to build its evidence root as os.TempDir()/gatehouse-evidence.
 // Under a service unit TMPDIR is unset, so on Linux that resolved to the shared
 // /tmp - a systemd tmpfs on current Ubuntu, meaning every screenshot the test
 // step gathered was held in RAM. Nothing in this program ever removed it
@@ -25,7 +25,7 @@ import (
 //
 // This drives a real gate push through the real daemon and asserts the three
 // things that together fix that, at the boundary a user actually experiences:
-// the run names an evidence directory under NM_HOME, every agent it launches is
+// the run names an evidence directory under GATEHOUSE_HOME, every agent it launches is
 // steered to that same directory, and the shared temp location is never touched.
 func TestTestEvidenceLivesUnderAppRootNotSharedTemp(t *testing.T) {
 	// The legacy root is a shared machine-wide path that unrelated activity may
@@ -34,7 +34,7 @@ func TestTestEvidenceLivesUnderAppRootNotSharedTemp(t *testing.T) {
 	// not an option: the harness builds its binaries under it once per test
 	// process, so a per-test temp directory would delete them out from under
 	// the next test.
-	legacyRoot := filepath.Join(os.TempDir(), "no-mistakes-evidence")
+	legacyRoot := filepath.Join(os.TempDir(), "gatehouse-evidence")
 
 	h := NewHarness(t, SetupOpts{Agent: "claude", Scenario: cleanReviewScenario(t)})
 	if out, err := h.Run("init"); err != nil {

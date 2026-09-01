@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kunchenguid/no-mistakes/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
 )
 
 func TestStartInstallsWindowsTaskAndStartsManagedDaemon(t *testing.T) {
@@ -19,7 +19,7 @@ func TestStartInstallsWindowsTaskAndStartsManagedDaemon(t *testing.T) {
 	cleanup := stubServiceRuntime(t)
 	defer cleanup()
 	runtimeGOOS = "windows"
-	exe := `C:\Program Files\no-mistakes\no-mistakes.exe`
+	exe := `C:\Program Files\gatehouse\gatehouse.exe`
 	serviceExecutablePath = func() (string, error) { return exe, nil }
 
 	var commands []string
@@ -82,7 +82,7 @@ func TestInstallWindowsTaskDoesNotRemoveLegacyTaskForDifferentRoot(t *testing.T)
 		return nil, nil
 	}
 
-	if err := installWindowsTask(p, `C:\Program Files\no-mistakes\no-mistakes.exe`); err != nil {
+	if err := installWindowsTask(p, `C:\Program Files\gatehouse\gatehouse.exe`); err != nil {
 		t.Fatal(err)
 	}
 	if len(commands) != 2 {
@@ -113,7 +113,7 @@ func TestInstallWindowsTaskKeepsLegacyTaskOnCreateFailure(t *testing.T) {
 		return nil, nil
 	}
 
-	err := installWindowsTask(p, `C:\Program Files\no-mistakes\no-mistakes.exe`)
+	err := installWindowsTask(p, `C:\Program Files\gatehouse\gatehouse.exe`)
 	if err == nil {
 		t.Fatal("installWindowsTask should fail when schtasks create fails")
 	}

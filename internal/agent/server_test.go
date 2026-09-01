@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/runenv"
+	"github.com/BertramPetersen/gatehouse/internal/runenv"
 )
 
 // TestStartServerWithPort_DetectsEarlyExit verifies that when the spawned

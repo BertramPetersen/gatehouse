@@ -63,9 +63,9 @@ func TestGrokAgentPassesInvocationEnvironmentToProcess(t *testing.T) {
 		Prompt: "report environment",
 		CWD:    t.TempDir(),
 		Env: []string{
-			"NM_GROK_ENV_HELPER=run",
-			"NM_GROK_ENV_OBSERVATION=" + observationPath,
-			"NM_GROK_INVOCATION_VALUE=present",
+			"GATEHOUSE_GROK_ENV_HELPER=run",
+			"GATEHOUSE_GROK_ENV_OBSERVATION=" + observationPath,
+			"GATEHOUSE_GROK_INVOCATION_VALUE=present",
 		},
 	})
 	if err != nil {
@@ -91,10 +91,10 @@ func newGrokEnvHelperAgent(t *testing.T) *grokAgent {
 }
 
 func TestGrokEnvHelper(t *testing.T) {
-	if os.Getenv("NM_GROK_ENV_HELPER") != "run" {
+	if os.Getenv("GATEHOUSE_GROK_ENV_HELPER") != "run" {
 		return
 	}
-	if err := os.WriteFile(os.Getenv("NM_GROK_ENV_OBSERVATION"), []byte(os.Getenv("NM_GROK_INVOCATION_VALUE")), 0o644); err != nil {
+	if err := os.WriteFile(os.Getenv("GATEHOUSE_GROK_ENV_OBSERVATION"), []byte(os.Getenv("GATEHOUSE_GROK_INVOCATION_VALUE")), 0o644); err != nil {
 		os.Exit(2)
 	}
 	_, _ = os.Stdout.WriteString(`{"type":"result","subtype":"success","is_error":false,"result":"done"}` + "\n")
@@ -111,7 +111,7 @@ func TestGrokAgentHTTP402FailsClosedWithoutRetry(t *testing.T) {
 	result, err := a.Run(context.Background(), RunOpts{
 		Prompt: "review",
 		CWD:    t.TempDir(),
-		Env:    []string{"NM_GROK_HTTP402_HELPER=run"},
+		Env:    []string{"GATEHOUSE_GROK_HTTP402_HELPER=run"},
 		OnAttempt: func(Attempt) {
 			attempts++
 		},
@@ -131,7 +131,7 @@ func TestGrokAgentHTTP402FailsClosedWithoutRetry(t *testing.T) {
 }
 
 func TestGrokHTTP402Helper(t *testing.T) {
-	if os.Getenv("NM_GROK_HTTP402_HELPER") != "run" {
+	if os.Getenv("GATEHOUSE_GROK_HTTP402_HELPER") != "run" {
 		return
 	}
 	_, _ = os.Stdout.WriteString(`{"type":"result","subtype":"success","is_error":false,"result":"not accepted"}` + "\n")

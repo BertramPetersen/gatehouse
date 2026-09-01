@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kunchenguid/no-mistakes/internal/config"
-	"github.com/kunchenguid/no-mistakes/internal/db"
-	"github.com/kunchenguid/no-mistakes/internal/ipc"
-	"github.com/kunchenguid/no-mistakes/internal/paths"
-	"github.com/kunchenguid/no-mistakes/internal/types"
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/db"
+	"github.com/BertramPetersen/gatehouse/internal/ipc"
+	"github.com/BertramPetersen/gatehouse/internal/paths"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
 // Text the journey below asserts on. Each string is distinctive so an assertion
@@ -156,10 +156,10 @@ func TestCustomGatesJourney(t *testing.T) {
 		}
 
 		// The contributor's branch: a new package that is registered nowhere, plus
-		// a .no-mistakes.yaml that drops the maintainer's gates and declares its own.
+		// a .gatehouse.yaml that drops the maintainer's gates and declares its own.
 		const branch = "feature/custom-gates"
 		h.CommitChange(branch, "internal/pricing/pricing.go", "package pricing\n\nfunc Quote() int { return 1 }\n", "add pricing package")
-		h.CommitChange(branch, ".no-mistakes.yaml", pushedRepoConfigAttemptingToAuthorItsOwnGates,
+		h.CommitChange(branch, ".gatehouse.yaml", pushedRepoConfigAttemptingToAuthorItsOwnGates,
 			"contributor: replace the maintainer's gates with my own")
 		h.PushToGate(branch)
 
@@ -292,7 +292,7 @@ func TestCustomGatesJourney(t *testing.T) {
 		// satisfies the maintainer's own script.
 		assertPushedHead(t, final.HeadSHA, h.UpstreamBranchSHA(branch))
 		log := upstreamLog(t, h, branch)
-		if !strings.Contains(log, "no-mistakes(gate.test.package-registry): register internal/pricing in ARCHITECTURE.md") {
+		if !strings.Contains(log, "gatehouse(gate.test.package-registry): register internal/pricing in ARCHITECTURE.md") {
 			t.Errorf("pushed branch is missing the gate's fix commit:\n%s", log)
 		}
 		registry := upstreamFile(t, h, branch, "ARCHITECTURE.md")
@@ -324,7 +324,7 @@ func TestCustomGatesJourney(t *testing.T) {
 		}
 
 		const branch = "feature/gate-after-push"
-		h.CommitChange(branch, ".no-mistakes.yaml", `ignore_patterns:
+		h.CommitChange(branch, ".gatehouse.yaml", `ignore_patterns:
   - 'vendor/**'
 gates:
   - name: too-late
@@ -354,7 +354,7 @@ gates:
 
 		const branch = "feature/pushed-gates-only"
 		h.CommitChange(branch, "notes.txt", "a note\n", "add a note")
-		h.CommitChange(branch, ".no-mistakes.yaml", pushedRepoConfigAttemptingToAuthorItsOwnGates,
+		h.CommitChange(branch, ".gatehouse.yaml", pushedRepoConfigAttemptingToAuthorItsOwnGates,
 			"contributor: declare my own gates on my own branch")
 		h.PushToGate(branch)
 

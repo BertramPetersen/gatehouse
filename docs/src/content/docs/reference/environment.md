@@ -1,30 +1,30 @@
 ---
 title: Environment Variables
-description: All environment variables recognized by no-mistakes.
+description: All environment variables recognized by gatehouse.
 ---
 
-## `NM_HOME`
+## `GATEHOUSE_HOME`
 
 Override the data directory.
 
 |         |                  |
 | ------- | ---------------- |
 | Type    | `string`         |
-| Default | `~/.no-mistakes` |
+| Default | `~/.gatehouse` |
 
 When set, everything else moves under this root:
 
-- Global config: `$NM_HOME/config.yaml`
-- Gate repos: `$NM_HOME/repos/<id>.git`
-- Worktrees: `$NM_HOME/worktrees/<repoID>/<runID>/`, unless [`worktree_roots`](/no-mistakes/reference/global-config/#worktree_roots) places a repository's run worktrees elsewhere
-- Logs: `$NM_HOME/logs/`
-- Database: `$NM_HOME/state.sqlite`
-- Socket / PID / singleton lock: `$NM_HOME/socket`, `$NM_HOME/daemon.pid`, and `$NM_HOME/daemon.lock`
-- Managed agent server PID records: `$NM_HOME/servers/`
-- Local evaluation cases and registry: `$NM_HOME/eval/` (created by automatic collection or an explicit `no-mistakes eval` command)
-- Managed service names get a short stable suffix derived from `$NM_HOME` so multiple installs don't collide.
+- Global config: `$GATEHOUSE_HOME/config.yaml`
+- Gate repos: `$GATEHOUSE_HOME/repos/<id>.git`
+- Worktrees: `$GATEHOUSE_HOME/worktrees/<repoID>/<runID>/`, unless [`worktree_roots`](/gatehouse/reference/global-config/#worktree_roots) places a repository's run worktrees elsewhere
+- Logs: `$GATEHOUSE_HOME/logs/`
+- Database: `$GATEHOUSE_HOME/state.sqlite`
+- Socket / PID / singleton lock: `$GATEHOUSE_HOME/socket`, `$GATEHOUSE_HOME/daemon.pid`, and `$GATEHOUSE_HOME/daemon.lock`
+- Managed agent server PID records: `$GATEHOUSE_HOME/servers/`
+- Local evaluation cases and registry: `$GATEHOUSE_HOME/eval/` (created by automatic collection or an explicit `gatehouse eval` command)
+- Managed service names get a short stable suffix derived from `$GATEHOUSE_HOME` so multiple installs don't collide.
 
-## `NM_DAEMON_CONNECT_TIMEOUT`
+## `GATEHOUSE_DAEMON_CONNECT_TIMEOUT`
 
 Override how long a CLI client waits for an existing daemon socket to accept a connection before failing instead of hanging.
 
@@ -59,14 +59,14 @@ Preferred host-scoped token used by forgejo-axi for Forgejo PR and CI operations
 
 ## `FORGEJO_TOKEN`
 
-Generic Forgejo token fallback. When present, no-mistakes passes its name explicitly to forgejo-axi; prefer a host-scoped token when the daemon serves multiple Forgejo instances.
+Generic Forgejo token fallback. When present, gatehouse passes its name explicitly to forgejo-axi; prefer a host-scoped token when the daemon serves multiple Forgejo instances.
 
 |         |          |
 | ------- | -------- |
 | Type    | `string` |
 | Default | (none)   |
 
-Tokens remain in the subprocess environment: no-mistakes never puts a token value in command arguments and redacts Forgejo token values from surfaced provider errors.
+Tokens remain in the subprocess environment: gatehouse never puts a token value in command arguments and redacts Forgejo token values from surfaced provider errors.
 
 ## `FORGEJO_TIMEOUT_MS`
 
@@ -88,9 +88,9 @@ Path to a replacement CA trust bundle used by forgejo-axi for HTTPS requests.
 | Type    | `string` |
 | Default | (none)   |
 
-This replaces rather than appends to the platform trust store. See [Provider Integration](/no-mistakes/guides/provider-integration/#forgejo) for provider setup.
+This replaces rather than appends to the platform trust store. See [Provider Integration](/gatehouse/guides/provider-integration/#forgejo) for provider setup.
 
-## `NO_MISTAKES_BITBUCKET_EMAIL`
+## `GATEHOUSE_BITBUCKET_EMAIL`
 
 Bitbucket Cloud account email used for PR creation and CI monitoring.
 
@@ -99,9 +99,9 @@ Bitbucket Cloud account email used for PR creation and CI monitoring.
 | Type    | `string`                                      |
 | Default | (none; Bitbucket PR/CI steps skip when unset) |
 
-Used alongside `NO_MISTAKES_BITBUCKET_API_TOKEN`. See [Provider Integration](/no-mistakes/guides/provider-integration/#bitbucket-cloud).
+Used alongside `GATEHOUSE_BITBUCKET_API_TOKEN`. See [Provider Integration](/gatehouse/guides/provider-integration/#bitbucket-cloud).
 
-## `NO_MISTAKES_BITBUCKET_API_TOKEN`
+## `GATEHOUSE_BITBUCKET_API_TOKEN`
 
 Bitbucket Cloud API token.
 
@@ -112,7 +112,7 @@ Bitbucket Cloud API token.
 
 Get one from [Bitbucket account settings](https://bitbucket.org/account/settings/app-passwords/).
 
-## `NO_MISTAKES_BITBUCKET_API_BASE_URL`
+## `GATEHOUSE_BITBUCKET_API_BASE_URL`
 
 Override the Bitbucket Cloud API base URL.
 
@@ -133,7 +133,7 @@ Alternatively, authenticate the Azure DevOps extension with `az devops login`.
 | Type    | `string`                                           |
 | Default | (none)                                             |
 
-See [Provider Integration](/no-mistakes/guides/provider-integration/#azure-devops).
+See [Provider Integration](/gatehouse/guides/provider-integration/#azure-devops).
 
 ## `GITHUB_TOKEN`
 
@@ -148,7 +148,7 @@ When set, the updater sends the token as a Bearer authorization header for relea
 
 ## `GH_TOKEN`
 
-Fallback GitHub token used by `no-mistakes update` when `GITHUB_TOKEN` is unset or empty.
+Fallback GitHub token used by `gatehouse update` when `GITHUB_TOKEN` is unset or empty.
 
 |         |          |
 | ------- | -------- |
@@ -157,7 +157,7 @@ Fallback GitHub token used by `no-mistakes update` when `GITHUB_TOKEN` is unset 
 
 See [`GITHUB_TOKEN`](#github_token) for the updater's authentication behavior and precedence.
 
-## `NO_MISTAKES_NO_UPDATE_CHECK`
+## `GATEHOUSE_NO_UPDATE_CHECK`
 
 Disable background update checks.
 
@@ -166,7 +166,7 @@ Disable background update checks.
 | Type    | `1` to disable, anything else to leave enabled |
 | Default | unset (checks enabled)                         |
 
-Update checks run on every CLI invocation except `update` itself and version queries (`--version` / `-v`, which stay side-effect-free), hit GitHub releases, cache the result in `$NM_HOME/update-check.json`, and print a one-line notification to stderr when a newer version is available. Dev builds (non-semver versions) suppress the check automatically.
+Update checks run on every CLI invocation except `update` itself and version queries (`--version` / `-v`, which stay side-effect-free), hit GitHub releases, cache the result in `$GATEHOUSE_HOME/update-check.json`, and print a one-line notification to stderr when a newer version is available. Dev builds (non-semver versions) suppress the check automatically.
 
 ## `XDG_DATA_HOME`
 
@@ -177,7 +177,7 @@ Data directory used to discover OpenCode transcripts for intent extraction.
 | Type    | `string`         |
 | Default | `~/.local/share` |
 
-When set, no-mistakes looks for OpenCode's intent transcript database at `$XDG_DATA_HOME/opencode/opencode.db`.
+When set, gatehouse looks for OpenCode's intent transcript database at `$XDG_DATA_HOME/opencode/opencode.db`.
 When unset, it falls back to `~/.local/share/opencode/opencode.db`.
 
 ## `GLAB_CONFIG_DIR`
@@ -189,7 +189,7 @@ Directory holding glab's `config.yml`, consulted when detecting self-hosted GitL
 | Type    | `string` |
 | Default | (none)   |
 
-When the upstream hostname carries no `gitlab` marker, no-mistakes reads glab's configured hosts from `$GLAB_CONFIG_DIR/config.yml` to decide whether the host is a GitLab instance. It takes precedence over `XDG_CONFIG_HOME`. A selected [`forge_profiles`](/no-mistakes/reference/global-config/#forge_profiles) entry overrides this variable for that run and removes `GITLAB_TOKEN`, `GITLAB_ACCESS_TOKEN`, `OAUTH_TOKEN`, `CI_JOB_TOKEN`, `GLAB_ENABLE_CI_AUTOLOGIN`, `GITLAB_HOST`, `GL_HOST`, `GITLAB_URI`, `GITLAB_API_HOST`, `GITLAB_REPO`, `GITLAB_GROUP`, `REMOTE_ALIAS`, and `GIT_REMOTE_URL_VAR` from all child processes. See [Provider Integration](/no-mistakes/guides/provider-integration/#self-hosted-githubgitlab).
+When the upstream hostname carries no `gitlab` marker, gatehouse reads glab's configured hosts from `$GLAB_CONFIG_DIR/config.yml` to decide whether the host is a GitLab instance. It takes precedence over `XDG_CONFIG_HOME`. A selected [`forge_profiles`](/gatehouse/reference/global-config/#forge_profiles) entry overrides this variable for that run and removes `GITLAB_TOKEN`, `GITLAB_ACCESS_TOKEN`, `OAUTH_TOKEN`, `CI_JOB_TOKEN`, `GLAB_ENABLE_CI_AUTOLOGIN`, `GITLAB_HOST`, `GL_HOST`, `GITLAB_URI`, `GITLAB_API_HOST`, `GITLAB_REPO`, `GITLAB_GROUP`, `REMOTE_ALIAS`, and `GIT_REMOTE_URL_VAR` from all child processes. See [Provider Integration](/gatehouse/guides/provider-integration/#self-hosted-githubgitlab).
 
 ## `GH_CONFIG_DIR`
 
@@ -200,7 +200,7 @@ Directory holding gh's `hosts.yml`, consulted when detecting self-hosted GitHub 
 | Type    | `string` |
 | Default | (none)   |
 
-When the upstream hostname is not `github.com`, no-mistakes reads gh's configured hosts from `$GH_CONFIG_DIR/hosts.yml` to decide whether the host is a GitHub Enterprise instance. It takes precedence over `XDG_CONFIG_HOME`. A selected [`forge_profiles`](/no-mistakes/reference/global-config/#forge_profiles) entry overrides this variable for that run and removes `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN`, `GITHUB_ENTERPRISE_TOKEN`, `GH_HOST`, and `GH_REPO` from all child processes. See [Provider Integration](/no-mistakes/guides/provider-integration/#self-hosted-githubgitlab).
+When the upstream hostname is not `github.com`, gatehouse reads gh's configured hosts from `$GH_CONFIG_DIR/hosts.yml` to decide whether the host is a GitHub Enterprise instance. It takes precedence over `XDG_CONFIG_HOME`. A selected [`forge_profiles`](/gatehouse/reference/global-config/#forge_profiles) entry overrides this variable for that run and removes `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN`, `GITHUB_ENTERPRISE_TOKEN`, `GH_HOST`, and `GH_REPO` from all child processes. See [Provider Integration](/gatehouse/guides/provider-integration/#self-hosted-githubgitlab).
 
 ## `XDG_CONFIG_HOME`
 
@@ -211,37 +211,37 @@ Config directory used to locate glab's `config.yml` for self-hosted GitLab detec
 | Type    | `string`    |
 | Default | `~/.config` |
 
-When `GLAB_CONFIG_DIR` is unset, no-mistakes looks for glab's configured hosts at `$XDG_CONFIG_HOME/glab-cli/config.yml`, falling back to `~/.config/glab-cli/config.yml` when `XDG_CONFIG_HOME` is unset.
-When `GH_CONFIG_DIR` is unset, no-mistakes looks for gh's configured hosts at `$XDG_CONFIG_HOME/gh/hosts.yml`, falling back to `~/.config/gh/hosts.yml` when `XDG_CONFIG_HOME` is unset.
-tea has no CLI-specific override env var (unlike `GLAB_CONFIG_DIR`/`GH_CONFIG_DIR`); no-mistakes always looks for its configured logins at `$XDG_CONFIG_HOME/tea/config.yml`, falling back to `~/.config/tea/config.yml` when `XDG_CONFIG_HOME` is unset. See [Provider Integration](/no-mistakes/guides/provider-integration/#self-hosted-gitea).
+When `GLAB_CONFIG_DIR` is unset, gatehouse looks for glab's configured hosts at `$XDG_CONFIG_HOME/glab-cli/config.yml`, falling back to `~/.config/glab-cli/config.yml` when `XDG_CONFIG_HOME` is unset.
+When `GH_CONFIG_DIR` is unset, gatehouse looks for gh's configured hosts at `$XDG_CONFIG_HOME/gh/hosts.yml`, falling back to `~/.config/gh/hosts.yml` when `XDG_CONFIG_HOME` is unset.
+tea has no CLI-specific override env var (unlike `GLAB_CONFIG_DIR`/`GH_CONFIG_DIR`); gatehouse always looks for its configured logins at `$XDG_CONFIG_HOME/tea/config.yml`, falling back to `~/.config/tea/config.yml` when `XDG_CONFIG_HOME` is unset. See [Provider Integration](/gatehouse/guides/provider-integration/#self-hosted-gitea).
 
-## `NO_MISTAKES_UMAMI_HOST`
+## `GATEHOUSE_UMAMI_HOST`
 
 Override the telemetry collection host.
 
 |         |                             |
 | ------- | --------------------------- |
-| Type    | `URL`                       |
-| Default | `https://a.kunchenguid.com` |
+| Type    | `URL`                                 |
+| Default | unset - no telemetry host is embedded |
 
-When set, telemetry sends events to this host's `/api/send` endpoint. If it is unset in a dev build, `no-mistakes` also checks a repo-local `.env` file for `NO_MISTAKES_UMAMI_HOST`. If no runtime value is found, it falls back to any host embedded at build time and then the default self-hosted Umami instance.
+When set, telemetry sends events to this host's `/api/send` endpoint. If it is unset in a dev build, `gatehouse` also checks a repo-local `.env` file for `GATEHOUSE_UMAMI_HOST`. If no runtime value is found, it falls back to any host embedded at build time. `gatehouse` ships with no collection host, so telemetry stays off until you configure one.
 
-## `NO_MISTAKES_UMAMI_WEBSITE_ID`
+## `GATEHOUSE_UMAMI_WEBSITE_ID`
 
 Override or enable the telemetry website ID.
 
 |         |                                                                         |
 | ------- | ----------------------------------------------------------------------- |
 | Type    | `string`                                                                |
-| Default | embedded in Makefile and release builds; unset in unembedded dev builds |
+| Default | unset - telemetry is disabled until you supply a website ID           |
 
-When set, telemetry uses this website ID at runtime. If it is unset in a dev build, `no-mistakes` also checks a repo-local `.env` file for `NO_MISTAKES_UMAMI_WEBSITE_ID`. If no runtime value is found, it falls back to any website ID embedded at build time.
+When set, telemetry uses this website ID at runtime. If it is unset in a dev build, `gatehouse` also checks a repo-local `.env` file for `GATEHOUSE_UMAMI_WEBSITE_ID`. If no runtime value is found, it falls back to any website ID embedded at build time. With no website ID from any source, telemetry is a no-op sink and nothing is sent.
 
-When telemetry is enabled, `no-mistakes` sends command, run, approval, fix, and wizard events, completed step events with `awaiting_approval`, `fix_review`, or `failed` status, and pageviews for the human surfaces `/wizard` and `/tui` and the state-changing agent surfaces `/axi/run`, `/axi/respond`, and `/axi/abort` to Umami.
+When telemetry is enabled, `gatehouse` sends command, run, approval, fix, and wizard events, completed step events with `awaiting_approval`, `fix_review`, or `failed` status, and pageviews for the human surfaces `/wizard` and `/tui` and the state-changing agent surfaces `/axi/run`, `/axi/respond`, and `/axi/abort` to Umami.
 Mutation pageviews are sent alongside command events, so command status and duration remain available.
 They include only flag-derived context: `/axi/run` records whether `--yes`, `--intent`, or `--skip` was present, and `/axi/respond` records the sanitized action and whether `--yes` was present.
 
-Read-only surfaces (`axi` home, `axi status`, `axi logs`, `status`, `runs`) emit no pageview and rate-limit their command event: it is sent when the observed run state changed since the last emit, and otherwise at most once per 10 minutes, with the dedupe state persisted at `<NM_HOME>/telemetry-gate.json` so agent polling loops stay bounded across processes.
+Read-only surfaces (`axi` home, `axi status`, `axi logs`, `status`, `runs`) emit no pageview and rate-limit their command event: it is sent when the observed run state changed since the last emit, and otherwise at most once per 10 minutes, with the dedupe state persisted at `<GATEHOUSE_HOME>/telemetry-gate.json` so agent polling loops stay bounded across processes.
 The `axi logs` command event records the sanitized step, whether `--full` was present, and whether `--run` was present; `axi status` records whether `--run` was present.
 Each explicit human CLI, AXI, or TUI branch-sync check/apply attempt emits one command event and no additional pageview.
 Its fields are bounded enums and booleans only: surface, mode, state, relation, target kind, pipeline phase, PR state, result, refusal reason, dirty state, and duration.
@@ -251,9 +251,9 @@ It never sends a SHA, run ID, path, branch name, URL, remote name, or command ar
 
 Everything sent remotely is low-cardinality: command names, statuses, durations, counts, flag booleans, agent and step names, and - on the single terminal `run finished` event - the bounded performance rollup `agent_invocations`, `resumed_invocations`, and `fallback_invocations` (small counts only).
 Run IDs, repository paths, branch names, session identities, prompts, model outputs, diffs, and per-invocation performance records are never sent.
-A step name is one of the fixed pipeline steps, except for a repository-declared [gate](/no-mistakes/reference/repo-config/#gates), whose bounded declared name reaches step, approval, and fix events as written in the repository's trusted `.no-mistakes.yaml`; the `axi logs` command event records it as the fixed token `gate` instead.
+A step name is one of the fixed pipeline steps, except for a repository-declared [gate](/gatehouse/reference/repo-config/#gates), whose bounded declared name reaches step, approval, and fix events as written in the repository's trusted `.gatehouse.yaml`; the `axi logs` command event records it as the fixed token `gate` instead.
 
-Detailed performance evidence stays on the machine in the local state database (`<NM_HOME>/state.sqlite`): one `agent_invocations` row per agent invocation, plus each run's accumulated parked-at-gate time.
+Detailed performance evidence stays on the machine in the local state database (`<GATEHOUSE_HOME>/state.sqlite`): one `agent_invocations` row per agent invocation, plus each run's accumulated parked-at-gate time.
 Each row records run and step identity, purpose (such as review/review-fix/housekeeping), the reported model and its provider, the cold/started/resumed/fallback session mode, a truncated session-identity hash, timestamps, duration, exit status, and failure category, alongside the session-fidelity metrics below.
 It never stores prompts, model outputs, diffs, raw command arguments, secret values, or credentials - only bounded counts, low-cardinality categories, and durations.
 
@@ -266,9 +266,9 @@ The legacy raw input, output, and cache-read token counters render numerically; 
 - Context: `workload_files`/`workload_lines` (bounded change size), `finding_count` (findings in the structured output), and `fallback_reason` (why a failed resume forced a fresh session, one of transient/parse/exit/spawn/unsupported/other).
 
 The count and timing definitions live in one authoritative place (`internal/agent/invocationmetrics.go`).
-Inspect the evidence with `no-mistakes stats --agents` (per-purpose aggregates, including a `METRICS` coverage count so a real zero is distinguishable from missing instrumentation) or `no-mistakes stats --run <id>` (one run's invocations, the per-round-vs-cumulative token split, and parked time).
+Inspect the evidence with `gatehouse stats --agents` (per-purpose aggregates, including a `METRICS` coverage count so a real zero is distinguishable from missing instrumentation) or `gatehouse stats --run <id>` (one run's invocations, the per-round-vs-cumulative token split, and parked time).
 
-## `NO_MISTAKES_TELEMETRY`
+## `GATEHOUSE_TELEMETRY`
 
 Disable telemetry collection.
 

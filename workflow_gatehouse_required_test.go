@@ -47,7 +47,7 @@ const requireActionUsesPrefix = "BertramPetersen/gatehouse/"
 // deliberately asserted by value, not just by shape: the pin must always name
 // a commit that already carries the action, and bumping it is a separate,
 // deliberate pull request that updates this constant in the same change.
-const requiredActionPin = "32d396ac0f29135daf7fcb9964aba9d5f4e796d6"
+const requiredActionPin = "b52bf4dd97ad082c22d214d94c7310043238458e"
 
 var immutableActionPin = regexp.MustCompile(`^[0-9a-f]{40}$`)
 

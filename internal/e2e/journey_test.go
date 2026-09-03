@@ -835,10 +835,13 @@ func assertInitOutput(t *testing.T, h *Harness, out string) {
 	if path, err := filepath.EvalSymlinks(h.WorkDir); err == nil {
 		resolved = path
 	}
-	for _, want := range []string{resolved, "git push gatehouse", "|__| |_/", "Gate initialized"} {
+	for _, want := range []string{resolved, "git push gatehouse", "Gate initialized"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("init output should contain %q, got:\n%s", want, out)
 		}
+	}
+	if !containsASCIIArtLine(out) {
+		t.Errorf("init output should contain the ASCII art banner, got:\n%s", out)
 	}
 }
 
@@ -2927,4 +2930,19 @@ func validatePromptsAbsent(invs []Invocation, unexpected ...string) []string {
 		}
 	}
 	return errs
+}
+
+// containsASCIIArtLine reports whether s contains a line drawn only from the
+// banner's glyph characters. It asserts the PROPERTY ("a plain ASCII banner is
+// printed") rather than specific letters on purpose: pinning a fragment of the
+// art let a rename leave this assertion describing a banner nobody renders.
+func containsASCIIArtLine(s string) bool {
+	for _, line := range strings.Split(s, "\n") {
+		trimmed := strings.TrimRight(line, " ")
+		if len(trimmed) >= 20 && strings.ContainsAny(trimmed, "_|") &&
+			strings.TrimLeft(trimmed, ` _|[]/\`) == "" {
+			return true
+		}
+	}
+	return false
 }

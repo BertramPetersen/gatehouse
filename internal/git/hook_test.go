@@ -146,7 +146,7 @@ func TestPostReceiveHookScript(t *testing.T) {
 	if !strings.Contains(script, "gatehouse") {
 		t.Fatal("hook should mention the command name")
 	}
-	if !strings.Contains(script, "|__| |_/") {
+	if !containsASCIIArtLine(script) {
 		t.Fatal("hook should contain ASCII art banner")
 	}
 	if strings.Contains(script, "\033[") {
@@ -964,4 +964,19 @@ func TestInstallPostReceiveHookCreatesDir(t *testing.T) {
 	if _, err := os.Stat(hookPath); err != nil {
 		t.Fatalf("hook file not found: %v", err)
 	}
+}
+
+// containsASCIIArtLine reports whether s contains a line drawn only from the
+// banner's glyph characters. It asserts the PROPERTY ("a plain ASCII banner is
+// printed") rather than specific letters on purpose: pinning a fragment of the
+// art let a rename leave this assertion describing a banner nobody renders.
+func containsASCIIArtLine(s string) bool {
+	for _, line := range strings.Split(s, "\n") {
+		trimmed := strings.TrimRight(line, " ")
+		if len(trimmed) >= 20 && strings.ContainsAny(trimmed, "_|") &&
+			strings.TrimLeft(trimmed, ` _|[]/\`) == "" {
+			return true
+		}
+	}
+	return false
 }

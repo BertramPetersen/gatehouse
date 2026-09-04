@@ -1,15 +1,18 @@
-// Package skill holds the canonical content of the gatehouse agent skill.
+// Package skill holds the canonical content of the gatehouse agent skills.
 //
-// It is the single source of truth for the skill's identity (name and
-// trigger description) and its SKILL.md body. The genskill tool renders
-// Markdown() to the public skills/gatehouse/SKILL.md (verified fresh in
-// CI), and the init command installs the same rendering into the user-level
-// agent skill directories under the user's home.
+// It is the single source of truth for each skill's identity (name and
+// trigger description) and its SKILL.md body, enumerated by All(). The
+// genskill tool renders every skill to its public skills/<name>/SKILL.md
+// (verified fresh in CI), and the init command installs the same renderings
+// into the user-level agent skill directories under the user's home.
 // The CLI's axi home view reuses Description so the two never drift.
 package skill
 
 import (
+	"fmt"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/BertramPetersen/gatehouse/internal/gateguidance"
 	"github.com/BertramPetersen/gatehouse/internal/testguidance"
@@ -39,17 +42,37 @@ type Skill struct {
 	DisableModelInvocation bool
 }
 
+// frontmatter is the YAML header every SKILL.md carries. Skill loaders parse it
+// with a real YAML parser, so it is marshalled rather than concatenated: a
+// description that happens to contain YAML syntax - a colon followed by a
+// space is enough - would otherwise render a document no loader accepts, and
+// the skill would silently never be offered. Field order is the struct's, so
+// the output stays deterministic and diff-checkable.
+type frontmatter struct {
+	Name                   string `yaml:"name"`
+	Description            string `yaml:"description"`
+	UserInvocable          bool   `yaml:"user-invocable"`
+	DisableModelInvocation bool   `yaml:"disable-model-invocation,omitempty"`
+}
+
 // Markdown returns the complete SKILL.md document (YAML frontmatter plus body).
 // The output is deterministic so it can be regenerated and diff-checked.
 func (s Skill) Markdown() string {
+	head, err := yaml.Marshal(frontmatter{
+		Name:                   s.Name,
+		Description:            s.Description,
+		UserInvocable:          true,
+		DisableModelInvocation: s.DisableModelInvocation,
+	})
+	if err != nil {
+		// Unreachable: the struct holds only strings and bools, which the
+		// encoder cannot reject. Panicking beats emitting a half-written
+		// header that every skill loader would quietly refuse.
+		panic(fmt.Sprintf("render %s frontmatter: %v", s.Name, err))
+	}
 	var b strings.Builder
 	b.WriteString("---\n")
-	b.WriteString("name: " + s.Name + "\n")
-	b.WriteString("description: " + s.Description + "\n")
-	b.WriteString("user-invocable: true\n")
-	if s.DisableModelInvocation {
-		b.WriteString("disable-model-invocation: true\n")
-	}
+	b.Write(head)
 	b.WriteString("---\n")
 	b.WriteString(s.Body)
 	return b.String()

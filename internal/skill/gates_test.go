@@ -1,36 +1,70 @@
 package skill
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/BertramPetersen/gatehouse/internal/config"
+	"github.com/BertramPetersen/gatehouse/internal/types"
 )
 
-// TestGatesSkillFrontmatter pins the invocation contract. This skill is
+// TestGatesSkillFrontmatter pins the invocation contract as a skill loader
+// reads it: the header is parsed as YAML and the values are asserted, because
+// a substring match reports green on a header no parser accepts. This skill is
 // deliberately NOT model-invocable: authoring a repository gate changes what
 // validating the repository means, so it runs when a human asks for it and
 // never because an agent guessed the task looked related.
 func TestGatesSkillFrontmatter(t *testing.T) {
-	md := Gates.Markdown()
-	if !strings.HasPrefix(md, "---\n") {
-		t.Fatalf("SKILL.md must start with YAML frontmatter, got:\n%s", md[:min(40, len(md))])
+	got := parseFrontmatter(t, Gates.Markdown())
+	want := frontmatter{
+		Name:                   GatesName,
+		Description:            GatesDescription,
+		UserInvocable:          true,
+		DisableModelInvocation: true,
 	}
-	for _, want := range []string{
-		"name: " + GatesName + "\n",
-		"description: " + GatesDescription + "\n",
-		"user-invocable: true\n",
-		"disable-model-invocation: true\n",
-	} {
-		if !strings.Contains(md, want) {
-			t.Errorf("frontmatter missing %q", want)
-		}
+	if got != want {
+		t.Errorf("gates frontmatter = %+v, want %+v", got, want)
 	}
-	if strings.Count(md, "---\n") < 2 {
-		t.Errorf("frontmatter not closed with a second --- delimiter")
-	}
-	if strings.Contains(md, "internal: true") {
+	if strings.Contains(Gates.Markdown(), "internal: true") {
 		t.Errorf("Gates.Markdown() must not be marked internal")
+	}
+}
+
+// TestEverySkillRendersParseableFrontmatter is the render-boundary guard: a
+// description carrying YAML syntax (a colon followed by a space is enough)
+// must not produce a header a loader refuses, which would silently withhold
+// the skill from the user.
+func TestEverySkillRendersParseableFrontmatter(t *testing.T) {
+	for _, sk := range All() {
+		t.Run(sk.Name, func(t *testing.T) {
+			got := parseFrontmatter(t, sk.Markdown())
+			if got.Name != sk.Name {
+				t.Errorf("name = %q, want %q", got.Name, sk.Name)
+			}
+			if got.Description != sk.Description {
+				t.Errorf("description = %q, want %q", got.Description, sk.Description)
+			}
+			if !got.UserInvocable {
+				t.Errorf("user-invocable = false, want true")
+			}
+			if got.DisableModelInvocation != sk.DisableModelInvocation {
+				t.Errorf("disable-model-invocation = %v, want %v", got.DisableModelInvocation, sk.DisableModelInvocation)
+			}
+		})
+	}
+}
+
+// TestFrontmatterSurvivesAYAMLHostileDescription reproduces the defect at the
+// boundary rather than through today's descriptions, so rewording one cannot
+// retire the guard.
+func TestFrontmatterSurvivesAYAMLHostileDescription(t *testing.T) {
+	hostile := `Do a thing: then #another, "quoted" - {inline: map} | and more`
+	sk := Skill{Name: "hostile", Description: hostile, Body: "\nbody\n"}
+	if got := parseFrontmatter(t, sk.Markdown()); got.Description != hostile {
+		t.Errorf("description round-trip = %q, want %q", got.Description, hostile)
 	}
 }
 
@@ -38,7 +72,7 @@ func TestGatesSkillFrontmatter(t *testing.T) {
 // must keep activating on its own, because an agent asked to ship work should
 // reach for the gate without being told.
 func TestPipelineSkillStaysModelInvocable(t *testing.T) {
-	if strings.Contains(Markdown(), "disable-model-invocation") {
+	if parseFrontmatter(t, Markdown()).DisableModelInvocation {
 		t.Errorf("the pipeline skill must remain model-invocable")
 	}
 }
@@ -56,8 +90,9 @@ func TestGatesSkillBodyCarriesTheLoadBearingRules(t *testing.T) {
 		"valid anchors":       "`rebase`, `review`, `test`, `document`, `lint`",
 		"refused anchors":     "cannot be anchored",
 		"name syntax":         "lowercase letters, digits, and inner hyphens",
-		"gate cap":            "At most 16 gates",
-		"instructions cap":    "16,384 bytes",
+		"name length":         fmt.Sprintf("at most %d characters", types.MaxCustomGateLabelLen),
+		"gate cap":            fmt.Sprintf("At most %d gates", config.MaxGates),
+		"instructions cap":    fmt.Sprintf("may not exceed %d bytes", config.MaxGateInstructionsBytes),
 		"activation rule":     "trusted default-branch copy",
 		"no effect this run":  "does not affect that branch's own run",
 		"pinned at creation":  "resolves its gate list once",
@@ -66,6 +101,8 @@ func TestGatesSkillBodyCarriesTheLoadBearingRules(t *testing.T) {
 		"repo local":          "no global or machine-wide",
 		"log step name":       "gate.<anchor>.<name>",
 		"hardening":           "disable_project_settings",
+		"hardening scope":     "applies to every pipeline agent step",
+		"hardening closes":    "fails the run closed on a harness without verified suppression",
 		"read existing first": "Read the repository's existing",
 	} {
 		if !strings.Contains(md, want) {

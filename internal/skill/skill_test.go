@@ -6,26 +6,17 @@ import (
 	"strings"
 	"testing"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/BertramPetersen/gatehouse/internal/testguidance"
 )
 
 func TestMarkdownFrontmatter(t *testing.T) {
 	md := Markdown()
-	if !strings.HasPrefix(md, "---\n") {
-		t.Fatalf("SKILL.md must start with YAML frontmatter, got:\n%s", md[:min(40, len(md))])
-	}
-	for _, want := range []string{
-		"name: " + Name + "\n",
-		"description: " + Description + "\n",
-		"user-invocable: true\n",
-	} {
-		if !strings.Contains(md, want) {
-			t.Errorf("frontmatter missing %q", want)
-		}
-	}
-	// Frontmatter block must be closed before the body.
-	if strings.Count(md, "---\n") < 2 {
-		t.Errorf("frontmatter not closed with a second --- delimiter")
+	got := parseFrontmatter(t, md)
+	want := frontmatter{Name: Name, Description: Description, UserInvocable: true}
+	if got != want {
+		t.Errorf("pipeline frontmatter = %+v, want %+v", got, want)
 	}
 	if !strings.Contains(md, "gatehouse axi run") {
 		t.Errorf("body should document the axi run command")
@@ -36,6 +27,31 @@ func TestMarkdownFrontmatter(t *testing.T) {
 	if strings.Contains(md, "internal: true") {
 		t.Errorf("Markdown() must not be marked internal")
 	}
+}
+
+// parseFrontmatter reads a rendered SKILL.md the way a skill loader does: it
+// splits the YAML header off the body and unmarshals it. Asserting on parsed
+// values instead of raw substrings is what makes these tests able to fail on a
+// header no loader accepts.
+func parseFrontmatter(t *testing.T, md string) frontmatter {
+	t.Helper()
+	if !strings.HasPrefix(md, "---\n") {
+		t.Fatalf("SKILL.md must start with YAML frontmatter, got:\n%s", md[:min(40, len(md))])
+	}
+	head, body, found := strings.Cut(strings.TrimPrefix(md, "---\n"), "---\n")
+	if !found {
+		t.Fatalf("frontmatter not closed with a second --- delimiter:\n%s", md[:min(200, len(md))])
+	}
+	if strings.TrimSpace(body) == "" {
+		t.Fatalf("SKILL.md carries no body after its frontmatter")
+	}
+	var fm frontmatter
+	dec := yaml.NewDecoder(strings.NewReader(head))
+	dec.KnownFields(true)
+	if err := dec.Decode(&fm); err != nil {
+		t.Fatalf("frontmatter is not valid YAML a skill loader can read: %v\n%s", err, head)
+	}
+	return fm
 }
 
 func TestBodyIncludesGeneratedGateStepGuard(t *testing.T) {

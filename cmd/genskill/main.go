@@ -1,14 +1,14 @@
-// Command genskill renders the canonical gatehouse SKILL.md from the
-// internal/skill package into skills/gatehouse/SKILL.md. The same rendering
-// is what `gatehouse init` installs into the user-level agent skill
-// directories, so the committed file and the installed copies never drift.
+// Command genskill renders every skill in the internal/skill package into its
+// canonical skills/<name>/SKILL.md. The same renderings are what
+// `gatehouse init` installs into the user-level agent skill directories, so the
+// committed files and the installed copies never drift.
 //
 // Usage:
 //
-//	go run ./cmd/genskill           # (re)write the skill file
-//	go run ./cmd/genskill --check   # fail if the committed file is stale
+//	go run ./cmd/genskill           # (re)write the skill files
+//	go run ./cmd/genskill --check   # fail if any committed file is stale
 //
-// The --check form is meant for CI so the committed skill never drifts from
+// The --check form is meant for CI so the committed skills never drift from
 // the generator, which is the single source of truth.
 package main
 
@@ -25,12 +25,10 @@ func main() {
 	check := flag.Bool("check", false, "verify the committed skill matches the generator instead of writing it")
 	flag.Parse()
 
-	// The canonical public skill that `npx skills add` discovers, relative to
-	// the repo root.
 	// Every skill in skill.All() gets a canonical public copy that discovery
-	// tools find, relative to the repo root. Iterating the same list the
-	// installer uses is what keeps a new skill from being published without
-	// being installed, or the reverse.
+	// tools such as `npx skills add` find, relative to the repo root. Iterating
+	// the same list the installer uses is what keeps a new skill from being
+	// published without being installed, or the reverse.
 	stale := false
 	for _, sk := range skill.All() {
 		rel := filepath.Join("skills", sk.Name, "SKILL.md")

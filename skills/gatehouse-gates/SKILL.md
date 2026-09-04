@@ -1,6 +1,6 @@
 ---
 name: gatehouse-gates
-description: Add a repository gate to .gatehouse.yaml from a description of what it should enforce: choosing command or instructions, the anchor step, a valid name, the size limits, and the trust rules that decide when it takes effect. Invoke with /gatehouse-gates.
+description: 'Add a repository gate to .gatehouse.yaml from a description of what it should enforce: choosing command or instructions, the anchor step, a valid name, the size limits, and the trust rules that decide when it takes effect. Invoke with /gatehouse-gates.'
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -78,7 +78,7 @@ filename, so it has to stay path-safe.
 
 ## 5. Respect the limits
 
-At most 16 gates are allowed, and an `instructions` value may not exceed 16,384
+At most 16 gates are allowed, and an `instructions` value may not exceed 16384
 bytes, because it shares the agent prompt's budget.
 
 Merge-conflict markers are stripped from `instructions`, and a value left empty
@@ -131,6 +131,15 @@ can steer the verdict.
 When that matters, state the rule as `instructions` and set
 `disable_project_settings: true` on the trusted copy, or point `command` at logic
 that does not live in the repository.
+
+`disable_project_settings` is not scoped to the gate you are adding. It is a
+repository-wide setting that applies to every pipeline agent step, and it fails
+the run closed on a harness without verified suppression - only `claude`,
+`codex`, and `pi` qualify today, and only while `agent_args_override` does not
+override the knob. On a repository configured for any other agent, turning it on
+means every later run stops before its first step instead of hardening one gate.
+So check the configured agent first, and tell the user it changes the whole
+pipeline rather than presenting it as gate-local hardening.
 
 ## 9. Verify
 

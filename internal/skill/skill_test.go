@@ -91,29 +91,38 @@ func TestBodyDocumentsAxiGateGuidance(t *testing.T) {
 	}
 }
 
-func TestInstallWritesBothPaths(t *testing.T) {
+func TestInstallWritesEverySkillPath(t *testing.T) {
 	root := t.TempDir()
 	written, err := Install(root)
 	if err != nil {
 		t.Fatalf("Install: %v", err)
 	}
-	wantRel := []string{
-		filepath.Join(".claude", "skills", Name, "SKILL.md"),
-		filepath.Join(".agents", "skills", Name, "SKILL.md"),
+	want := wantInstalledContent()
+	if len(written) != len(want) {
+		t.Fatalf("written = %v, want %d path(s)", written, len(want))
 	}
-	if len(written) != len(wantRel) {
-		t.Fatalf("written = %v, want %v", written, wantRel)
-	}
-	for i, rel := range wantRel {
-		if written[i] != rel {
-			t.Errorf("written[%d] = %q, want %q", i, written[i], rel)
+	seen := map[string]bool{}
+	for _, rel := range written {
+		content, ok := want[rel]
+		if !ok {
+			t.Errorf("Install reported unexpected path %q", rel)
+			continue
 		}
+		if seen[rel] {
+			t.Errorf("Install reported %q twice", rel)
+		}
+		seen[rel] = true
 		data, err := os.ReadFile(filepath.Join(root, rel))
 		if err != nil {
 			t.Fatalf("read %s: %v", rel, err)
 		}
-		if string(data) != Markdown() {
-			t.Errorf("%s content does not match Markdown()", rel)
+		if string(data) != content {
+			t.Errorf("%s content does not match its skill's Markdown()", rel)
+		}
+	}
+	for rel := range want {
+		if !seen[rel] {
+			t.Errorf("Install never wrote %q", rel)
 		}
 	}
 }
@@ -131,16 +140,17 @@ func TestInstallUserWritesUnderHome(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InstallUser: %v", err)
 	}
-	if len(written) != len(InstallBases) {
-		t.Fatalf("written = %v, want one path per base", written)
+	want := wantInstalledContent()
+	if len(written) != len(want) {
+		t.Fatalf("written = %v, want one path per skill per base (%d)", written, len(want))
 	}
-	for _, base := range InstallBases {
-		data, err := os.ReadFile(filepath.Join(home, base, Name, "SKILL.md"))
+	for rel, content := range want {
+		data, err := os.ReadFile(filepath.Join(home, rel))
 		if err != nil {
-			t.Fatalf("skill not installed under home at %s: %v", base, err)
+			t.Fatalf("skill not installed under home at %s: %v", rel, err)
 		}
-		if string(data) != Markdown() {
-			t.Errorf("%s content does not match Markdown()", base)
+		if string(data) != content {
+			t.Errorf("%s content does not match its skill's Markdown()", rel)
 		}
 	}
 }
@@ -222,13 +232,19 @@ func TestInstallSymlinkLayouts(t *testing.T) {
 			}
 
 			// Every reported path must be readable with current content.
+			want := wantInstalledContent()
 			for _, rel := range written {
 				data, err := os.ReadFile(filepath.Join(root, rel))
 				if err != nil {
 					t.Fatalf("read reported %s: %v", rel, err)
 				}
-				if string(data) != Markdown() {
-					t.Errorf("%s content does not match Markdown()", rel)
+				content, ok := want[rel]
+				if !ok {
+					t.Errorf("Install reported unexpected path %q", rel)
+					continue
+				}
+				if string(data) != content {
+					t.Errorf("%s content does not match its skill's Markdown()", rel)
 				}
 			}
 
@@ -358,4 +374,17 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// wantInstalledContent maps every root-relative install path to the content it
+// must carry. Tests use it instead of assuming a single skill, so adding one to
+// All() cannot leave an install assertion silently checking the wrong body.
+func wantInstalledContent() map[string]string {
+	want := make(map[string]string, len(All())*len(InstallBases))
+	for _, sk := range All() {
+		for _, base := range InstallBases {
+			want[filepath.Join(base, sk.Name, "SKILL.md")] = sk.Markdown()
+		}
+	}
+	return want
 }

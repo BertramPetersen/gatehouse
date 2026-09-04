@@ -335,6 +335,8 @@ gates:
 A gate with `command` runs that command in the run worktree and passes on exit code 0.
 A gate with `instructions` runs an agent that judges the change against those instructions alone and reports structured findings. On that judging turn the agent is instructed to report only and to leave the worktree alone, which is a prompt contract like the rest of the pipeline's agent steering rather than an enforced sandbox. Only an explicitly authorized `fix` answer lets a gate of either kind change the worktree, and what it repairs is committed to the branch - see [Failure](#failure) below.
 
+To write one from a description of what it should enforce, invoke the `/gatehouse-gates` skill that [`init`](/gatehouse/reference/cli/#gatehouse-init) installs; it carries this section's schema, anchors, limits, and trust rules.
+
 #### Placement
 
 `after` names the core step the gate runs immediately after. Valid anchors are `rebase`, `review`, `test`, `document`, and `lint`.

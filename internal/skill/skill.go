@@ -24,25 +24,53 @@ const Name = "gatehouse"
 // agent's decision to load the skill, so it leads with outcomes and keywords.
 const Description = "Validate your code changes through the gatehouse pipeline - automated code review, tests, lint, docs, push, PR, and CI - before they reach the configured push target. Use when the user asks to run gatehouse, gate or ship or validate their changes, push safely, asks you to do a task and then validate it, or invokes /gatehouse."
 
+// Skill is one renderable agent skill. Every copy of a skill comes from a
+// single Skill value: the canonical public file under skills/ and the
+// user-level copy `gatehouse init` installs are the same rendering, so a skill
+// can never be published without being installed, or the reverse.
+type Skill struct {
+	Name        string
+	Description string
+	Body        string
+	// DisableModelInvocation keeps the skill out of the agent's automatic
+	// selection, leaving it reachable only when a human invokes it by name.
+	// Use it when activating the skill is a decision rather than a step, so an
+	// agent cannot load it merely because a task looked related.
+	DisableModelInvocation bool
+}
+
 // Markdown returns the complete SKILL.md document (YAML frontmatter plus body).
-// The output is deterministic so it can be regenerated and diff-checked. It is
-// the single rendering: the canonical public skill (surfaced by discovery
-// tools, e.g. `npx skills add BertramPetersen/gatehouse`) and the copy init
-// installs at user level are identical. Older versions vendored a variant with
-// `metadata.internal: true` into each target repo to keep the vendored copy
-// out of repo skill listings; the user-level install is a genuine user
-// installation that should stay discoverable, so no internal marker exists
-// anymore.
-func Markdown() string {
+// The output is deterministic so it can be regenerated and diff-checked.
+func (s Skill) Markdown() string {
 	var b strings.Builder
 	b.WriteString("---\n")
-	b.WriteString("name: " + Name + "\n")
-	b.WriteString("description: " + Description + "\n")
+	b.WriteString("name: " + s.Name + "\n")
+	b.WriteString("description: " + s.Description + "\n")
 	b.WriteString("user-invocable: true\n")
+	if s.DisableModelInvocation {
+		b.WriteString("disable-model-invocation: true\n")
+	}
 	b.WriteString("---\n")
-	b.WriteString(body)
+	b.WriteString(s.Body)
 	return b.String()
 }
+
+// Pipeline drives a validation run. It stays model-invocable on purpose: an
+// agent asked to ship or validate work should reach for the gate unprompted.
+var Pipeline = Skill{Name: Name, Description: Description, Body: body}
+
+// All is the single list the generator and the installer both iterate, so
+// adding a skill there is enough to publish and install it.
+func All() []Skill { return []Skill{Pipeline, Gates} }
+
+// Markdown renders the pipeline skill. It stays a package-level function
+// because that is the canonical public skill (surfaced by discovery tools, e.g.
+// `npx skills add BertramPetersen/gatehouse`) which most callers mean. Older
+// versions vendored a variant with `metadata.internal: true` into each target
+// repo to keep the vendored copy out of repo skill listings; the user-level
+// install is a genuine user installation that should stay discoverable, so no
+// internal marker exists anymore.
+func Markdown() string { return Pipeline.Markdown() }
 
 // body is the Markdown instructions an agent reads when the skill activates.
 // Keep it focused: the operating loop, the command vocabulary, and how to read

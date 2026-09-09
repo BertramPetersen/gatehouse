@@ -71,7 +71,7 @@ func newInitCmd() *cobra.Command {
 					return fmt.Errorf("start daemon: %w", err)
 				}
 
-				// Install the agent skill at user level so agents can drive
+				// Install the agent skills at user level so agents can drive
 				// gatehouse via `/gatehouse` in any repo. Best-effort: a
 				// skill write failure must not undo a successful gate setup.
 				_, skillErr := skill.InstallUser()

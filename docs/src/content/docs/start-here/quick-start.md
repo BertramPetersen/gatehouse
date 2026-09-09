@@ -67,7 +67,7 @@ $ gatehouse init
 Without fork routing, you can bypass the gate for a specific push with `git push origin <branch>`.
 With `--fork-url`, bypassing the gate means pushing to your fork URL yourself.
 
-You can safely re-run `gatehouse init` later to refresh gate wiring or update the installed agent skill after an upgrade.
+You can safely re-run `gatehouse init` later to refresh gate wiring or update the installed agent skills after an upgrade.
 If you rename or move the repo directory, re-run `gatehouse init` from the new path to reattach the existing gate and keep its run history.
 Copied repos get their own fresh gate while the original path still exists.
 

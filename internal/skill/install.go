@@ -17,8 +17,9 @@ var InstallBases = []string{
 	filepath.Join(".agents", "skills"),
 }
 
-// InstallUser installs the skill into the agent skill directories under the
-// current user's home directory. It returns the home-relative paths written.
+// InstallUser installs every skill in All() into the agent skill directories
+// under the current user's home directory. It returns the home-relative paths
+// written.
 func InstallUser() ([]string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -27,8 +28,8 @@ func InstallUser() ([]string, error) {
 	return Install(home)
 }
 
-// Install writes SKILL.md into each agent skills directory under root
-// (normally the user's home directory), creating directories as needed. It
+// Install writes each skill's SKILL.md into every agent skills directory under
+// root (normally the user's home directory), creating directories as needed. It
 // returns the root-relative paths written so the caller can report them.
 // Writing is idempotent: re-running overwrites with identical content
 // (refreshing a stale SKILL.md from an older version).

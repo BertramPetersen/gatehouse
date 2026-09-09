@@ -60,13 +60,13 @@ It refuses to register a checkout that contains a directory an existing [`worktr
 It also refuses to register anything while `~/.gatehouse/config.yaml` does not load, naming the fault, because the daemon refuses to start on that same config.
 
 Re-running `init` on an already-initialized repo succeeds and reports `Gate already initialized (refreshed)`.
-It refreshes managed gate wiring, origin/default-branch metadata, hook-path isolation, and the installed agent skill, overwriting any stale `SKILL.md` content from an older binary.
+It refreshes managed gate wiring, origin/default-branch metadata, hook-path isolation, and the installed agent skills, overwriting any stale `SKILL.md` content from an older binary.
 When a fork URL is already recorded, re-running `init` without `--fork-url` preserves it.
 Passing `--fork-url` again replaces the stored fork URL after validation.
 If you rename or move an initialized working directory and the old path no longer exists, re-running `init` from the new path reattaches the existing gate, preserves the repo ID and run history, and updates the stored working path.
 If you copy an initialized working directory while the original still exists, the copy is treated as a separate repo and gets a fresh gate.
 Fresh init rolls back gate setup when a required gate or daemon step fails; refresh does not eject a pre-existing gate if daemon startup fails.
-Skill installation is best-effort: if the skill write fails, init reports it and leaves the working gate in place.
+Skill installation is best-effort: if a skill write fails, init reports it and leaves the working gate in place.
 
 ## gatehouse axi
 
@@ -291,7 +291,7 @@ gatehouse eject
 ```
 
 Removes the `gatehouse` remote, deletes the bare repo directory, cleans up worktrees, and deletes the database record (cascades to runs and steps).
-It does not remove any legacy repo-local agent skill files left by older versions; current `init` installs the skill at user level instead.
+It does not remove any legacy repo-local agent skill files left by older versions; current `init` installs its skills at user level instead.
 
 ## gatehouse attach
 

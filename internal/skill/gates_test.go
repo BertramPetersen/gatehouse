@@ -192,3 +192,70 @@ func TestCommittedGatesSkillMatchesGenerator(t *testing.T) {
 // flattenSpace collapses every run of whitespace to a single space so a prose
 // assertion matches regardless of where the source text wraps.
 func flattenSpace(s string) string { return strings.Join(strings.Fields(s), " ") }
+
+// TestGatesSkillExamplesAreAcceptedByTheRealConfigParser runs the examples the
+// skill hands an agent through config.LoadRepoFromBytes, the same parser the
+// daemon uses to read a repository's .gatehouse.yaml. The skill exists because
+// an agent without these rules writes a gate that is rejected at parse time, so
+// an example the parser refuses would teach exactly the failure it prevents.
+// The derived step name is asserted too, because the skill's Verify section
+// tells the user to read that gate's log with `axi logs --step gate.test.
+// mutation-budget`, which only resolves if the parser agrees.
+func TestGatesSkillExamplesAreAcceptedByTheRealConfigParser(t *testing.T) {
+	examples := gateExamplesFrom(Gates.Markdown())
+	if len(examples) < 2 {
+		t.Fatalf("found %d gate example(s) in the skill body, want the command and instructions examples", len(examples))
+	}
+	var steps []string
+	for i, ex := range examples {
+		cfg, err := config.LoadRepoFromBytes([]byte(ex))
+		if err != nil {
+			t.Errorf("example %d is not valid repo config:\n%s\n%v", i, ex, err)
+			continue
+		}
+		if len(cfg.Gates) != 1 {
+			t.Errorf("example %d parsed to %d gate(s), want 1:\n%s", i, len(cfg.Gates), ex)
+			continue
+		}
+		steps = append(steps, string(cfg.Gates[0].StepName()))
+	}
+	want := []string{"gate.test.mutation-budget", "gate.lint.no-cli-imports"}
+	if len(steps) != len(want) {
+		t.Fatalf("parsed step names = %v, want %v", steps, want)
+	}
+	for i := range want {
+		if steps[i] != want[i] {
+			t.Errorf("example %d step name = %q, want %q", i, steps[i], want[i])
+		}
+	}
+	// The Verify section documents the first example's step name verbatim, so
+	// the log command it tells the user to run must name the step the parser
+	// actually produces.
+	if !strings.Contains(flattenSpace(Gates.Markdown()), "`"+want[0]+"`") {
+		t.Errorf("the Verify section no longer names %q, the step the parser derives", want[0])
+	}
+}
+
+// gateExamplesFrom lifts every indented `gates:` example out of the rendered
+// skill body and dedents it back into a standalone YAML document, so the
+// examples can be fed to the real parser exactly as an agent would copy them.
+func gateExamplesFrom(md string) []string {
+	const indent = "    "
+	var out []string
+	lines := strings.Split(md, "\n")
+	for i := 0; i < len(lines); i++ {
+		if lines[i] != indent+"gates:" {
+			continue
+		}
+		var block []string
+		for ; i < len(lines); i++ {
+			line := lines[i]
+			if strings.TrimSpace(line) == "" || !strings.HasPrefix(line, indent) {
+				break
+			}
+			block = append(block, strings.TrimPrefix(line, indent))
+		}
+		out = append(out, strings.Join(block, "\n")+"\n")
+	}
+	return out
+}

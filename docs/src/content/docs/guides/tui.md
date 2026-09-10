@@ -32,6 +32,21 @@ In practice, each part of the screen answers a different question:
 - **Diff panel** - what changed during the fix cycle?
 - **Log tail** - what is the step doing right now?
 
+## Choosing a local model
+
+When the operator's [`agent_profiles`/`agent_step_profiles`](/gatehouse/reference/global-config/#agent_profiles-and-agent_step_profiles) opt in a repository to custom-gate model setup and a run's first-use agent-backed custom gate has no saved choice, the run parks **pending** with no step started and the TUI shows a chooser instead of the pipeline box:
+
+| Key | Action |
+|---|---|
+| `↑`/`k`, `↓`/`j`/`tab` | Move between gates that still need a choice |
+| `←`/`h`, `→`/`l`/`space` | Cycle the profile choice for the current gate, showing its per-harness detail |
+| `enter` | Save all choices at once and start the run |
+| `r` | Refresh (e.g. after local profiles changed) |
+| `x` | Abort - press twice to confirm |
+| `q` | Detach |
+
+Saving requires a choice for every listed gate; `gatehouse axi models` is the equivalent non-interactive workflow. See [step profiles](/gatehouse/reference/global-config/#agent_profiles-and-agent_step_profiles) for configuration and precedence, and [`gatehouse axi models`](/gatehouse/reference/cli/#gatehouse-axi-models) for the AXI command.
+
 ## Layout
 
 The layout adapts to terminal width:

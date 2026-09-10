@@ -31,6 +31,16 @@ agent_config:
     model: gpt-5.4
     effort: low
 
+agent_profiles:
+  thorough:
+    claude: {model: opus, effort: high}
+  economical:
+    claude: {model: haiku, effort: low}
+
+agent_step_profiles:
+  review: thorough
+  test: economical
+
 agent_args_override:
   codex:
     - -c

@@ -9,20 +9,23 @@ import (
 
 // JSON-RPC 2.0 method names.
 const (
-	MethodPushReceived   = "push_received"
-	MethodGetRun         = "get_run"
-	MethodGetStepDiff    = "get_step_diff"
-	MethodGetRuns        = "get_runs"
-	MethodGetRunsForHead = "get_runs_for_head"
-	MethodGetActiveRun   = "get_active_run"
-	MethodRerun          = "rerun"
-	MethodSubscribe      = "subscribe"
-	MethodRespond        = "respond"
-	MethodCancelRun      = "cancel_run"
-	MethodGateContext    = "gate_context"
-	MethodAdmitPush      = "admit_push"
-	MethodHealth         = "health"
-	MethodShutdown       = "shutdown"
+	MethodPushReceived    = "push_received"
+	MethodGetRun          = "get_run"
+	MethodGetStepDiff     = "get_step_diff"
+	MethodGetRuns         = "get_runs"
+	MethodGetRunsForHead  = "get_runs_for_head"
+	MethodGetActiveRun    = "get_active_run"
+	MethodRerun           = "rerun"
+	MethodSubscribe       = "subscribe"
+	MethodRespond         = "respond"
+	MethodCancelRun       = "cancel_run"
+	MethodGateContext     = "gate_context"
+	MethodAdmitPush       = "admit_push"
+	MethodHealth          = "health"
+	MethodShutdown        = "shutdown"
+	MethodModelSetup      = "model_setup"
+	MethodForgetModels    = "forget_models"
+	MethodConfigureModels = "configure_models"
 )
 
 // JSON-RPC 2.0 error codes.
@@ -78,6 +81,28 @@ type PushReceivedParams struct {
 // GetRunParams requests a single run by ID.
 type GetRunParams struct {
 	RunID string `json:"run_id"`
+}
+
+type ModelProfileOption struct {
+	Name   string `json:"name" toon:"name"`
+	Detail string `json:"detail" toon:"detail"`
+}
+type ModelSetupResult struct {
+	Saved    map[string]string    `json:"saved,omitempty"`
+	RunID    string               `json:"run_id"`
+	Token    string               `json:"token"`
+	Missing  []types.StepName     `json:"missing"`
+	Profiles []ModelProfileOption `json:"profiles"`
+}
+type ConfigureModelsParams struct {
+	RunID   string            `json:"run_id"`
+	Token   string            `json:"token"`
+	Choices map[string]string `json:"choices"`
+}
+
+type ForgetModelsParams struct {
+	RunID string   `json:"run_id"`
+	Steps []string `json:"steps"`
 }
 
 // GetStepDiffParams requests the working-tree diff for a run parked at a
@@ -244,17 +269,18 @@ type ShutdownResult struct {
 
 // RunInfo is the IPC representation of a pipeline run.
 type RunInfo struct {
-	ID               string          `json:"id"`
-	RepoID           string          `json:"repo_id"`
-	Branch           string          `json:"branch"`
-	HeadSHA          string          `json:"head_sha"`
-	SubmittedHeadSHA *string         `json:"submitted_head_sha,omitempty"`
-	BaseSHA          string          `json:"base_sha"`
-	Status           types.RunStatus `json:"status"`
-	PRURL            *string         `json:"pr_url,omitempty"`
-	Error            *string         `json:"error,omitempty"`
-	CIReady          bool            `json:"ci_ready,omitempty"`
-	CIReadyNoCI      bool            `json:"ci_ready_no_ci,omitempty"`
+	ModelSetup       []types.StepName `json:"model_setup,omitempty"`
+	ID               string           `json:"id"`
+	RepoID           string           `json:"repo_id"`
+	Branch           string           `json:"branch"`
+	HeadSHA          string           `json:"head_sha"`
+	SubmittedHeadSHA *string          `json:"submitted_head_sha,omitempty"`
+	BaseSHA          string           `json:"base_sha"`
+	Status           types.RunStatus  `json:"status"`
+	PRURL            *string          `json:"pr_url,omitempty"`
+	Error            *string          `json:"error,omitempty"`
+	CIReady          bool             `json:"ci_ready,omitempty"`
+	CIReadyNoCI      bool             `json:"ci_ready_no_ci,omitempty"`
 	// AwaitingAgent is true while the run is parked at a gate awaiting the
 	// driving agent's response. AwaitingAgentSince is the unix-seconds time it
 	// parked, so a supervisor can read "parked for N seconds" in one call. Both

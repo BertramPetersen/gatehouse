@@ -96,6 +96,9 @@ func (m Model) rerunCmd(requestID uint64) tea.Cmd {
 // runs to completion without looping. Each terminal action fires once so
 // duplicate events while waiting for the round-trip don't resend it.
 func (m Model) maybeAutoApproveCmd() tea.Cmd {
+	if m.needsModels() {
+		return nil
+	}
 	if !m.yoloMode {
 		return nil
 	}

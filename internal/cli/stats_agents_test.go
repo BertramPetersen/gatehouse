@@ -94,7 +94,8 @@ func TestStatsRendersPopulatedFidelityMetrics(t *testing.T) {
 		t.Fatal(err)
 	}
 	inv := db.AgentInvocation{
-		RunID: run.ID, StepName: "review", Round: 2, Purpose: "review-fix", Agent: "codex",
+		Profile: "thorough",
+		RunID:   run.ID, StepName: "review", Round: 2, Purpose: "review-fix", Agent: "codex",
 		Model: "gpt-5.6-sol", ModelProvider: strPtrCLI("openai"),
 		SessionMode: db.InvocationModeResumed, SessionKey: "deadbeef00000000",
 		StartedAt: 1, CompletedAt: 2, DurationMS: 10_000, SubprocessWaitMS: statsInt64Ptr(2_000),
@@ -127,7 +128,7 @@ func TestStatsRendersPopulatedFidelityMetrics(t *testing.T) {
 	}
 	// Per-round delta (1500) is shown distinctly from the raw cumulative (2500),
 	// the tool histogram and the workload render, and the model-time split appears.
-	for _, want := range []string{"Δ IN (round)", "1500", "2500", "7 0/2/3/1/1/0", "12/1060", "MODEL"} {
+	for _, want := range []string{"Δ IN (round)", "1500", "2500", "7 0/2/3/1/1/0", "12/1060", "MODEL", "PROFILE", "thorough"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("stats --run missing %q in:\n%s", want, out)
 		}

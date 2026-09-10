@@ -12,6 +12,7 @@ import (
 
 	toon "github.com/toon-format/toon-go"
 
+	"github.com/BertramPetersen/gatehouse/internal/config"
 	"github.com/BertramPetersen/gatehouse/internal/db"
 	"github.com/BertramPetersen/gatehouse/internal/git"
 	"github.com/BertramPetersen/gatehouse/internal/ipc"
@@ -121,6 +122,13 @@ func runStateFingerprint(rv runView) string {
 func annotateRunView(env *axiEnv, rv *runView) {
 	if env == nil || rv == nil {
 		return
+	}
+	if rv.Status == string(types.RunPending) && env.d != nil {
+		if data, err := env.d.GetRunModelPlan(rv.ID); err == nil {
+			if pin, err := config.ParseStepProfilePlan(data); err == nil && pin != nil {
+				rv.ModelSetup = pin.Missing()
+			}
+		}
 	}
 	quietWarning := configQuietWarning(env)
 	for i := range rv.Steps {

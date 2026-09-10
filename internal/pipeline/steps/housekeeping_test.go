@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/BertramPetersen/gatehouse/internal/agent"
+	"github.com/BertramPetersen/gatehouse/internal/agentcfg"
 	"github.com/BertramPetersen/gatehouse/internal/config"
 	"github.com/BertramPetersen/gatehouse/internal/db"
 	"github.com/BertramPetersen/gatehouse/internal/paths"
@@ -22,6 +23,27 @@ func newHousekeepingContext(t *testing.T, ag agent.Agent, workDir, baseSHA, head
 	sctx := newTestContextWithDBRecords(t, ag, workDir, baseSHA, headSHA, cmds)
 	sctx.Shared = &pipeline.RunShared{}
 	return sctx
+}
+
+func TestDocumentStep_DifferentModelsKeepLintSeparate(t *testing.T) {
+	dir, base, head := setupGitRepo(t)
+	ag := &mockAgent{name: "test", runFn: func(context.Context, agent.RunOpts) (*agent.Result, error) {
+		return &agent.Result{Output: json.RawMessage(`{"findings":[],"summary":"docs current"}`)}, nil
+	}}
+	sctx := newHousekeepingContext(t, ag, dir, base, head, config.Commands{})
+	sctx.Config.StepProfiles = &config.StepProfilePlan{Steps: map[types.StepName]config.StepProfile{
+		types.StepDocument: {Name: "thorough", Agents: map[string]agentcfg.Profile{"codex": {Model: "large"}}},
+		types.StepLint:     {Name: "economical", Agents: map[string]agentcfg.Profile{"codex": {Model: "small"}}},
+	}}
+	if _, err := (&DocumentStep{}).Execute(sctx); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(ag.calls[0].Prompt, "Combined lint duty") {
+		t.Fatal("lint ran with document's model")
+	}
+	if _, ok := sctx.Shared.TakeHousekeepingLint(); ok {
+		t.Fatal("separate lint must invoke its own model")
+	}
 }
 
 // TestDocumentStep_CombinedPassCoversBothDutiesAndSplitsFindings proves the

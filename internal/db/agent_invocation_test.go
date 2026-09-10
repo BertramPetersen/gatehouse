@@ -119,6 +119,17 @@ func TestAgentInvocations_NullableFidelityFieldsRoundTrip(t *testing.T) {
 }
 
 func strPtr(s string) *string { return &s }
+
+func TestAgentInvocationStoresLocalProfile(t *testing.T) {
+	d, _, run := openSessionTestDB(t)
+	if _, err := d.InsertAgentInvocation(AgentInvocation{RunID: run.ID, StepName: "review", Profile: "thorough", Agent: "codex", SessionMode: InvocationModeCold, ExitStatus: "ok"}); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := d.GetAgentInvocationsByRun(run.ID)
+	if err != nil || len(rows) != 1 || rows[0].Profile != "thorough" {
+		t.Fatalf("rows: %+v %v", rows, err)
+	}
+}
 func int64Ptr(v int64) *int64 { return &v }
 
 // TestAgentInvocations_PrivacySafeShape guards the privacy boundary: the

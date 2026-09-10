@@ -35,6 +35,8 @@ func guardGateControl(cmd *cobra.Command) error {
 func mutatesPipelineControl(cmd *cobra.Command) bool {
 	path := cmd.CommandPath()
 	switch path {
+	case "gatehouse axi models":
+		return cmd.Flags().Changed("set") || cmd.Flags().Changed("forget")
 	case "gatehouse", "gatehouse init", "gatehouse eject", "gatehouse rerun",
 		"gatehouse axi run", "gatehouse axi respond", "gatehouse axi abort",
 		"gatehouse daemon start", "gatehouse daemon stop", "gatehouse daemon restart",

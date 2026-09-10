@@ -447,6 +447,9 @@ func driveRunWithReconciler(ctx context.Context, progress io.Writer, client *ipc
 			return nil, false, fmt.Errorf("run %s not found", runID)
 		}
 		pp.update(run)
+		if len(run.ModelSetup) != 0 {
+			return run, false, nil
+		}
 
 		rv := runViewFromIPC(run)
 		if terminalStatus(rv.Status) {
@@ -586,6 +589,10 @@ func sendRespond(client *ipc.Client, runID string, step types.StepName, action t
 func renderDriveResult(cmd *cobra.Command, run *ipc.RunInfo, ciReady bool) error {
 	rv := runViewFromIPC(run)
 	fields := []toon.Field{runObjectField(rv)}
+	if len(run.ModelSetup) != 0 {
+		emitDoc(cmd, append(fields, toon.Field{Key: "outcome", Value: "model-configuration-required"}, toon.Field{Key: "missing", Value: modelStepNames(run.ModelSetup)}, toon.Field{Key: "help", Value: []string{modelSetupGuidance, "Inspect choices: gatehouse axi models --run " + run.ID}})...)
+		return nil
+	}
 	hasBranchSync := false
 	if syncField := cachedBranchSyncField(cmd, run.ID); syncField != nil {
 		fields = append(fields, *syncField)

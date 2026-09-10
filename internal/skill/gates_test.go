@@ -178,16 +178,28 @@ func TestInstallWritesEverySkillIntoEveryBase(t *testing.T) {
 
 // TestCommittedGatesSkillMatchesGenerator is the `make lint` drift check for the
 // second skill: the committed file is generated, never hand-edited.
+//
+// Line endings are normalized before comparing because the two sides cannot
+// agree on them across platforms. Markdown() is always LF: the body is a raw
+// string literal, and Go discards carriage returns inside those, so the
+// generator emits LF even when its own source was checked out as CRLF. The
+// committed file, by contrast, carries whatever the checkout wrote - CRLF under
+// the `core.autocrlf=true` that Windows CI runners default to. Comparing raw
+// bytes therefore asserts the checkout's eol configuration rather than drift.
 func TestCommittedGatesSkillMatchesGenerator(t *testing.T) {
 	path := filepath.Join("..", "..", "skills", GatesName, "SKILL.md")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read committed skill: %v (run `make skill`)", err)
 	}
-	if string(data) != Gates.Markdown() {
+	if normalizeEOL(string(data)) != normalizeEOL(Gates.Markdown()) {
 		t.Errorf("%s is stale; run `make skill` and commit the result", path)
 	}
 }
+
+// normalizeEOL rewrites CRLF to LF so a generated file's content can be
+// compared independently of how git's eol translation wrote it to disk.
+func normalizeEOL(s string) string { return strings.ReplaceAll(s, "\r\n", "\n") }
 
 // flattenSpace collapses every run of whitespace to a single space so a prose
 // assertion matches regardless of where the source text wraps.

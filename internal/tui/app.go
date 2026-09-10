@@ -23,7 +23,12 @@ type Model struct {
 	subscriptionID uint64
 
 	// State.
-	run *ipc.RunInfo
+	run          *ipc.RunInfo
+	modelSetup   *ipc.ModelSetupResult
+	modelChoices map[string]string
+	modelGate    int
+	modelSaving  bool
+	modelLoading bool
 	// stateRev is the highest run-state revision this model has applied. It
 	// is scoped to the current subscription generation: a fresh subscription
 	// resets it to zero and reconciles, adopting the daemon's numbering.
@@ -205,6 +210,32 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case modelSetupMsg:
+		if m.run == nil || msg.runID != m.run.ID {
+			return m, nil
+		}
+		m.modelSaving = false
+		m.modelLoading = false
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		m.err = nil
+		if msg.saved {
+			m.modelSetup = nil
+			m.run.ModelSetup = nil
+			return m, m.reconcileCmd()
+		}
+		if !m.needsModels() {
+			return m, nil
+		}
+		if msg.setup == nil || len(msg.setup.Missing) == 0 {
+			return m, m.reconcileCmd()
+		}
+		m.modelSetup = msg.setup
+		m.modelChoices = map[string]string{}
+		m.modelGate = 0
+		return m, nil
 	case tea.KeyMsg:
 		return m.handleKey(msg)
 
@@ -291,6 +322,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.resubscribeTries = 0
 		}
 		cmds := m.drainDiffFetches()
+		if m.needsModels() && m.modelSetup == nil && !m.modelLoading {
+			m.modelLoading = true
+			cmds = append(cmds, m.fetchModelsCmd())
+		}
 		if m.reconcileAgain {
 			m.reconcileAgain = false
 			cmds = append(cmds, m.reconcileCmd())

@@ -44,6 +44,8 @@ type AgentInvocation struct {
 	Purpose string
 	Agent   string
 	Model   string
+	// Profile is the selected local profile, empty for legacy/unprofiled runs.
+	Profile string
 	// ModelProvider is the provider that served the model (openai, anthropic,
 	// ...). Nil when the adapter cannot report it.
 	ModelProvider *string
@@ -120,7 +122,7 @@ const agentInvocationColumns = `id, run_id, step_name, round, purpose, agent, mo
 	delta_input_tokens, delta_output_tokens, delta_cache_read_tokens,
 	model_roundtrips, tool_calls,
 	tool_wait_calls, tool_test_lint_calls, tool_edit_calls, tool_read_calls, tool_git_calls, tool_other_calls,
-	workload_files, workload_lines, finding_count`
+	workload_files, workload_lines, finding_count, profile`
 
 // agentInvocationInsertPlaceholders has one '?' per agentInvocationColumns entry.
 const agentInvocationInsertPlaceholders = `?, ?, ?, ?, ?, ?, ?, ?,
@@ -131,7 +133,7 @@ const agentInvocationInsertPlaceholders = `?, ?, ?, ?, ?, ?, ?, ?,
 	?, ?, ?,
 	?, ?,
 	?, ?, ?, ?, ?, ?,
-	?, ?, ?`
+	?, ?, ?, ?`
 
 // InsertAgentInvocation records one completed agent invocation. Nil pointer
 // fields are stored as SQL NULL (database/sql dereferences non-nil pointers).
@@ -148,7 +150,7 @@ func (d *DB) InsertAgentInvocation(inv AgentInvocation) (*AgentInvocation, error
 		inv.DeltaInputTokens, inv.DeltaOutputTokens, inv.DeltaCacheReadTokens,
 		inv.ModelRoundtrips, inv.ToolCalls,
 		inv.ToolWaitCalls, inv.ToolTestLintCalls, inv.ToolEditCalls, inv.ToolReadCalls, inv.ToolGitCalls, inv.ToolOtherCalls,
-		inv.WorkloadFiles, inv.WorkloadLines, inv.FindingCount,
+		inv.WorkloadFiles, inv.WorkloadLines, inv.FindingCount, inv.Profile,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("insert agent invocation: %w", err)
@@ -193,7 +195,7 @@ func scanAgentInvocation(row scanner) (AgentInvocation, error) {
 		&inv.DeltaInputTokens, &inv.DeltaOutputTokens, &inv.DeltaCacheReadTokens,
 		&inv.ModelRoundtrips, &inv.ToolCalls,
 		&inv.ToolWaitCalls, &inv.ToolTestLintCalls, &inv.ToolEditCalls, &inv.ToolReadCalls, &inv.ToolGitCalls, &inv.ToolOtherCalls,
-		&inv.WorkloadFiles, &inv.WorkloadLines, &inv.FindingCount,
+		&inv.WorkloadFiles, &inv.WorkloadLines, &inv.FindingCount, &inv.Profile,
 	); err != nil {
 		return AgentInvocation{}, fmt.Errorf("scan agent invocation: %w", err)
 	}

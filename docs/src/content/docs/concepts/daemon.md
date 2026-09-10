@@ -83,9 +83,11 @@ As an independent safety layer, the daemon also refuses to bind the Unix socket 
 When a push arrives via the post-receive hook:
 
 1. Creates a detached worktree at `~/.gatehouse/worktrees/<repoID>/<runID>/`, or at `<root>/<runID>` when [`worktree_roots`](/gatehouse/reference/global-config/#worktree_roots) names a directory for that repository. The placement is resolved once, at run creation, and recorded on the run, so editing the setting never retargets a run that already exists
-2. Starts the pipeline executor in that worktree
+2. Resolves local model routing, then starts the pipeline executor in that worktree
 3. Streams events to any connected TUI clients and serves request/response state to AXI clients
 4. Cleans up the worktree when the run finishes (success or failure)
+
+When [step profiles](/gatehouse/reference/global-config/#agent_profiles-and-agent_step_profiles) require a first-use custom-gate choice, the run remains **pending** with its worktree and trusted gate declarations retained, but no steps or agents have started. Detaching leaves this setup intact; daemon recovery preserves it. The terminal chooser or explicit `axi models --set` batch starts that same run after all choices are saved. Aborting or superseding the run releases its worktree. Model setup cannot be approved through ordinary gate responses or `--yes`.
 
 Event delivery is bounded, so a slow or wedged client can never stall a run. Under pressure the daemon may drop ordinary log output, but it never silently loses a state change: it coalesces those into a single gap signal, and the TUI and `axi` respond by re-reading authoritative run state. A live view can therefore skip log lines while it is behind, but it converges on the run's real state. After a dropped connection, the TUI retries with a bounded delay and reconciles when it reattaches; if the daemon remains unavailable, it surfaces the connection error instead of retrying forever.
 

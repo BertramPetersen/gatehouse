@@ -12,6 +12,9 @@ func (m Model) View() string {
 	if m.quitting {
 		return ""
 	}
+	if m.needsModels() {
+		return m.modelSetupView()
+	}
 
 	showSelectionActions, allowFix, selectedCount, totalCount := m.awaitingActionState()
 	hasCI := isCIActive(m.steps)

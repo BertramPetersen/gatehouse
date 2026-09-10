@@ -39,6 +39,9 @@ func (m *Model) applyEvent(event ipc.Event) bool {
 	}
 	switch event.Type {
 	case ipc.EventRunUpdated, ipc.EventRunCreated:
+		if m.run != nil && m.run.Status == types.RunPending {
+			return true
+		}
 		m.err = nil
 		if event.Status != nil {
 			m.run.Status = types.RunStatus(*event.Status)

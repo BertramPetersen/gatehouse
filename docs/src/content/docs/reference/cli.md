@@ -134,6 +134,24 @@ Use `gatehouse rerun` only after that monitor is no longer running, such as a cl
 Successful outcomes (`checks-passed` and `passed`) also carry `help` instructions telling the agent to summarize the run.
 When the pipeline applied fixes, they include a `fixes` table and a `help` instruction to acknowledge the misses and list those fixes for the user's review.
 
+## gatehouse axi models
+
+Inspect missing custom-gate model choices and saved choices for the repository of an explicit run. This command never prompts. `--set` saves all missing choices atomically and starts the same pending run; `--forget` resets named gate choices for future runs without changing existing pins. See [step profiles](/gatehouse/reference/global-config/#agent_profiles-and-agent_step_profiles) for configuration and precedence.
+
+```sh
+gatehouse axi models --run <run-id>
+gatehouse axi models --run <run-id> --set gate.test.arch-fitness=economical
+gatehouse axi models --run <run-id> --forget gate.test.arch-fitness
+```
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--run` | `string` | Required run ID identifying the repository and pending setup |
+| `--set` | `string[]` | Explicit `gate.<anchor>.<name>=<profile>` choice; repeat for every missing gate |
+| `--forget` | `string[]` | Gate identity to forget for future runs; repeatable, mutually exclusive with `--set` |
+
+`axi run` returns `model-configuration-required` when choices are missing, including with `--yes`. Ask the user for those choices before saving. Bare `gatehouse` presents the interactive chooser when attached to that pending run.
+
 ## gatehouse axi respond
 
 Answer the current approval gate and continue until the next gate, CI-ready decision point, or final outcome.

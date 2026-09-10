@@ -25,6 +25,7 @@ type perfRecordingAgent struct {
 	db       *db.DB
 	runID    string
 	stepName types.StepName
+	profile  string
 	// round returns the 1-based round the current invocation belongs to.
 	round func() int
 }
@@ -75,6 +76,7 @@ func (a *perfRecordingAgent) record(ctx context.Context, opts agent.RunOpts, age
 
 	sessionKey := invocationSessionKey(opts, result)
 	inv := db.AgentInvocation{
+		Profile:     a.profile,
 		RunID:       a.runID,
 		StepName:    string(a.stepName),
 		Round:       a.round(),

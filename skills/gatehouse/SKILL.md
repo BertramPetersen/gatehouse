@@ -157,6 +157,13 @@ Run the pipeline and decide on its findings as they come up:
    the run is parked at an approval or fix-review gate and waiting for you to
    send `axi respond`. The field is observability only: it does not change
    gate resolution, auto-resume the run, or make `--yes` the default.
+   If the outcome is `model-configuration-required`, no pipeline step has
+   started. Inspect `gatehouse axi models --run <id>` and ask the user which
+   local profile to use for every missing custom gate. Never infer those choices,
+   including under `--yes`. Save their explicit choices together using
+   `gatehouse axi models --run <id> --set gate.<step>.<name>=<profile>`
+   (repeat `--set` for each gate). This starts the same pending run; reattach
+   from the original branch with `gatehouse axi run` to continue driving it.
    While a step is actively `running` or `fixing`, `axi status` may include
    `active_steps` with `active_for`, `last_activity`, a native `agent_pid` when
    a subprocess agent is running, and the current round such as `round 1`,

@@ -131,14 +131,14 @@ func renderRunAgentPerf(w io.Writer, database *db.DB, runID string) error {
 	// Table 1: session, timing split, activity, workload, and findings.
 	fmt.Fprintln(w)
 	tw := tabwriter.NewWriter(w, 2, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, "STEP\tROUND\tPURPOSE\tAGENT\tMODEL\tSESSION\tKEY\tDURATION\tMODEL\tSUBPROC\tRT\tTOOLS (w/t/e/r/g/o)\tFIND\tWORK (f/l)\tFALLBACK\tEXIT")
+	fmt.Fprintln(tw, "STEP\tROUND\tPURPOSE\tAGENT\tMODEL\tPROFILE\tSESSION\tKEY\tDURATION\tMODEL\tSUBPROC\tRT\tTOOLS (w/t/e/r/g/o)\tFIND\tWORK (f/l)\tFALLBACK\tEXIT")
 	for _, inv := range invocations {
 		exit := inv.ExitStatus
 		if inv.FailureCategory != "" && inv.FailureCategory != inv.ExitStatus {
 			exit += "/" + inv.FailureCategory
 		}
-		fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			inv.StepName, inv.Round, inv.Purpose, inv.Agent, orUnknown(inv.Model),
+		fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			inv.StepName, inv.Round, inv.Purpose, inv.Agent, orUnknown(inv.Model), orUnknown(inv.Profile),
 			inv.SessionMode, inv.SessionKey,
 			formatMS(inv.DurationMS), formatModelTime(inv), optMS(inv.SubprocessWaitMS),
 			optInt(inv.ModelRoundtrips), formatToolHistogram(inv), optInt(inv.FindingCount),

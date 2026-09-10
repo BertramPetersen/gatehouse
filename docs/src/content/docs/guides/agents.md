@@ -147,6 +147,9 @@ If your home directory consolidates `.claude` and `.agents` with symlinks, `init
 Re-run `gatehouse init` after an upgrade to refresh that skill, including overwriting stale `SKILL.md` content from an older binary.
 Older versions vendored the skill into each initialized repo's `.claude/skills` and `.agents/skills`; those copies are no longer needed, and `init` prints a notice when it finds one so you can remove it.
 The skill drives `gatehouse axi`, a non-interactive command surface that prints TOON to stdout and progress to stderr.
+
+`init` also installs `/gatehouse-gates`, which teaches an agent to add a [repository gate](/gatehouse/reference/repo-config/#gates) from a description of what it should enforce: choosing `command` or `instructions`, the anchor step, a valid name, the size limits, and the trust rules that decide when it takes effect.
+Unlike `/gatehouse` it never activates on its own and only runs when you invoke it, because a gate defines what validating the repository means and declaring one stays a deliberate request.
 When CI is ready - either its registered checks are green or the trusted default-branch config declares [`no_ci: true`](/gatehouse/reference/repo-config/#no_ci) with no registered checks - but the PR is still open, `axi run` and `axi respond` return `outcome: checks-passed` with a help line pointing at the PR instead of waiting for a human merge. An empty check result without that declaration is not ready; see the [CI step reference](/gatehouse/reference/pipeline-steps/#ci) for the readiness rules.
 That is a successful agent stopping point: report that the PR is ready and ask the user to review and merge it.
 Successful outcomes also instruct the agent to summarize the run for the user.

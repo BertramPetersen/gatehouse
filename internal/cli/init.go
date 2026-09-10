@@ -71,7 +71,7 @@ func newInitCmd() *cobra.Command {
 					return fmt.Errorf("start daemon: %w", err)
 				}
 
-				// Install the agent skill at user level so agents can drive
+				// Install the agent skills at user level so agents can drive
 				// gatehouse via `/gatehouse` in any repo. Best-effort: a
 				// skill write failure must not undo a successful gate setup.
 				_, skillErr := skill.InstallUser()
@@ -98,7 +98,14 @@ func newInitCmd() *cobra.Command {
 				if skillErr != nil {
 					fmt.Fprintf(w, "  %s  %s\n", sDim.Render(" skill"), sYellow.Render("skipped: "+skillErr.Error()))
 				} else {
-					fmt.Fprintf(w, "  %s  %s %s\n", sDim.Render(" skill"), sGreen.Render("/gatehouse"), sDim.Render("installed for agents at user level"))
+					// Name every installed skill from the same list Install
+					// iterates, so adding one cannot leave this line claiming
+					// fewer commands than the user actually received.
+					names := make([]string, 0, len(skill.All()))
+					for _, sk := range skill.All() {
+						names = append(names, "/"+sk.Name)
+					}
+					fmt.Fprintf(w, "  %s  %s %s\n", sDim.Render(" skill"), sGreen.Render(strings.Join(names, " ")), sDim.Render("installed for agents at user level"))
 				}
 				if resolvedWorktreeRoot != "" {
 					printWorktreeRootGuidance(w, p, repo.WorkingPath, resolvedWorktreeRoot)

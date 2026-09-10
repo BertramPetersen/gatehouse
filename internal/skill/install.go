@@ -17,8 +17,9 @@ var InstallBases = []string{
 	filepath.Join(".agents", "skills"),
 }
 
-// InstallUser installs the skill into the agent skill directories under the
-// current user's home directory. It returns the home-relative paths written.
+// InstallUser installs every skill in All() into the agent skill directories
+// under the current user's home directory. It returns the home-relative paths
+// written.
 func InstallUser() ([]string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -27,8 +28,8 @@ func InstallUser() ([]string, error) {
 	return Install(home)
 }
 
-// Install writes SKILL.md into each agent skills directory under root
-// (normally the user's home directory), creating directories as needed. It
+// Install writes each skill's SKILL.md into every agent skills directory under
+// root (normally the user's home directory), creating directories as needed. It
 // returns the root-relative paths written so the caller can report them.
 // Writing is idempotent: re-running overwrites with identical content
 // (refreshing a stale SKILL.md from an older version).
@@ -39,24 +40,27 @@ func InstallUser() ([]string, error) {
 // not exist yet (a plain os.MkdirAll would fail with "file exists" on a dangling
 // symlink). Both logical bases stay readable afterward via the link.
 func Install(root string) ([]string, error) {
-	content := []byte(Markdown())
-	written := make([]string, 0, len(InstallBases))
-	for _, base := range InstallBases {
-		rel := filepath.Join(base, Name, "SKILL.md")
-		path := filepath.Join(root, rel)
-		// Resolve any symlink components to a real directory before creating
-		// it, so a dangling symlink in the path does not collide with MkdirAll.
-		realDir, err := resolveThroughSymlinks(filepath.Dir(path))
-		if err != nil {
-			return written, err
+	written := make([]string, 0, len(All())*len(InstallBases))
+	for _, sk := range All() {
+		content := []byte(sk.Markdown())
+		for _, base := range InstallBases {
+			rel := filepath.Join(base, sk.Name, "SKILL.md")
+			path := filepath.Join(root, rel)
+			// Resolve any symlink components to a real directory before
+			// creating it, so a dangling symlink in the path does not collide
+			// with MkdirAll.
+			realDir, err := resolveThroughSymlinks(filepath.Dir(path))
+			if err != nil {
+				return written, err
+			}
+			if err := os.MkdirAll(realDir, 0o755); err != nil {
+				return written, err
+			}
+			if err := os.WriteFile(filepath.Join(realDir, "SKILL.md"), content, 0o644); err != nil {
+				return written, err
+			}
+			written = append(written, rel)
 		}
-		if err := os.MkdirAll(realDir, 0o755); err != nil {
-			return written, err
-		}
-		if err := os.WriteFile(filepath.Join(realDir, "SKILL.md"), content, 0o644); err != nil {
-			return written, err
-		}
-		written = append(written, rel)
 	}
 	return written, nil
 }

@@ -1,15 +1,18 @@
-// Package skill holds the canonical content of the gatehouse agent skill.
+// Package skill holds the canonical content of the gatehouse agent skills.
 //
-// It is the single source of truth for the skill's identity (name and
-// trigger description) and its SKILL.md body. The genskill tool renders
-// Markdown() to the public skills/gatehouse/SKILL.md (verified fresh in
-// CI), and the init command installs the same rendering into the user-level
-// agent skill directories under the user's home.
+// It is the single source of truth for each skill's identity (name and
+// trigger description) and its SKILL.md body, enumerated by All(). The
+// genskill tool renders every skill to its public skills/<name>/SKILL.md
+// (verified fresh in CI), and the init command installs the same renderings
+// into the user-level agent skill directories under the user's home.
 // The CLI's axi home view reuses Description so the two never drift.
 package skill
 
 import (
+	"fmt"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/BertramPetersen/gatehouse/internal/gateguidance"
 	"github.com/BertramPetersen/gatehouse/internal/testguidance"
@@ -24,25 +27,73 @@ const Name = "gatehouse"
 // agent's decision to load the skill, so it leads with outcomes and keywords.
 const Description = "Validate your code changes through the gatehouse pipeline - automated code review, tests, lint, docs, push, PR, and CI - before they reach the configured push target. Use when the user asks to run gatehouse, gate or ship or validate their changes, push safely, asks you to do a task and then validate it, or invokes /gatehouse."
 
+// Skill is one renderable agent skill. Every copy of a skill comes from a
+// single Skill value: the canonical public file under skills/ and the
+// user-level copy `gatehouse init` installs are the same rendering, so a skill
+// can never be published without being installed, or the reverse.
+type Skill struct {
+	Name        string
+	Description string
+	Body        string
+	// DisableModelInvocation keeps the skill out of the agent's automatic
+	// selection, leaving it reachable only when a human invokes it by name.
+	// Use it when activating the skill is a decision rather than a step, so an
+	// agent cannot load it merely because a task looked related.
+	DisableModelInvocation bool
+}
+
+// frontmatter is the YAML header every SKILL.md carries. Skill loaders parse it
+// with a real YAML parser, so it is marshalled rather than concatenated: a
+// description that happens to contain YAML syntax - a colon followed by a
+// space is enough - would otherwise render a document no loader accepts, and
+// the skill would silently never be offered. Field order is the struct's, so
+// the output stays deterministic and diff-checkable.
+type frontmatter struct {
+	Name                   string `yaml:"name"`
+	Description            string `yaml:"description"`
+	UserInvocable          bool   `yaml:"user-invocable"`
+	DisableModelInvocation bool   `yaml:"disable-model-invocation,omitempty"`
+}
+
 // Markdown returns the complete SKILL.md document (YAML frontmatter plus body).
-// The output is deterministic so it can be regenerated and diff-checked. It is
-// the single rendering: the canonical public skill (surfaced by discovery
-// tools, e.g. `npx skills add BertramPetersen/gatehouse`) and the copy init
-// installs at user level are identical. Older versions vendored a variant with
-// `metadata.internal: true` into each target repo to keep the vendored copy
-// out of repo skill listings; the user-level install is a genuine user
-// installation that should stay discoverable, so no internal marker exists
-// anymore.
-func Markdown() string {
+// The output is deterministic so it can be regenerated and diff-checked.
+func (s Skill) Markdown() string {
+	head, err := yaml.Marshal(frontmatter{
+		Name:                   s.Name,
+		Description:            s.Description,
+		UserInvocable:          true,
+		DisableModelInvocation: s.DisableModelInvocation,
+	})
+	if err != nil {
+		// Unreachable: the struct holds only strings and bools, which the
+		// encoder cannot reject. Panicking beats emitting a half-written
+		// header that every skill loader would quietly refuse.
+		panic(fmt.Sprintf("render %s frontmatter: %v", s.Name, err))
+	}
 	var b strings.Builder
 	b.WriteString("---\n")
-	b.WriteString("name: " + Name + "\n")
-	b.WriteString("description: " + Description + "\n")
-	b.WriteString("user-invocable: true\n")
+	b.Write(head)
 	b.WriteString("---\n")
-	b.WriteString(body)
+	b.WriteString(s.Body)
 	return b.String()
 }
+
+// Pipeline drives a validation run. It stays model-invocable on purpose: an
+// agent asked to ship or validate work should reach for the gate unprompted.
+var Pipeline = Skill{Name: Name, Description: Description, Body: body}
+
+// All is the single list the generator and the installer both iterate, so
+// adding a skill there is enough to publish and install it.
+func All() []Skill { return []Skill{Pipeline, Gates} }
+
+// Markdown renders the pipeline skill. It stays a package-level function
+// because that is the canonical public skill (surfaced by discovery tools, e.g.
+// `npx skills add BertramPetersen/gatehouse`) which most callers mean. Older
+// versions vendored a variant with `metadata.internal: true` into each target
+// repo to keep the vendored copy out of repo skill listings; the user-level
+// install is a genuine user installation that should stay discoverable, so no
+// internal marker exists anymore.
+func Markdown() string { return Pipeline.Markdown() }
 
 // body is the Markdown instructions an agent reads when the skill activates.
 // Keep it focused: the operating loop, the command vocabulary, and how to read

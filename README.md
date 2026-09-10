@@ -68,7 +68,7 @@ $ gatehouse init
     repo  /Users/you/src/my-repo
     gate  gatehouse → /Users/you/.gatehouse/repos/abc123def456.git
   remote  git@github.com:you/my-repo.git
-   skill  /gatehouse installed for agents at user level
+   skill  /gatehouse /gatehouse-gates installed for agents at user level
 
   Push through the gate with:
   git push gatehouse <branch>

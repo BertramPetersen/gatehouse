@@ -6,26 +6,17 @@ import (
 	"strings"
 	"testing"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/BertramPetersen/gatehouse/internal/testguidance"
 )
 
 func TestMarkdownFrontmatter(t *testing.T) {
 	md := Markdown()
-	if !strings.HasPrefix(md, "---\n") {
-		t.Fatalf("SKILL.md must start with YAML frontmatter, got:\n%s", md[:min(40, len(md))])
-	}
-	for _, want := range []string{
-		"name: " + Name + "\n",
-		"description: " + Description + "\n",
-		"user-invocable: true\n",
-	} {
-		if !strings.Contains(md, want) {
-			t.Errorf("frontmatter missing %q", want)
-		}
-	}
-	// Frontmatter block must be closed before the body.
-	if strings.Count(md, "---\n") < 2 {
-		t.Errorf("frontmatter not closed with a second --- delimiter")
+	got := parseFrontmatter(t, md)
+	want := frontmatter{Name: Name, Description: Description, UserInvocable: true}
+	if got != want {
+		t.Errorf("pipeline frontmatter = %+v, want %+v", got, want)
 	}
 	if !strings.Contains(md, "gatehouse axi run") {
 		t.Errorf("body should document the axi run command")
@@ -36,6 +27,31 @@ func TestMarkdownFrontmatter(t *testing.T) {
 	if strings.Contains(md, "internal: true") {
 		t.Errorf("Markdown() must not be marked internal")
 	}
+}
+
+// parseFrontmatter reads a rendered SKILL.md the way a skill loader does: it
+// splits the YAML header off the body and unmarshals it. Asserting on parsed
+// values instead of raw substrings is what makes these tests able to fail on a
+// header no loader accepts.
+func parseFrontmatter(t *testing.T, md string) frontmatter {
+	t.Helper()
+	if !strings.HasPrefix(md, "---\n") {
+		t.Fatalf("SKILL.md must start with YAML frontmatter, got:\n%s", md[:min(40, len(md))])
+	}
+	head, body, found := strings.Cut(strings.TrimPrefix(md, "---\n"), "---\n")
+	if !found {
+		t.Fatalf("frontmatter not closed with a second --- delimiter:\n%s", md[:min(200, len(md))])
+	}
+	if strings.TrimSpace(body) == "" {
+		t.Fatalf("SKILL.md carries no body after its frontmatter")
+	}
+	var fm frontmatter
+	dec := yaml.NewDecoder(strings.NewReader(head))
+	dec.KnownFields(true)
+	if err := dec.Decode(&fm); err != nil {
+		t.Fatalf("frontmatter is not valid YAML a skill loader can read: %v\n%s", err, head)
+	}
+	return fm
 }
 
 func TestBodyIncludesGeneratedGateStepGuard(t *testing.T) {
@@ -91,29 +107,38 @@ func TestBodyDocumentsAxiGateGuidance(t *testing.T) {
 	}
 }
 
-func TestInstallWritesBothPaths(t *testing.T) {
+func TestInstallWritesEverySkillPath(t *testing.T) {
 	root := t.TempDir()
 	written, err := Install(root)
 	if err != nil {
 		t.Fatalf("Install: %v", err)
 	}
-	wantRel := []string{
-		filepath.Join(".claude", "skills", Name, "SKILL.md"),
-		filepath.Join(".agents", "skills", Name, "SKILL.md"),
+	want := wantInstalledContent()
+	if len(written) != len(want) {
+		t.Fatalf("written = %v, want %d path(s)", written, len(want))
 	}
-	if len(written) != len(wantRel) {
-		t.Fatalf("written = %v, want %v", written, wantRel)
-	}
-	for i, rel := range wantRel {
-		if written[i] != rel {
-			t.Errorf("written[%d] = %q, want %q", i, written[i], rel)
+	seen := map[string]bool{}
+	for _, rel := range written {
+		content, ok := want[rel]
+		if !ok {
+			t.Errorf("Install reported unexpected path %q", rel)
+			continue
 		}
+		if seen[rel] {
+			t.Errorf("Install reported %q twice", rel)
+		}
+		seen[rel] = true
 		data, err := os.ReadFile(filepath.Join(root, rel))
 		if err != nil {
 			t.Fatalf("read %s: %v", rel, err)
 		}
-		if string(data) != Markdown() {
-			t.Errorf("%s content does not match Markdown()", rel)
+		if string(data) != content {
+			t.Errorf("%s content does not match its skill's Markdown()", rel)
+		}
+	}
+	for rel := range want {
+		if !seen[rel] {
+			t.Errorf("Install never wrote %q", rel)
 		}
 	}
 }
@@ -131,16 +156,17 @@ func TestInstallUserWritesUnderHome(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InstallUser: %v", err)
 	}
-	if len(written) != len(InstallBases) {
-		t.Fatalf("written = %v, want one path per base", written)
+	want := wantInstalledContent()
+	if len(written) != len(want) {
+		t.Fatalf("written = %v, want one path per skill per base (%d)", written, len(want))
 	}
-	for _, base := range InstallBases {
-		data, err := os.ReadFile(filepath.Join(home, base, Name, "SKILL.md"))
+	for rel, content := range want {
+		data, err := os.ReadFile(filepath.Join(home, rel))
 		if err != nil {
-			t.Fatalf("skill not installed under home at %s: %v", base, err)
+			t.Fatalf("skill not installed under home at %s: %v", rel, err)
 		}
-		if string(data) != Markdown() {
-			t.Errorf("%s content does not match Markdown()", base)
+		if string(data) != content {
+			t.Errorf("%s content does not match its skill's Markdown()", rel)
 		}
 	}
 }
@@ -222,13 +248,19 @@ func TestInstallSymlinkLayouts(t *testing.T) {
 			}
 
 			// Every reported path must be readable with current content.
+			want := wantInstalledContent()
 			for _, rel := range written {
 				data, err := os.ReadFile(filepath.Join(root, rel))
 				if err != nil {
 					t.Fatalf("read reported %s: %v", rel, err)
 				}
-				if string(data) != Markdown() {
-					t.Errorf("%s content does not match Markdown()", rel)
+				content, ok := want[rel]
+				if !ok {
+					t.Errorf("Install reported unexpected path %q", rel)
+					continue
+				}
+				if string(data) != content {
+					t.Errorf("%s content does not match its skill's Markdown()", rel)
 				}
 			}
 
@@ -358,4 +390,17 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// wantInstalledContent maps every root-relative install path to the content it
+// must carry. Tests use it instead of assuming a single skill, so adding one to
+// All() cannot leave an install assertion silently checking the wrong body.
+func wantInstalledContent() map[string]string {
+	want := make(map[string]string, len(All())*len(InstallBases))
+	for _, sk := range All() {
+		for _, base := range InstallBases {
+			want[filepath.Join(base, sk.Name, "SKILL.md")] = sk.Markdown()
+		}
+	}
+	return want
 }

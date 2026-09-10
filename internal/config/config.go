@@ -117,7 +117,9 @@ type GlobalConfig struct {
 	// agent_args_override: it describes this machine's agent setup and decides
 	// which model runs with the operator's credentials, so no pushed branch may
 	// set it.
-	AgentConfig map[string]agentcfg.Profile `yaml:"agent_config"`
+	AgentConfig       map[string]agentcfg.Profile            `yaml:"agent_config"`
+	AgentProfiles     map[string]map[string]agentcfg.Profile `yaml:"agent_profiles"`
+	AgentStepProfiles map[types.StepName]string              `yaml:"agent_step_profiles"`
 	// WorktreeRoots places a repository's pipeline run worktrees under a
 	// directory the operator chose instead of the default
 	// <GATEHOUSE_HOME>/worktrees/<repoID>. Keys are registered checkout paths
@@ -159,31 +161,33 @@ type GlobalConfig struct {
 
 // globalConfigRaw is the on-disk YAML representation with duration as string.
 type globalConfigRaw struct {
-	Agent                   agentList                  `yaml:"agent"`
-	ACPXPath                string                     `yaml:"acpx_path"`
-	ForgejoAXIPath          string                     `yaml:"forgejo_axi_path"`
-	ACPRegistryOverrides    map[string]string          `yaml:"acp_registry_overrides"`
-	AgentPathOverride       map[string]string          `yaml:"agent_path_override"`
-	AgentArgsOverride       map[string][]string        `yaml:"agent_args_override"`
-	AgentConfig             map[string]agentProfileRaw `yaml:"agent_config"`
-	WorktreeRoots           map[string]string          `yaml:"worktree_roots"`
-	CITimeout               string                     `yaml:"ci_timeout"`
-	DaemonConnectTimeout    string                     `yaml:"daemon_connect_timeout"`
-	BranchSyncRemoteTimeout string                     `yaml:"branch_sync_remote_timeout"`
-	BabysitTimeout          string                     `yaml:"babysit_timeout"`
-	StepQuietWarning        string                     `yaml:"step_quiet_warning"`
-	AgentTimeout            string                     `yaml:"agent_timeout"`
-	ReviewAgentTimeout      string                     `yaml:"review_agent_timeout"`
-	TestAgentTimeout        string                     `yaml:"test_agent_timeout"`
-	LogLevel                string                     `yaml:"log_level"`
-	SessionReuse            *bool                      `yaml:"session_reuse"`
-	AutoFix                 AutoFixRaw                 `yaml:"auto_fix"`
-	CI                      CIRaw                      `yaml:"ci"`
-	Commit                  CommitRaw                  `yaml:"commit"`
-	Intent                  IntentRaw                  `yaml:"intent"`
-	Test                    TestRaw                    `yaml:"test"`
-	Eval                    EvalRaw                    `yaml:"eval"`
-	ForgeProfiles           ForgeProfiles              `yaml:"forge_profiles"`
+	Agent                   agentList                             `yaml:"agent"`
+	ACPXPath                string                                `yaml:"acpx_path"`
+	ForgejoAXIPath          string                                `yaml:"forgejo_axi_path"`
+	ACPRegistryOverrides    map[string]string                     `yaml:"acp_registry_overrides"`
+	AgentPathOverride       map[string]string                     `yaml:"agent_path_override"`
+	AgentArgsOverride       map[string][]string                   `yaml:"agent_args_override"`
+	AgentConfig             map[string]agentProfileRaw            `yaml:"agent_config"`
+	AgentProfiles           map[string]map[string]agentProfileRaw `yaml:"agent_profiles"`
+	AgentStepProfiles       map[types.StepName]string             `yaml:"agent_step_profiles"`
+	WorktreeRoots           map[string]string                     `yaml:"worktree_roots"`
+	CITimeout               string                                `yaml:"ci_timeout"`
+	DaemonConnectTimeout    string                                `yaml:"daemon_connect_timeout"`
+	BranchSyncRemoteTimeout string                                `yaml:"branch_sync_remote_timeout"`
+	BabysitTimeout          string                                `yaml:"babysit_timeout"`
+	StepQuietWarning        string                                `yaml:"step_quiet_warning"`
+	AgentTimeout            string                                `yaml:"agent_timeout"`
+	ReviewAgentTimeout      string                                `yaml:"review_agent_timeout"`
+	TestAgentTimeout        string                                `yaml:"test_agent_timeout"`
+	LogLevel                string                                `yaml:"log_level"`
+	SessionReuse            *bool                                 `yaml:"session_reuse"`
+	AutoFix                 AutoFixRaw                            `yaml:"auto_fix"`
+	CI                      CIRaw                                 `yaml:"ci"`
+	Commit                  CommitRaw                             `yaml:"commit"`
+	Intent                  IntentRaw                             `yaml:"intent"`
+	Test                    TestRaw                               `yaml:"test"`
+	Eval                    EvalRaw                               `yaml:"eval"`
+	ForgeProfiles           ForgeProfiles                         `yaml:"forge_profiles"`
 }
 
 // ForgeProfile selects one isolated provider CLI configuration directory.
@@ -504,6 +508,9 @@ type Config struct {
 	AgentPathOverride     map[string]string
 	AgentArgsOverride     map[string][]string
 	AgentConfig           map[string]agentcfg.Profile
+	AgentProfiles         map[string]map[string]agentcfg.Profile
+	AgentStepProfiles     map[types.StepName]string
+	StepProfiles          *StepProfilePlan
 	CITimeout             time.Duration
 	StepQuietWarning      time.Duration
 	AgentTimeout          time.Duration
@@ -1778,6 +1785,9 @@ func LoadGlobalFromBytes(data []byte) (*GlobalConfig, error) {
 		}
 		cfg.AgentArgsOverride = raw.AgentArgsOverride
 	}
+	if err := parseStepProfiles(cfg, raw); err != nil {
+		return nil, err
+	}
 	if raw.AgentConfig != nil {
 		profiles, err := parseAgentConfig(raw.AgentConfig)
 		if err != nil {
@@ -2519,6 +2529,8 @@ func Merge(global *GlobalConfig, repo *RepoConfig) *Config {
 		AgentPathOverride:    global.AgentPathOverride,
 		AgentArgsOverride:    global.AgentArgsOverride,
 		AgentConfig:          global.AgentConfig,
+		AgentProfiles:        global.AgentProfiles,
+		AgentStepProfiles:    global.AgentStepProfiles,
 		CITimeout:            global.CITimeout,
 		StepQuietWarning:     global.StepQuietWarning,
 		AgentTimeout:         global.AgentTimeout,

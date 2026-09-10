@@ -251,6 +251,47 @@ agent_args_override:
     - o3
 ```
 
+### agent_profiles and agent_step_profiles
+
+Choose different model and reasoning-effort settings for different pipeline steps. Both maps are **global-only**: a repository cannot choose models or reference local profile names.
+
+`agent_profiles` maps local names to per-harness overlays using the same fields and validation as [`agent_config`](#agent_config). Omitted fields inherit from `agent_config`; omitted harnesses retain their existing settings. The implicit, reserved `default` profile is exactly `agent_config` plus the harness's own defaults. Profile names use lowercase letters, digits, and inner hyphens (maximum 40 characters).
+
+`agent_step_profiles` maps `intent`, `rebase`, `review`, `test`, `document`, `lint`, `pr`, or `ci` to a profile name. Unspecified steps use `default`. `push` is deterministic and cannot be assigned a profile. These settings tune agent invocations, including fixes, not configured shell commands.
+
+```yaml
+agent: claude
+agent_config:
+  claude: {model: sonnet, effort: medium}
+agent_profiles:
+  thorough:
+    claude: {model: opus, effort: high}
+  economical:
+    claude: {model: haiku, effort: low}
+agent_step_profiles:
+  review: thorough
+  test: economical
+```
+
+Use model IDs and effort levels supported by your harness/account. Named profiles do not select a different harness: the configured `agent` fallback chain is shared, with each harness receiving its own profile entry. Native [`agent_args_override`](#agent_args_override) pins still win; remove those pins if you want the profile to control that knob. Document and lint share one agent pass only when their resolved profiles are identical.
+
+Declaring either nonempty map opts into custom-gate model setup. Before any step executes, each previously unseen **agent-backed** custom gate needs an explicit local choice. The terminal UI shows a chooser; `axi run` returns `model-configuration-required`, even with `--yes`. Inspect and save choices with:
+
+```sh
+gatehouse axi models --run <run-id>
+gatehouse axi models --run <run-id> \
+  --set gate.test.arch-fitness=economical \
+  --set gate.test.mutation-budget=economical
+```
+
+Supply every missing gate in one batch. The choices are stored in the local Gatehouse database by repository ID and full gate identity (`gate.<anchor>.<name>`), never in `.gatehouse.yaml`. Saving starts the same pending run; subsequent runs reuse the choices. New or renamed gates, changed anchors, or a removed local profile require another choice. Changed instructions alone do not. Command-backed gates require no choice and any authorized repair uses `default`. Agent gates still need a choice when their anchor is skipped, because custom gates execute independently of a core-step skip.
+
+Profile edits take effect on **new runs**. Each opted-in run stores resolved model/effort settings and its harness chain locally, keeping review/fix sessions and recovery on the same settings. Removing a profile does not rewrite an existing run. A missing pinned harness or changed native override arguments prevents recovery; restore them or start a new run. Raw arguments are not copied into the model snapshot. Profile names and requested settings stay local (run metadata and step logs), outside remote telemetry. Provider-reported actual model metadata continues to be recorded when available.
+
+To choose again for a saved gate, run `gatehouse axi models --run <run-id> --forget gate.test.arch-fitness`. The run identifies the repository; forgetting affects future runs only, and they ask again. Ejecting a repository removes its local choices.
+
+With neither map configured, behavior remains unchanged, including no custom-gate chooser. Existing `agent_config` and `agent_args_override` files require no migration. Configuring only `agent_step_profiles: {review: default}` enables the chooser without creating a named profile.
+
 ### agent_args_override
 
 Extra CLI flags to pass to each native agent.

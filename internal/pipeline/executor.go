@@ -284,7 +284,7 @@ func (e *Executor) prepareRestart(runID string, name types.StepName, currentInde
 
 func (e *Executor) initializeRunScopes(runID string) {
 	sessionsEnabled := e.config != nil && e.config.SessionReuse && e.agent != nil
-	e.sessions = NewRunSessions(e.db, runID, e.agent, sessionsEnabled)
+	e.sessions = NewRunSessions(e.db, runID, AgentForStep(e.agent, types.StepReview), sessionsEnabled)
 	e.shared = &RunShared{}
 }
 
@@ -385,7 +385,7 @@ func (e *Executor) Resume(ctx context.Context, run *db.Run, repo *db.Repo, workD
 		Config:       e.config,
 		ForgeContext: e.forge,
 		DB:           e.db,
-		Agent:        e.agent,
+		Agent:        AgentForStep(e.agent, gate.step.Name()),
 		Sessions:     e.sessions,
 		Shared:       e.shared,
 		Log: func(message string) {
@@ -785,7 +785,13 @@ func (e *Executor) executeStep(ctx context.Context, step Step, sr *db.StepResult
 	autoFixAttempts := state.autoFixAttempts
 	roundNum := state.roundNum
 
-	stepAgent := e.agent
+	stepAgent := AgentForStep(e.agent, stepName)
+	profileName := ""
+	if e.config != nil && e.config.StepProfiles != nil {
+		profile := e.config.StepProfiles.Steps[stepName]
+		profileName = profile.Name
+		writeLog(fmt.Sprintf("local agent profile: %s (%v)", profile.Name, profile.Agents))
+	}
 	if stepAgent != nil {
 		// Innermost: default-by-construction invocation deadline so a step
 		// that calls Agent.Run directly cannot hang the run.
@@ -793,6 +799,7 @@ func (e *Executor) executeStep(ctx context.Context, step Step, sr *db.StepResult
 		stepAgent = &gateStepBoundaryAgent{inner: stepAgent, phase: stepName}
 		stepAgent = &lifecycleAgent{inner: stepAgent, onLifecycle: onAgentLifecycle}
 		stepAgent = &perfRecordingAgent{
+			profile:  profileName,
 			inner:    stepAgent,
 			db:       e.db,
 			runID:    run.ID,

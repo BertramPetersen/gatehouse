@@ -96,14 +96,16 @@ func NewRunManager(database *db.DB, p *paths.Paths, stepFactory StepFactory) *Ru
 }
 
 type recoveredRunPlan struct {
-	run     *db.Run
-	repo    *db.Repo
-	workDir string
-	gateDir string
-	cfg     *config.Config
-	agent   agent.Agent
-	steps   []pipeline.Step
-	forge   *forgecontext.Context
+	configuring bool
+	fresh       bool
+	run         *db.Run
+	repo        *db.Repo
+	workDir     string
+	gateDir     string
+	cfg         *config.Config
+	agent       agent.Agent
+	steps       []pipeline.Step
+	forge       *forgecontext.Context
 }
 
 func (m *RunManager) recoverableParkedRuns(ctx context.Context) []recoveredRunPlan {
@@ -133,6 +135,9 @@ func (m *RunManager) recoverableParkedRuns(ctx context.Context) []recoveredRunPl
 }
 
 func (m *RunManager) prepareRecoveredRun(ctx context.Context, run *db.Run) (*recoveredRunPlan, error) {
+	if run != nil && run.Status == types.RunPending {
+		return m.preparePendingModelRun(ctx, run)
+	}
 	if run == nil || run.Status != types.RunRunning || run.AwaitingAgentSince == nil || run.Branch == "" {
 		return nil, fmt.Errorf("run is not a parked running run")
 	}
@@ -254,6 +259,9 @@ func (m *RunManager) loadRecoveredConfig(ctx context.Context, run *db.Run, repo 
 		return nil, err
 	}
 	cfg.Gates = gates
+	if err := m.loadRunModelPlan(run.ID, cfg); err != nil {
+		return nil, err
+	}
 	if err := m.paths.ValidateEvidenceRoot(cfg.Test.Evidence.LocalRoot); err != nil {
 		return nil, err
 	}
@@ -283,7 +291,7 @@ func (m *RunManager) pinnedRunGates(runID string) ([]config.Gate, error) {
 	return gates, nil
 }
 
-func newPipelineAgent(ctx context.Context, cfg *config.Config, evidenceRoot string, lookPath func(string) (string, error), environment runenv.Overlay) (agent.Agent, error) {
+func newProfileAgent(ctx context.Context, cfg *config.Config, evidenceRoot string, lookPath func(string) (string, error), environment runenv.Overlay) (agent.Agent, error) {
 	if steps.IsDemoMode() {
 		return agent.NewNoop(), nil
 	}
@@ -357,12 +365,18 @@ func (m *RunManager) resumeRecoveredRuns(plans []recoveredRunPlan) {
 }
 
 func (m *RunManager) resumeRecoveredRun(plan recoveredRunPlan) {
+	if plan.configuring {
+		return
+	}
 	if m.shuttingDown.Load() {
 		_ = plan.agent.Close()
 		return
 	}
 	runCtx, cancel := context.WithCancelCause(context.Background())
 	executor := pipeline.NewExecutor(m.db, m.paths, plan.cfg, plan.agent, plan.steps, m.broadcast)
+	if plan.cfg.StepProfiles != nil {
+		executor.SetSkippedSteps(plan.cfg.StepProfiles.Skip)
+	}
 	executor.SetOnPRMerged(func(_ context.Context, runID string) {
 		m.wg.Add(1)
 		go func() {
@@ -373,12 +387,20 @@ func (m *RunManager) resumeRecoveredRun(plan recoveredRunPlan) {
 	executor.SetForgeContext(plan.forge)
 	done := make(chan struct{})
 	m.mu.Lock()
+	// Model setup can finish while shutdown is taking its cancellation
+	// snapshot. Register both ownership and the wait count under that lock.
+	if m.shuttingDown.Load() {
+		m.mu.Unlock()
+		cancel(nil)
+		_ = plan.agent.Close()
+		return
+	}
+	m.wg.Add(1)
 	m.executors[plan.run.ID] = executor
 	m.cancels[plan.run.ID] = cancel
 	m.dones[plan.run.ID] = done
 	m.mu.Unlock()
 
-	m.wg.Add(1)
 	go func() {
 		startedAt := time.Now()
 		defer m.wg.Done()
@@ -408,7 +430,11 @@ func (m *RunManager) resumeRecoveredRun(plan recoveredRunPlan) {
 			m.mu.Unlock()
 		}()
 
-		if err := executor.Resume(runCtx, plan.run, plan.repo, plan.workDir); err != nil {
+		execute := executor.Resume
+		if plan.fresh {
+			execute = executor.Execute
+		}
+		if err := execute(runCtx, plan.run, plan.repo, plan.workDir); err != nil {
 			if plan.run.Status == types.RunRunning {
 				errMsg := err.Error()
 				plan.run.Status = types.RunFailed
@@ -1075,53 +1101,6 @@ func (m *RunManager) startRunWithIntentSource(ctx context.Context, repo *db.Repo
 		return "", fmt.Errorf("resolve forge profile: %w", err)
 	}
 
-	// Create agent. In demo mode, skip resolution and use a no-op agent.
-	var ag agent.Agent
-	if steps.IsDemoMode() {
-		ag = agent.NewNoop()
-	} else {
-		if err := cfg.ResolveAgent(ctx, exec.LookPath); err != nil {
-			m.db.UpdateRunError(run.ID, err.Error())
-			trackStartFailure("resolve_agent")
-			return "", err
-		}
-		agents := cfg.Agents
-		if len(agents) == 0 {
-			agents = []types.AgentName{cfg.Agent}
-		}
-		created := make([]agent.Agent, 0, len(agents))
-		for _, name := range agents {
-			next, agErr := agent.NewWithOptions(name, cfg.AgentPathFor(name), cfg.AgentArgsFor(name), agent.Options{
-				ACPRegistryOverrides:   cfg.ACPRegistryOverrides,
-				DisableProjectSettings: cfg.DisableProjectSettings,
-				Profile:                cfg.AgentProfileFor(name),
-				Environment:            forgeEnvironment(forgeCtx),
-			})
-			if agErr != nil {
-				m.db.UpdateRunError(run.ID, fmt.Sprintf("create agent %s: %s", name, agErr))
-				trackStartFailure("create_agent")
-				return "", fmt.Errorf("create agent %s: %w", name, agErr)
-			}
-			// Steer every pipeline agent to keep writes inside the worktree and
-			// avoid mutating system state (e.g. brew/Homebrew touching
-			// /Applications), which triggers macOS App Management prompts.
-			created = append(created, agent.WithSteering(next, m.paths.EvidenceRoot(cfg.Test.Evidence.LocalRoot)))
-		}
-		ag = agent.NewFallback(created)
-		// Fail closed ONLY under the trusted opt-out: when the repo asked to
-		// disable project settings, refuse any resolved harness that lacks a
-		// verified suppression knob rather than launch it with the target repo's
-		// project instructions loaded. When the repo did not opt out, every
-		// adapter runs exactly as before (backward-compat).
-		if cfg.DisableProjectSettings {
-			if err := agent.EnsureGateNeutralized(ag); err != nil {
-				m.db.UpdateRunError(run.ID, err.Error())
-				trackStartFailure("gate_not_neutralized")
-				return "", err
-			}
-		}
-	}
-
 	// Configuration decides this run's gates exactly once, here, and the
 	// resolved list is recorded before the executor can write a single step
 	// row. Every later consumer - above all crash recovery - reads that record
@@ -1140,6 +1119,22 @@ func (m *RunManager) startRunWithIntentSource(ctx context.Context, repo *db.Repo
 		return "", fmt.Errorf("record gates: %w", err)
 	}
 
+	if err := m.prepareRunModelPlan(ctx, run, cfg, skipSteps); err != nil {
+		m.db.UpdateRunError(run.ID, err.Error())
+		return "", err
+	}
+	if cfg.StepProfiles != nil && len(cfg.StepProfiles.Missing()) != 0 {
+		// Retain the worktree so cancellation, custody and recovery keep using
+		// the run's recorded placement. No step or agent has executed.
+		bgOwnsWorktree = true
+		m.broadcast(ipc.Event{Type: ipc.EventRunUpdated, RunID: run.ID})
+		return run.ID, nil
+	}
+	ag, err := newPipelineAgent(ctx, cfg, m.paths.EvidenceRoot(cfg.Test.Evidence.LocalRoot), exec.LookPath, forgeEnvironment(forgeCtx))
+	if err != nil {
+		m.db.UpdateRunError(run.ID, err.Error())
+		return "", err
+	}
 	execSteps := steps.WithCustomGates(m.steps(), cfg.Gates)
 	telemetry.Track("run", telemetry.Fields{
 		"action":      "started",
@@ -1451,6 +1446,30 @@ func (m *RunManager) HandleCancel(runID string) error {
 	m.mu.Unlock()
 
 	if !ok {
+		run, err := m.db.GetRun(runID)
+		if err != nil {
+			return err
+		}
+		if run != nil {
+			lock, _ := m.branchLocks.LoadOrStore(run.RepoID+"/"+run.Branch, &sync.Mutex{})
+			mu := lock.(*sync.Mutex)
+			mu.Lock()
+			defer mu.Unlock()
+			run, err = m.db.GetRun(runID)
+			if err != nil {
+				return err
+			}
+			m.mu.Lock()
+			cancel, ok = m.cancels[runID]
+			m.mu.Unlock()
+			if ok {
+				cancel(fmt.Errorf(types.RunCancelReasonAbortedByUser))
+				return nil
+			}
+			if handled, err := m.cancelPendingModels(run, types.RunCancelReasonAbortedByUser); handled || err != nil {
+				return err
+			}
+		}
 		return fmt.Errorf("no active run %s", runID)
 	}
 
@@ -1484,6 +1503,9 @@ func (m *RunManager) cancelActiveRuns(repoID, branch string) {
 		done := m.dones[run.ID]
 		m.mu.Unlock()
 		if !ok {
+			if _, err := m.cancelPendingModels(run, types.RunCancelReasonSuperseded); err != nil {
+				slog.Warn("cancel model setup", "error", err)
+			}
 			continue
 		}
 

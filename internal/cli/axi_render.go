@@ -95,6 +95,7 @@ type stepView struct {
 
 // runView is a render-ready view of a pipeline run.
 type runView struct {
+	ModelSetup  []types.StepName
 	ID          string
 	Branch      string
 	Status      string
@@ -111,6 +112,7 @@ type runView struct {
 
 func runViewFromIPC(r *ipc.RunInfo) runView {
 	rv := runView{
+		ModelSetup:         r.ModelSetup,
 		ID:                 r.ID,
 		Branch:             r.Branch,
 		Status:             string(r.Status),
@@ -411,6 +413,9 @@ func runObjectFieldWithKey(key string, rv runView) toon.Field {
 		{Key: "id", Value: rv.ID},
 		{Key: "branch", Value: rv.Branch},
 		{Key: "status", Value: rv.Status},
+	}
+	if len(rv.ModelSetup) != 0 {
+		fields = append(fields, toon.Field{Key: "model_setup", Value: modelStepNames(rv.ModelSetup)}, toon.Field{Key: "next", Value: "gatehouse axi models --run " + rv.ID})
 	}
 	// Surface the parked-awaiting-agent signal right after status so one read
 	// distinguishes a run waiting for the agent to drive a gate from one that

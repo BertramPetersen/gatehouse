@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS agent_invocations (
     agent                 TEXT NOT NULL,
     model                 TEXT,
     model_provider        TEXT,
+    profile               TEXT NOT NULL DEFAULT '',
     session_mode          TEXT NOT NULL,
     session_key           TEXT,
     fallback_reason       TEXT,
@@ -133,6 +134,18 @@ CREATE TABLE IF NOT EXISTS run_agent_sessions (
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     PRIMARY KEY (run_id, role)
+);
+
+CREATE TABLE IF NOT EXISTS repo_model_choices (
+    repo_id TEXT NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
+    step TEXT NOT NULL,
+    profile TEXT NOT NULL,
+    PRIMARY KEY (repo_id, step)
+);
+
+CREATE TABLE IF NOT EXISTS run_model_plans (
+    run_id TEXT PRIMARY KEY REFERENCES runs(id) ON DELETE CASCADE,
+    plan TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS intent_cache (
@@ -235,6 +248,9 @@ var migrationStatements = []string{
 	`ALTER TABLE step_results ADD COLUMN agent_pid INTEGER`,
 	`ALTER TABLE step_results ADD COLUMN auto_fix_limit INTEGER`,
 	`ALTER TABLE step_results ADD COLUMN ci_fix_attempts INTEGER NOT NULL DEFAULT 0`,
+	// An empty local profile distinguishes legacy invocations from named routing.
+	`ALTER TABLE agent_invocations ADD COLUMN profile TEXT NOT NULL DEFAULT ''`,
+
 	// Session-fidelity telemetry columns (all nullable so pre-existing rows read
 	// back as unknown, never a fabricated zero).
 	`ALTER TABLE agent_invocations ADD COLUMN model_provider TEXT`,

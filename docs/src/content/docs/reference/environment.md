@@ -250,11 +250,11 @@ It never sends a SHA, run ID, path, branch name, URL, remote name, or command ar
 ### What stays local and what leaves the machine
 
 Everything sent remotely is low-cardinality: command names, statuses, durations, counts, flag booleans, agent and step names, and - on the single terminal `run finished` event - the bounded performance rollup `agent_invocations`, `resumed_invocations`, and `fallback_invocations` (small counts only).
-Run IDs, repository paths, branch names, session identities, prompts, model outputs, diffs, and per-invocation performance records are never sent.
+Run IDs, repository paths, branch names, session identities, local profile names, requested model/effort settings, prompts, model outputs, diffs, and per-invocation performance records are never sent.
 A step name is one of the fixed pipeline steps, except for a repository-declared [gate](/gatehouse/reference/repo-config/#gates), whose bounded declared name reaches step, approval, and fix events as written in the repository's trusted `.gatehouse.yaml`; the `axi logs` command event records it as the fixed token `gate` instead.
 
 Detailed performance evidence stays on the machine in the local state database (`<GATEHOUSE_HOME>/state.sqlite`): one `agent_invocations` row per agent invocation, plus each run's accumulated parked-at-gate time.
-Each row records run and step identity, purpose (such as review/review-fix/housekeeping), the reported model and its provider, the cold/started/resumed/fallback session mode, a truncated session-identity hash, timestamps, duration, exit status, and failure category, alongside the session-fidelity metrics below.
+Each row records run and step identity, purpose (such as review/review-fix/housekeeping), the selected local profile when step routing is enabled, the reported model and its provider, the cold/started/resumed/fallback session mode, a truncated session-identity hash, timestamps, duration, exit status, and failure category, alongside the session-fidelity metrics below. Local repository gate choices and resolved per-run model/effort pins are stored separately in the same database; raw native arguments are represented only by a change-detection digest in the pin.
 It never stores prompts, model outputs, diffs, raw command arguments, secret values, or credentials - only bounded counts, low-cardinality categories, and durations.
 
 The additive session-fidelity fields are nullable and read back as unknown (rendered `-`) rather than a fabricated zero when the adapter did not report them, so rows written before a field existed, and adapters that do not surface a datum, stay honest.

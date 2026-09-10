@@ -1219,6 +1219,39 @@ func registerHandlers(srv *ipc.Server, mgr *RunManager, d *db.DB, shutdown func(
 		return &ipc.PushReceivedResult{RunID: runID}, nil
 	})
 
+	srv.Handle(ipc.MethodModelSetup, func(ctx context.Context, params json.RawMessage) (interface{}, error) {
+		var p ipc.GetRunParams
+		if err := json.Unmarshal(params, &p); err != nil {
+			return nil, err
+		}
+		return mgr.ModelSetup(p.RunID)
+	})
+	srv.Handle(ipc.MethodConfigureModels, func(ctx context.Context, params json.RawMessage) (interface{}, error) {
+		if err := refuseNested(ctx, false); err != nil {
+			return nil, err
+		}
+		var p ipc.ConfigureModelsParams
+		if err := json.Unmarshal(params, &p); err != nil {
+			return nil, err
+		}
+		if err := mgr.ConfigureModels(ctx, p); err != nil {
+			return nil, err
+		}
+		return &ipc.RespondResult{OK: true}, nil
+	})
+	srv.Handle(ipc.MethodForgetModels, func(ctx context.Context, params json.RawMessage) (interface{}, error) {
+		if err := refuseNested(ctx, false); err != nil {
+			return nil, err
+		}
+		var p ipc.ForgetModelsParams
+		if err := json.Unmarshal(params, &p); err != nil {
+			return nil, err
+		}
+		if err := mgr.ForgetModels(p); err != nil {
+			return nil, err
+		}
+		return &ipc.RespondResult{OK: true}, nil
+	})
 	srv.Handle(ipc.MethodRespond, func(ctx context.Context, params json.RawMessage) (interface{}, error) {
 		if err := refuseNested(ctx, false); err != nil {
 			return nil, err
@@ -1334,6 +1367,13 @@ func runToInfo(d *db.DB, r *db.Run, steps []*db.StepResult) *ipc.RunInfo {
 		AwaitingAgentSince: r.AwaitingAgentSince,
 		CreatedAt:          r.CreatedAt,
 		UpdatedAt:          r.UpdatedAt,
+	}
+	if r.Status == types.RunPending && d != nil {
+		if data, err := d.GetRunModelPlan(r.ID); err == nil {
+			if pin, err := config.ParseStepProfilePlan(data); err == nil && pin != nil {
+				info.ModelSetup = pin.Missing()
+			}
+		}
 	}
 	if len(steps) > 0 {
 		info.Steps = make([]ipc.StepResultInfo, 0, len(steps))

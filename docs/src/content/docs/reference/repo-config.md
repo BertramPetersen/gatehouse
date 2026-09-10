@@ -312,6 +312,8 @@ Like `document.instructions`, this field steers gate behavior, so it is honored 
 
 ### gates
 
+Repositories declare what gates enforce, not which models run them. Model choices belong to the operator's [global step profiles](/gatehouse/reference/global-config/#agent_profiles-and-agent_step_profiles); first-use choices for agent-backed gates are remembered locally per repository. Repository `agent_profiles` and `agent_step_profiles` blocks are ignored.
+
 Extra repository-declared checks that run inside the pipeline, in addition to the core steps.
 
 | | |

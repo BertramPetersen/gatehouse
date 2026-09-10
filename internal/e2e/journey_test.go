@@ -52,6 +52,7 @@ func TestUserJourney(t *testing.T) {
 			runHappyPath(t, agentName)
 		})
 	}
+	t.Run("local_model_profiles", runModelProfilesJourney)
 }
 
 func TestAXIControlByteFailureGateRemainsReadable(t *testing.T) {

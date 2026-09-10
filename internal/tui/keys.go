@@ -7,6 +7,10 @@ import (
 
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
+	if m.needsModels() && key != "q" && key != "ctrl+c" && key != "x" {
+		m.confirmAbort = false
+		return m.handleModelKey(key)
+	}
 
 	// Route to modal editor first, if one is open. ctrl+c always quits.
 	if m.editorActive() && key != "ctrl+c" {
